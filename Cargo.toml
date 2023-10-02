@@ -1,0 +1,20 @@
+[package]
+name = "treq"
+version = "1.0.0"
+edition = "2021"
+authors = [ "Talis-Fb" ]
+license = "GPL-3.0"
+# homepage = "https://github.com/talis-fb/TReq"
+# repository = "https://github.com/talis-fb/TReq"
+# documentation = "https://github.com/talis-fb/TReq/wiki"
+categories = ["command-line-interface"]
+keywords = [
+  "cli",
+  "http",
+  "client",
+  "terminal",
+  "restful"
+]
+
+[dependencies]
+tokio = { version = "1.32.0", features = ["full"] }
