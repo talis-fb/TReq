@@ -2,6 +2,10 @@ use super::entity::{RequestData, RequestEntity};
 use super::RequestService;
 use std::rc::Rc;
 
+
+// HERE, each method that return a result is atomic.
+// That way, if it returns a error the service return to initial state
+
 pub trait RequestServiceFacade {
     fn add_request(&mut self, request: RequestData) -> String;
     fn edit_request(&mut self, id: String, request: RequestData) -> Result<(), ()>;

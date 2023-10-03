@@ -1,7 +1,7 @@
 use std::ops::FnOnce;
 
 pub type CommandClosure<Facade> =
-    dyn FnOnce(Box<Facade>) -> Result<Box<Facade>, String> + Send + Sync;
+    dyn FnOnce(Facade) -> Result<Facade, String> + Send + Sync;
     
 pub type Command<Facade> = Box<CommandClosure<Facade>>;
 
