@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use self::entity::RequestEntity;
+use std::collections::HashMap;
 
 pub mod commands;
 pub mod entity;

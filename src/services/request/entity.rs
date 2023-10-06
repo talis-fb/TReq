@@ -30,7 +30,7 @@ pub struct RequestEntity {
 }
 
 impl RequestEntity {
-    pub fn set_request(&mut self, request_data: RequestData) -> () {
+    pub fn update_current_request(&mut self, request_data: RequestData) -> () {
         let request_data = Rc::new(request_data);
         self.history.push_back(request_data.clone());
         self.current_request = request_data.clone();

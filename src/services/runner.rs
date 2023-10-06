@@ -3,7 +3,10 @@ use tokio::sync::oneshot;
 
 use crate::utils::commands::Command;
 
-pub struct ServiceRunner<ServiceFacade> where ServiceFacade : Sized {
+pub struct ServiceRunner<ServiceFacade>
+where
+    ServiceFacade: Sized,
+{
     pub service: Option<ServiceFacade>,
     pub commands_channel: mpsc::Receiver<Command<ServiceFacade>>,
     pub cancel_channel: oneshot::Receiver<()>,
@@ -23,7 +26,7 @@ impl<ServiceFacade> ServiceRunner<ServiceFacade> {
                         },
                         Err(_) => {
                             // THIS should reset to initial service instance
-                            // as it's not possible to make a clone in all execution, the 
+                            // as it's not possible to make a clone in all execution, the
                             // error data must contains the backup state of service
                             // this way. Each command must return what would be the initial state
                             //

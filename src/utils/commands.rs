@@ -1,10 +1,19 @@
 use std::ops::FnOnce;
 
-pub type CommandClosure<Facade> =
-    dyn FnOnce(Facade) -> Result<Facade, String> + Send + Sync;
-    
-pub type Command<Facade> = Box<CommandClosure<Facade>>;
+pub type Command<Facade> =
+    Box<dyn FnOnce(Facade) -> Result<Facade, ErrAtomic<Facade>> + Send + Sync>;
 
-pub fn from<Facade, Param, Return>(cl: impl FnOnce(Param) -> Return) -> Command<Facade> {
-    todo!()
+// Result and errors
+// IDEIA IMPROVEMENT: Maybe you could call for something with term "atomic" or "transacional"
+pub struct ErrAtomic<Snapshot>
+where
+    Snapshot: Sized,
+{
+    snapshot: Snapshot,
 }
+
+// pub type ResultCommandService<T, Service> = Result<T, ErrCommandService<Service>>;
+
+// pub fn from<Facade, Param, Return>(cl: impl FnOnce(Param) -> Return) -> Command<Facade> {
+//     todo!()
+// }
