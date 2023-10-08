@@ -3,6 +3,8 @@ use tokio::sync::oneshot;
 
 use super::request::facade::RequestServiceFacade;
 use super::runner::ServiceRunner;
+use crate::services::request::commands::Commands;
+use crate::services::request::entity::RequestData;
 use crate::utils::commands::Command;
 
 // Basicamente TODOS os endpoints do app, é de fato a interface para o backend
@@ -32,7 +34,16 @@ pub struct ServicesProvider {
 
 impl Provider for ServicesProvider {
     fn add_request(&mut self) {
-        todo!()
+
+        let req = RequestData::default();
+
+        let command = Commands::add_request(req);
+
+        let sender = self.request_service.command_channel.clone();
+
+        tokio::task::spawn(async move {
+            sender.send(command).await.unwrap();
+        });
     }
     fn edit_request(&mut self) {
         todo!()

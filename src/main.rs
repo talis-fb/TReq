@@ -2,6 +2,7 @@ use treq::services::{request::RequestService, provider::{ServicesProvider, Provi
 
 
 mod services;
+mod utils;
 
 #[tokio::main]
 async fn main() {
