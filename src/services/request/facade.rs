@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::entity::{RequestData, RequestEntity};
 use super::RequestService;
@@ -11,11 +11,11 @@ use super::RequestService;
 // anything about the service initial state.
 // Or the result is right and it changes or nothing happens.
 
-pub trait RequestServiceFacade {
+pub trait RequestServiceFacade  {
     fn add_request(&mut self, request: RequestData) -> String;
     fn edit_request(&mut self, id: String, request: RequestData);
     fn delete_request(&mut self, id: String);
-    fn get_request_data(&mut self, id: String) -> Option<Rc<RequestData>>;
+    fn get_request_data(&mut self, id: String) -> Option<Arc<RequestData>>;
 }
 
 impl RequestServiceFacade for RequestService {
@@ -38,7 +38,7 @@ impl RequestServiceFacade for RequestService {
     fn delete_request(&mut self, id: String) {
         self.requests.remove(&id);
     }
-    fn get_request_data(&mut self, id: String) -> Option<Rc<RequestData>> {
+    fn get_request_data(&mut self, id: String) -> Option<Arc<RequestData>> {
         Some(self.requests.get(&id)?.get_current_request())
     }
 }

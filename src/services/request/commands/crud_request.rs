@@ -6,21 +6,21 @@ use crate::services::request::{
 
 impl Commands {
     pub fn edit_request(id: String, request: RequestData) -> CommandRequestService {
-        Box::new(|mut service: Box<dyn RequestServiceFacade>| {
+        Box::new(|mut service: Box<dyn RequestServiceFacade + Send>| {
             service.edit_request(id, request);
             Ok(service)
         })
     }
 
     pub fn add_request(request: RequestData) -> CommandRequestService {
-        Box::new(|mut service: Box<dyn RequestServiceFacade>| {
+        Box::new(|mut service: Box<dyn RequestServiceFacade + Send>| {
             service.add_request(request);
             Ok(service)
         })
     }
 
     pub fn delete_request(id: String) -> CommandRequestService {
-        Box::new(|mut service: Box<dyn RequestServiceFacade>| {
+        Box::new(|mut service: Box<dyn RequestServiceFacade + Send>| {
             service.delete_request(id);
             Ok(service)
         })

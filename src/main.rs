@@ -8,7 +8,11 @@ mod utils;
 async fn main() {
     let req = RequestService::init();
 
-    let mut provider = ServicesProvider::init(req);
+    let mut provider = ServicesProvider::init(req).await;
 
-    provider.add_request();
+    // provider.listen().await.unwrap();
+
+    provider.add_request().await;
+
+    println!("Aqui tudo morre");
 }

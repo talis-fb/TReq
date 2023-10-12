@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, LinkedList},
-    rc::Rc,
+    sync::Arc,
 };
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
@@ -25,17 +25,17 @@ pub struct RequestData {
 #[derive(Default)]
 pub struct RequestEntity {
     pub name: String,
-    current_request: Rc<RequestData>,
-    history: LinkedList<Rc<RequestData>>,
+    current_request: Arc<RequestData>,
+    history: LinkedList<Arc<RequestData>>,
 }
 
 impl RequestEntity {
-    pub fn get_current_request(&self) -> Rc<RequestData> {
+    pub fn get_current_request(&self) -> Arc<RequestData> {
         self.current_request.clone()
     }
 
     pub fn update_current_request(&mut self, request_data: RequestData) -> () {
-        let request_data = Rc::new(request_data);
+        let request_data = Arc::new(request_data);
         self.history.push_back(request_data.clone());
         self.current_request = request_data.clone();
     }

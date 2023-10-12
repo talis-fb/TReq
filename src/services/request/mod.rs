@@ -14,6 +14,8 @@ pub struct RequestService {
     requests: HashMap<String, RequestEntity>,
 }
 
+// unsafe impl Send for RequestService {}
+
 impl RequestService {
     pub fn init() -> Self {
         Self {

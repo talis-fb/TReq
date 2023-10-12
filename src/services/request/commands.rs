@@ -1,7 +1,7 @@
 use crate::services::request::facade::RequestServiceFacade;
 use crate::utils::commands::Command as CommandAlias;
 
-pub type CommandRequestService = CommandAlias<Box<dyn RequestServiceFacade>>;
+pub type CommandRequestService = CommandAlias<Box<dyn RequestServiceFacade + Send>>;
 
 pub struct Commands;
 
