@@ -1,8 +1,9 @@
 use crate::services::request::facade::RequestServiceFacade;
-use crate::utils::commands::Command as CommandAlias;
+use crate::services::request::service::RequestServiceInstance;
+use crate::utils::commands::CommandClosureType;
 
-pub type CommandRequestService = CommandAlias<Box<dyn RequestServiceFacade + Send>>;
+pub type CommandRequestService = CommandClosureType<RequestServiceInstance>;
 
-pub struct Commands;
+pub struct CommandsFactory;
 
 pub mod crud_request;

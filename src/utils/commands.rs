@@ -1,6 +1,6 @@
 use std::ops::FnOnce;
 
-pub type Command<Facade> =
+pub type CommandClosureType<Facade> =
     Box<dyn FnOnce(Facade) -> Result<Facade, ErrAtomic<Facade>> + Send + Sync>;
 
 // Result and errors
