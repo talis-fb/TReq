@@ -1,17 +1,11 @@
-use std::sync::Arc;
-use std::vec;
-
-use async_trait::async_trait;
-use tokio::sync::oneshot;
-
+use super::request::service::RequestServiceInstance;
 use crate::services::request::commands::CommandsFactory;
 use crate::services::request::entity::RequestData;
 use crate::services::request::facade::RequestServiceFacade;
 use crate::services::runner::ServiceRunner;
 use crate::utils::uuid::UUID;
-
-use super::request::commands::CommandsUtils;
-use super::request::service::RequestServiceInstance;
+use async_trait::async_trait;
+use std::sync::Arc;
 
 // Basicamente TODOS os endpoints do app, é de fato a interface para o backend
 #[async_trait]
@@ -20,6 +14,7 @@ pub trait Provider {
     async fn edit_request(&mut self, id: UUID, request: RequestData);
     async fn delete_request(&mut self, id: UUID);
     async fn get_request(&mut self, id: UUID) -> Option<Arc<RequestData>>;
+    async fn rollback_request(&mut self, id: UUID) -> ();
 }
 
 // ESSE é o cara que vai ter as instancais dos runners de cada serviço
@@ -61,6 +56,13 @@ impl Provider for ServicesProvider {
             println!("erro: {}", err);
         }
     }
+    async fn rollback_request(&mut self, id: UUID) -> () {
+        let command = CommandsFactory::rollback_request_data(id);
+        let output = self.request_service.command_channel.send(command).await;
+        if let Err(err) = output {
+            println!("erro: {}", err);
+        }
+    }
 }
 
 impl ServicesProvider {
@@ -74,16 +76,3 @@ impl ServicesProvider {
     }
 }
 
-// impl ServicesProvider {
-//     pub async fn init<ServiceRequest>(request_service: ServiceRequest) -> Self
-//     where
-//         ServiceRequest: RequestServiceFacade + Send + 'static,
-//     {
-//         let request_service = {
-//             let request_service = Box::new(request_service);
-//             ServiceRunner::<RequestServiceInstance>::from(request_service).await
-//         };
-//
-//         Self { request_service }
-//     }
-// }

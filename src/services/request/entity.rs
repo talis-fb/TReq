@@ -35,8 +35,14 @@ impl RequestEntity {
     }
 
     pub fn update_current_request(&mut self, request_data: RequestData) -> () {
-        let request_data = Arc::new(request_data);
-        self.history.push_back(request_data.clone());
-        self.current_request = request_data.clone();
+        let new_request_data = Arc::new(request_data);
+        let old_request_data = std::mem::replace(&mut self.current_request, new_request_data);
+        self.history.push_back(old_request_data);
+    }
+
+    pub fn rollback(&mut self) {
+        if let Some(state) = self.history.pop_back() {
+            self.current_request = state;
+        }
     }
 }

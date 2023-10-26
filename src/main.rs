@@ -26,6 +26,11 @@ async fn main() {
     my_req.method = METHODS::PUT;
     my_req.headers = HashMap::from([("type".into(), "json".into())]);
     provider.edit_request(id.clone(), my_req.clone()).await;
+
+    println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
+
+    provider.rollback_request(id.clone()).await;
+
     println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
 
     provider.delete_request(id.clone()).await;

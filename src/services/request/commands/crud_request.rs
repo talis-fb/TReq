@@ -34,7 +34,7 @@ impl CommandsFactory {
     pub fn get_request_data(id: UUID) -> (Command, Receiver<Option<Arc<RequestData>>>) {
         let (tx, rx) = oneshot::channel::<Option<Arc<RequestData>>>();
         (
-            Box::new(move |mut service| {
+            Box::new(move |service| {
                 tx.send(service.get_request_data(id)).ok();
                 Ok(service)
             }),
@@ -45,6 +45,13 @@ impl CommandsFactory {
     pub fn delete_request(id: UUID) -> Command {
         Box::new(move |mut service| {
             service.delete_request(id);
+            Ok(service)
+        })
+    }
+
+    pub fn rollback_request_data(id: UUID) -> Command {
+        Box::new(move |mut service| {
+            service.rollback_request_data(id);
             Ok(service)
         })
     }

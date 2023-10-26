@@ -16,5 +16,6 @@ pub trait RequestServiceFacade {
     fn add_request(&mut self, request: RequestData) -> UUID;
     fn edit_request(&mut self, id: UUID, request: RequestData);
     fn delete_request(&mut self, id: UUID);
-    fn get_request_data(&mut self, id: UUID) -> Option<Arc<RequestData>>;
+    fn get_request_data(&self, id: UUID) -> Option<Arc<RequestData>>;
+    fn rollback_request_data(&mut self, id: UUID) -> ();
 }
