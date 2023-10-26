@@ -17,6 +17,7 @@ pub enum METHODS {
 #[derive(Default, Clone, Debug)]
 pub struct RequestData {
     pub url: String,
+    pub name: String,
     pub method: METHODS,
     pub headers: HashMap<String, String>,
     pub body: String,
@@ -24,7 +25,6 @@ pub struct RequestData {
 
 #[derive(Default)]
 pub struct RequestEntity {
-    pub name: String,
     current_request: Arc<RequestData>,
     history: LinkedList<Arc<RequestData>>,
 }

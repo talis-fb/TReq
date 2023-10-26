@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use super::entity::{RequestData, RequestEntity};
+use crate::utils::uuid::UUID;
+
+use super::entity::RequestData;
 
 // pub type ResultAtomicRequestServiceOperation<T> = Result<T, ErrAtomic<Box<dyn RequestServiceFacade>>>;
 // use ResultAtomicRequestServiceOperation as ResultAtomic;
@@ -11,8 +13,8 @@ use super::entity::{RequestData, RequestEntity};
 // Or the result is right and it changes or nothing happens.
 
 pub trait RequestServiceFacade {
-    fn add_request(&mut self, request: RequestData) -> String;
-    fn edit_request(&mut self, id: String, request: RequestData);
-    fn delete_request(&mut self, id: String);
-    fn get_request_data(&mut self, id: String) -> Option<Arc<RequestData>>;
+    fn add_request(&mut self, request: RequestData) -> UUID;
+    fn edit_request(&mut self, id: UUID, request: RequestData);
+    fn delete_request(&mut self, id: UUID);
+    fn get_request_data(&mut self, id: UUID) -> Option<Arc<RequestData>>;
 }

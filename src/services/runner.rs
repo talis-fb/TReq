@@ -33,11 +33,9 @@ impl<ServiceFacade: Send + 'static> ServiceRunner<ServiceFacade> {
 
             tx_is_command_listener_ready.send(()).unwrap();
 
-            println!("init loop");
             loop {
                 tokio::select! {
                     Some(command) = rx_command_channel.recv() => {
-                        println!("Runner select: Command");
                         let output_command = command(service_instance);
 
                         match output_command {
@@ -57,17 +55,13 @@ impl<ServiceFacade: Send + 'static> ServiceRunner<ServiceFacade> {
                         }
                     },
                     Ok(_) = &mut cancel_channel => {
-                        println!("Runner select: BREAKKK");
                         break;
                     },
                     else => {
-                        println!("Runner select: ELSE");
                         break;
                     }
                 }
             }
-
-            println!("end loop");
         });
 
         rx_is_command_listener_ready.await.unwrap();
