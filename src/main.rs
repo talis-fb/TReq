@@ -14,7 +14,7 @@ async fn main() {
 
     // Tests
     let mut my_req = RequestData::default();
-    let id = provider.add_request(my_req.clone()).await;
+    let id = provider.add_request(my_req.clone()).await.unwrap();
 
     println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
 

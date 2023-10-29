@@ -48,11 +48,4 @@ impl CommandsFactory {
             Ok(service)
         })
     }
-
-    pub fn rollback_request_data(id: UUID) -> Command {
-        Box::new(move |mut service| {
-            service.rollback_request_data(id);
-            Ok(service)
-        })
-    }
 }

@@ -1,5 +1,5 @@
 use crate::services::request::service::RequestServiceInstance;
-use crate::utils::commands::{CommandClosureType, ErrAtomic, CommandsUtils};
+use crate::utils::commands::{CommandClosureType, CommandsUtils, ErrAtomic};
 
 use crate::services::request::commands::CommandRequestService as Command;
 
@@ -13,4 +13,5 @@ impl CommandsFactory {
     }
 }
 
-pub mod crud_request;
+pub mod crud;
+pub mod history;
