@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 
@@ -26,7 +27,6 @@ impl ServicesProvider {
         Self { request_service }
     }
 }
-
 
 // Basicamente TODOS os endpoints do app, é de fato a interface para o backend
 #[async_trait]
@@ -66,4 +66,3 @@ impl Provider for ServicesProvider {
         Ok(())
     }
 }
-

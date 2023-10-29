@@ -2,13 +2,9 @@ use std::sync::Arc;
 
 use tokio::sync::oneshot::{self, Receiver};
 
-use crate::{
-    services::request::{
-        commands::{CommandRequestService as Command, CommandsFactory},
-        entity::RequestData,
-    },
-    utils::uuid::UUID,
-};
+use crate::services::request::commands::{CommandRequestService as Command, CommandsFactory};
+use crate::services::request::entity::RequestData;
+use crate::utils::uuid::UUID;
 
 impl CommandsFactory {
     pub fn edit_request(id: UUID, request: RequestData) -> Command {

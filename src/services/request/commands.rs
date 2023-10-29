@@ -1,7 +1,6 @@
+use crate::services::request::commands::CommandRequestService as Command;
 use crate::services::request::service::RequestServiceInstance;
 use crate::utils::commands::{CommandClosureType, CommandsUtils, ErrAtomic};
-
-use crate::services::request::commands::CommandRequestService as Command;
 
 pub type CommandRequestService = CommandClosureType<RequestServiceInstance>;
 

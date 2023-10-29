@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use crate::utils::uuid::UUID;
-
 use super::entity::RequestData;
+use crate::utils::uuid::UUID;
 
 // pub type ResultAtomicRequestServiceOperation<T> = Result<T, ErrAtomic<Box<dyn RequestServiceFacade>>>;
 // use ResultAtomicRequestServiceOperation as ResultAtomic;

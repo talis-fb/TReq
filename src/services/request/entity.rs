@@ -1,7 +1,5 @@
-use std::{
-    collections::{HashMap, LinkedList},
-    sync::Arc,
-};
+use std::collections::{HashMap, LinkedList};
+use std::sync::Arc;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum METHODS {

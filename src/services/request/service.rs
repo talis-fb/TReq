@@ -1,8 +1,8 @@
-use crate::utils::uuid::UUID;
-
-use super::entity::{RequestData, RequestEntity};
 use std::collections::HashMap;
 use std::sync::Arc;
+
+use super::entity::{RequestData, RequestEntity};
+use crate::utils::uuid::UUID;
 
 pub type RequestServiceInstance = Box<dyn RequestServiceFacade + Send>;
 
