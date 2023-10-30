@@ -3,25 +3,27 @@ use tokio::task::JoinHandle;
 
 use crate::utils::commands::CommandClosureType;
 
-pub struct ServiceRunner<ServiceFacade>
+pub struct ServiceRunner<ServiceInstance>
 where
-    ServiceFacade: Sized + Send,
+    ServiceInstance: Sized + Send,
 {
-    pub command_channel: mpsc::Sender<CommandClosureType<ServiceFacade>>,
+    pub command_channel: mpsc::Sender<CommandClosureType<ServiceInstance>>,
     shutdown_channel: oneshot::Sender<()>,
     task: JoinHandle<()>,
 }
 
-impl<ServiceFacade: Send + 'static> ServiceRunner<ServiceFacade> {
+impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
     pub fn close(&mut self) -> Option<()> {
         let (tx, _) = oneshot::channel::<()>();
         let shutdown_channel = std::mem::replace(&mut self.shutdown_channel, tx);
-        shutdown_channel.send(()).ok()
+        shutdown_channel.send(()).ok()?;
+        self.task.abort();
+        Some(())
     }
 
-    pub async fn from(service: ServiceFacade) -> Self {
+    pub async fn from(service: ServiceInstance) -> Self {
         let (tx_command_channel, mut rx_command_channel) =
-            mpsc::channel::<CommandClosureType<ServiceFacade>>(32);
+            mpsc::channel::<CommandClosureType<ServiceInstance>>(32);
         let (tx_cancel_channel, rx_cancel_channel) = oneshot::channel::<()>();
 
         let (tx_is_command_listener_ready, rx_is_command_listener_ready) = oneshot::channel::<()>();

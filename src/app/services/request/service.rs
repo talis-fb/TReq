@@ -22,15 +22,14 @@ impl RequestService {
     }
 }
 
-// -----------
-// Facade
-// -----------
+// --------------
+// Impl facade
+// --------------
 use super::facade::RequestServiceFacade;
 
 impl RequestServiceFacade for RequestService {
     fn add_request(&mut self, request_data: RequestData) -> UUID {
-        let mut new_request = RequestEntity::default();
-        new_request.update_current_request(request_data);
+        let new_request = RequestEntity::from(request_data);
         let id = UUID::new_random();
         self.requests.insert(id.clone(), new_request);
         id
@@ -50,7 +49,11 @@ impl RequestServiceFacade for RequestService {
         Some(self.requests.get(&id)?.get_current_request())
     }
 
-    fn rollback_request_data(&mut self, id: UUID) -> () {
-        self.requests.entry(id).and_modify(|e| e.rollback());
+    fn undo_request_data(&mut self, id: UUID) {
+        self.requests.entry(id).and_modify(|e| e.undo());
+    }
+
+    fn redo_request_data(&mut self, id: UUID) {
+        self.requests.entry(id).and_modify(|e| e.redo());
     }
 }

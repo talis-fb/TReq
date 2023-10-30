@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use uuid::Uuid;
 
-#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd, Debug)]
 pub struct UUID(pub Uuid);
 
 impl UUID {
@@ -15,9 +15,9 @@ impl UUID {
     }
 }
 
-impl Into<String> for UUID {
-    fn into(self) -> String {
-        self.0.to_string()
+impl From<UUID> for String {
+    fn from(val: UUID) -> Self {
+        val.0.to_string()
     }
 }
 

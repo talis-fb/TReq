@@ -1,7 +1,10 @@
 use std::ops::FnOnce;
 
-pub type CommandClosureType<Facade> =
-    Box<dyn FnOnce(Facade) -> Result<Facade, ErrAtomic<Facade>> + Send + Sync>;
+pub type CommandClosureType<ServiceInstance> = Box<
+    dyn FnOnce(ServiceInstance) -> Result<ServiceInstance, ErrAtomic<ServiceInstance>>
+        + Send
+        + Sync,
+>;
 
 // Result and errors
 // IDEIA IMPROVEMENT: Maybe you could call for something with term "atomic" or "transacional"
@@ -20,16 +23,13 @@ where
 
 pub struct CommandsUtils;
 impl CommandsUtils {
-    pub fn from<Facade>(
-        func: impl FnOnce(Facade) -> Result<Facade, ErrAtomic<Facade>> + Send + Sync + 'static,
-    ) -> CommandClosureType<Facade> {
-        Box::new(func)
-    }
-
-    pub fn chain<Facade>(
-        iters_commands: impl IntoIterator<Item = CommandClosureType<Facade>> + Send + Sync + 'static,
-    ) -> CommandClosureType<Facade> {
-        CommandsUtils::from(|service| {
+    pub fn chain<ServiceInstance>(
+        iters_commands: impl IntoIterator<Item = CommandClosureType<ServiceInstance>>
+            + Send
+            + Sync
+            + 'static,
+    ) -> CommandClosureType<ServiceInstance> {
+        Box::new(|service| {
             iters_commands
                 .into_iter()
                 .try_fold(service, |acc, command| command(acc))

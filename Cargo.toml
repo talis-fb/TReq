@@ -21,3 +21,10 @@ tokio = { version = "1.32.0", features = ["full"] }
 async-trait = "0.1.73"
 uuid = { version = "1.5.0", features = ["v4","fast-rng"]}
 anyhow = "1.0.75"
+reqwest = "0.11.22"
+serde = { version = "1.0" , features = ["derive"] }
+serde_json = "1.0"
+
+mockall = "0.11.4" # TODO: Move it to dev-dependencies, but it breaks with web_client integration test. Importing Mock of HttpRepository
+
+[dev-dependencies]
