@@ -5,23 +5,23 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::Client;
 
 use super::super::entity::{Response, ResponseStage};
-use super::{HttpClientRepository, ResponseType};
+use super::{HttpClientRepository, TaskRunningRequest};
 
 #[derive(Default)]
 pub struct ReqwestClientRepository;
 
 impl ReqwestClientRepository {
-    fn create_header_map(map: HashMap<String, String>) -> HeaderMap {
-        let mut headers = HeaderMap::new();
+    fn create_header_map(headers: HashMap<String, String>) -> HeaderMap {
+        let mut headers_reqwest = HeaderMap::new();
 
-        for (key, value) in map.into_iter() {
-            headers.insert(
+        for (key, value) in headers.into_iter() {
+            headers_reqwest.insert(
                 HeaderName::from_str(&key).unwrap(),
                 HeaderValue::from_str(&value).unwrap(),
             );
         }
 
-        headers
+        headers_reqwest
     }
 
     async fn convert_to_app_response(response: reqwest::Response) -> Result<Response, String> {
@@ -32,7 +32,7 @@ impl ReqwestClientRepository {
             .map(|(key, value)| {
                 (
                     key.as_str().to_string(),
-                    value.to_str().unwrap().to_string(),
+                    value.to_str().unwrap_or_default().to_string(),
                 )
             })
             .collect();
@@ -50,10 +50,15 @@ impl ReqwestClientRepository {
 }
 
 impl HttpClientRepository for ReqwestClientRepository {
-    fn call_get(&self, url: String, _headers: HashMap<String, String>) -> ResponseType {
+    fn call_get(&self, url: String, headers: HashMap<String, String>) -> TaskRunningRequest {
         tokio::task::spawn(async move {
             let client = Client::new();
-            let response = client.get(url).send().await.map_err(|e| e.to_string())?;
+            let response = client
+                .get(url)
+                .headers(ReqwestClientRepository::create_header_map(headers))
+                .send()
+                .await
+                .map_err(|e| e.to_string())?;
             ReqwestClientRepository::convert_to_app_response(response).await
         })
     }
@@ -63,7 +68,7 @@ impl HttpClientRepository for ReqwestClientRepository {
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType {
+    ) -> TaskRunningRequest {
         tokio::task::spawn(async move {
             let client = Client::new();
             let response = client
@@ -82,7 +87,7 @@ impl HttpClientRepository for ReqwestClientRepository {
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType {
+    ) -> TaskRunningRequest {
         tokio::task::spawn(async move {
             let client = Client::new();
             let response = client
@@ -101,7 +106,7 @@ impl HttpClientRepository for ReqwestClientRepository {
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType {
+    ) -> TaskRunningRequest {
         tokio::task::spawn(async move {
             let client = Client::new();
             let response = client
@@ -120,7 +125,7 @@ impl HttpClientRepository for ReqwestClientRepository {
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType {
+    ) -> TaskRunningRequest {
         tokio::task::spawn(async move {
             let client = Client::new();
             let response = client
@@ -139,7 +144,7 @@ impl HttpClientRepository for ReqwestClientRepository {
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType {
+    ) -> TaskRunningRequest {
         tokio::task::spawn(async move {
             let client = Client::new();
             let response = client

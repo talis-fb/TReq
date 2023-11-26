@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
-use super::entity::Response;
 use super::facade::WebClientFacade;
-use super::repository_client::HttpClientRepository;
+use super::repository_client::{HttpClientRepository, TaskRunningRequest};
 use crate::app::services::request::entity::{RequestData, METHODS};
 use crate::utils::uuid::UUID;
 
 pub type WebClientInstance = Box<dyn WebClientFacade + Send>;
 
 pub struct WebClient {
-    running_requests: HashMap<UUID, tokio::task::JoinHandle<Result<Response, String>>>,
-
+    running_requests: HashMap<UUID, TaskRunningRequest>,
     pub http_client: Box<dyn HttpClientRepository>,
 }
 
@@ -46,11 +44,8 @@ impl WebClientFacade for WebClient {
         id_task
     }
 
-    fn get_task_request(
-        &mut self,
-        id: UUID,
-    ) -> Option<tokio::task::JoinHandle<Result<Response, String>>> {
-        let func = self.running_requests.remove(&id)?;
-        Some(func)
+    fn get_task_request(&mut self, id: UUID) -> Option<TaskRunningRequest> {
+        let task = self.running_requests.remove(&id)?;
+        Some(task)
     }
 }

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use tokio::sync::oneshot;
 
 use super::services::web_client::commands::CommandsFactory as WebClientCommandsFactory;
 use super::services::web_client::entity::Response;
@@ -13,6 +14,22 @@ use crate::app::services::request::entity::RequestData;
 use crate::app::services::request::facade::RequestServiceFacade;
 use crate::app::services::request::service::RequestServiceInstance;
 use crate::utils::uuid::UUID;
+
+// Basicamente TODOS os endpoints do app, é de fato a interface para o backend
+#[async_trait]
+pub trait Provider {
+    async fn add_request(&mut self, request: RequestData) -> Result<UUID>;
+    async fn edit_request(&mut self, id: UUID, request: RequestData) -> Result<()>;
+    async fn delete_request(&mut self, id: UUID) -> Result<()>;
+    async fn get_request(&mut self, id: UUID) -> Result<Option<Arc<RequestData>>>;
+    async fn undo_request(&mut self, id: UUID) -> Result<()>;
+    async fn redo_request(&mut self, id: UUID) -> Result<()>;
+    async fn submit_request_blocking(&mut self, id: UUID) -> Result<Response>;
+    async fn submit_request_async(
+        &mut self,
+        id: UUID,
+    ) -> Result<oneshot::Receiver<Result<Response, String>>>;
+}
 
 // ESSE é o cara que vai ter as instancais dos runners de cada serviço
 //  ele será a unica depedência (via composição) das Views, no caso, a CLI e TUI
@@ -42,18 +59,6 @@ impl AppProvider {
             web_client,
         }
     }
-}
-
-// Basicamente TODOS os endpoints do app, é de fato a interface para o backend
-#[async_trait]
-pub trait Provider {
-    async fn add_request(&mut self, request: RequestData) -> Result<UUID>;
-    async fn edit_request(&mut self, id: UUID, request: RequestData) -> Result<()>;
-    async fn delete_request(&mut self, id: UUID) -> Result<()>;
-    async fn get_request(&mut self, id: UUID) -> Result<Option<Arc<RequestData>>>;
-    async fn undo_request(&mut self, id: UUID) -> Result<()>;
-    async fn redo_request(&mut self, id: UUID) -> Result<()>;
-    async fn submit_request(&mut self, id: UUID) -> Result<Response>;
 }
 
 #[async_trait]
@@ -89,11 +94,21 @@ impl Provider for AppProvider {
         Ok(())
     }
 
-    async fn submit_request(&mut self, id: UUID) -> Result<Response> {
+    async fn submit_request_blocking(&mut self, id: UUID) -> Result<Response> {
         // TODO: Remove this unwrap to a Option -> Result
         let request_data = self.get_request(id).await?.unwrap();
         let (command, resp) = WebClientCommandsFactory::submit((*request_data).clone());
         self.web_client.command_channel.send(command).await?;
         Ok(resp.await?.unwrap())
+    }
+
+    async fn submit_request_async(
+        &mut self,
+        id: UUID,
+    ) -> Result<oneshot::Receiver<Result<Response, String>>> {
+        let request_data = self.get_request(id).await?.unwrap();
+        let (command, resp) = WebClientCommandsFactory::submit((*request_data).clone());
+        self.web_client.command_channel.send(command).await?;
+        Ok(resp)
     }
 }

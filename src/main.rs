@@ -1,50 +1,40 @@
-#![allow(dead_code)]
+// #![allow(dead_code)]
+// #![allow(unused_variables)]
+// #![allow(unused_imports)]
 
-use std::collections::HashMap;
-
-use treq::app::provider::{AppProvider, Provider};
-use treq::app::services::request::entity::{RequestData, METHODS};
+use clap::Parser;
+use treq::app::provider::AppProvider;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
+use treq::view::cli::clap_parser::{parse_cli_args_to_command, CliArgs};
 
 #[tokio::main]
-async fn main() {
-    // Services
+async fn main() -> anyhow::Result<()> {
+    let args = CliArgs::parse();
+
+    if args.url_manual.is_none() && args.command.is_none() {
+        println!("Type treq help");
+        return Ok(());
+    }
+
+    // ----------------------------
+    //  VIEW
+    // ----------------------------
+    let command = parse_cli_args_to_command(args);
+    let mut command_executor = command.get_executor();
+
+    // ----------------------------
+    //  BACKEND
+    // ----------------------------
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
+    let provider = AppProvider::init(req, web).await;
 
-    // Provider
-    let mut provider = AppProvider::init(req, web).await;
+    // ----------------------------
+    //  Execute command received
+    // ----------------------------
+    command_executor.execute(Box::new(provider)).await.unwrap();
 
-    // Tests
-    let mut my_req = RequestData::default();
-    let id = provider.add_request(my_req.clone()).await.unwrap();
-
-    println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
-
-    my_req.url = "google.com".into();
-    provider
-        .edit_request(id.clone(), my_req.clone())
-        .await
-        .unwrap();
-
-    println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
-
-    my_req.method = METHODS::PUT;
-    my_req.headers = HashMap::from([("type".into(), "json".into())]);
-    provider
-        .edit_request(id.clone(), my_req.clone())
-        .await
-        .unwrap();
-
-    println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
-
-    provider.undo_request(id.clone()).await.unwrap();
-
-    println!("Req {:?}", provider.get_request(id.clone()).await.unwrap());
-
-    provider.delete_request(id.clone()).await.unwrap();
-
-    println!("Req {:?}", provider.get_request(id.clone()).await);
+    Ok(())
 }

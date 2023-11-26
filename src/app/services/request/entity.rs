@@ -5,11 +5,24 @@ use std::sync::Arc;
 pub enum METHODS {
     #[default]
     GET,
+    POST,
+    PUT,
     DELETE,
     HEAD,
     PATCH,
-    POST,
-    PUT,
+}
+impl ToString for METHODS {
+    fn to_string(&self) -> String {
+        match self {
+            METHODS::GET => "GET",
+            METHODS::POST => "POST",
+            METHODS::PUT => "PUT",
+            METHODS::DELETE => "DELETE",
+            METHODS::HEAD => "HEAD",
+            METHODS::PATCH => "PATCH",
+        }
+        .into()
+    }
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -38,8 +51,8 @@ impl RequestData {
         self.method = value;
         self
     }
-    pub fn with_headers<const N: usize>(mut self, values: [(String, String); N]) -> Self {
-        self.headers = HashMap::from(values);
+    pub fn with_headers(mut self, values: impl Into<HashMap<String, String>>) -> Self {
+        self.headers = values.into();
         self
     }
 }

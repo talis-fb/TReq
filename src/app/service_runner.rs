@@ -1,4 +1,4 @@
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc, oneshot};
 use tokio::task::JoinHandle;
 
 use crate::utils::commands::CommandClosureType;
@@ -10,24 +10,22 @@ where
     pub command_channel: mpsc::Sender<CommandClosureType<ServiceInstance>>,
     shutdown_channel: oneshot::Sender<()>,
     task: JoinHandle<()>,
+
+    // Errors
+    pub tx_error_channel: broadcast::Sender<String>,
 }
 
 impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
-    pub fn close(&mut self) -> Option<()> {
-        let (tx, _) = oneshot::channel::<()>();
-        let shutdown_channel = std::mem::replace(&mut self.shutdown_channel, tx);
-        shutdown_channel.send(()).ok()?;
-        self.task.abort();
-        Some(())
-    }
-
     pub async fn from(service: ServiceInstance) -> Self {
         let (tx_command_channel, mut rx_command_channel) =
             mpsc::channel::<CommandClosureType<ServiceInstance>>(32);
+        let (tx_error_channel, _) = broadcast::channel::<String>(16);
+
         let (tx_cancel_channel, rx_cancel_channel) = oneshot::channel::<()>();
 
         let (tx_is_command_listener_ready, rx_is_command_listener_ready) = oneshot::channel::<()>();
 
+        let error_channel = tx_error_channel.clone();
         let task = tokio::task::spawn(async move {
             let mut service_instance = service;
             let mut cancel_channel = rx_cancel_channel;
@@ -43,15 +41,9 @@ impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
                             Ok(service_result) => {
                                 service_instance = service_result;
                             },
-                            Err(_) => {
-                                // THSend rustIS should reset to initial service instance
-                                // as it's not possible to make a clone in all execution, the
-                                // error data must contains the backup state of service
-                                // this way. Each command must return what would be the initial state
-                                //
-                                // self.request_service = Some(service_now);
-                                // throws_error_to_somewhere();
-                                todo!()
+                            Err(error) => {
+                                service_instance = error.snapshot;
+                                let _ = error_channel.send(error.error_message);
                             }
                         }
                     },
@@ -70,7 +62,20 @@ impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
         Self {
             command_channel: tx_command_channel,
             shutdown_channel: tx_cancel_channel,
+            tx_error_channel,
             task,
         }
+    }
+
+    pub fn get_error_listener(&self) -> broadcast::Receiver<String> {
+        self.tx_error_channel.subscribe()
+    }
+
+    pub fn close(&mut self) -> Option<()> {
+        let (tx, _) = oneshot::channel::<()>();
+        let shutdown_channel = std::mem::replace(&mut self.shutdown_channel, tx);
+        shutdown_channel.send(()).ok()?;
+        self.task.abort();
+        Some(())
     }
 }

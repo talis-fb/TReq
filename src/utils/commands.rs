@@ -12,7 +12,8 @@ pub struct ErrAtomic<Snapshot>
 where
     Snapshot: Sized,
 {
-    snapshot: Snapshot,
+    pub snapshot: Snapshot,
+    pub error_message: String,
 }
 
 // pub type ResultCommandService<T, Service> = Result<T, ErrCommandService<Service>>;

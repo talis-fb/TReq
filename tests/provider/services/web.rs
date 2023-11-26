@@ -23,7 +23,7 @@ async fn test_basic_call_get() {
     let mut provider = create_provider_with_mock_web_client(mock_client).await;
     let id_req = provider.add_request(RequestData::default()).await.unwrap();
 
-    let response_submit = provider.submit_request(id_req).await.unwrap();
+    let response_submit = provider.submit_request_blocking(id_req).await.unwrap();
 
     assert_eq!(response_submit, expected_response());
 }

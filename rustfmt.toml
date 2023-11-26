@@ -1,6 +1,6 @@
 unstable_features = true
+newline_style = "Unix"
 imports_layout = "Horizontal"
 imports_granularity = "Module"
-newline_style = "Unix"
 group_imports = "StdExternalCrate"
 reorder_modules = true

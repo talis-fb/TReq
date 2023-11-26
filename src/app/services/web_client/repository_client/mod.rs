@@ -8,7 +8,7 @@ use tokio::task::JoinHandle as TokioTask;
 
 use super::entity::Response;
 
-pub type ResponseType = TokioTask<Result<Response, String>>;
+pub type TaskRunningRequest = TokioTask<Result<Response, String>>;
 
 // -------------------------------------------------------------------------------------------------------------------
 // TODO: Make this 'automock' enabled only in test mode
@@ -18,31 +18,35 @@ pub type ResponseType = TokioTask<Result<Response, String>>;
 
 #[automock]
 pub trait HttpClientRepository: Send {
-    fn call_get(&self, url: String, headers: HashMap<String, String>) -> ResponseType;
+    fn call_get(&self, url: String, headers: HashMap<String, String>) -> TaskRunningRequest;
     fn call_post(
         &self,
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType;
+    ) -> TaskRunningRequest;
     fn call_delete(
         &self,
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType;
+    ) -> TaskRunningRequest;
     fn call_patch(
         &self,
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType;
-    fn call_put(&self, url: String, headers: HashMap<String, String>, body: String)
-        -> ResponseType;
+    ) -> TaskRunningRequest;
+    fn call_put(
+        &self,
+        url: String,
+        headers: HashMap<String, String>,
+        body: String,
+    ) -> TaskRunningRequest;
     fn call_head(
         &self,
         url: String,
         headers: HashMap<String, String>,
         body: String,
-    ) -> ResponseType;
+    ) -> TaskRunningRequest;
 }
