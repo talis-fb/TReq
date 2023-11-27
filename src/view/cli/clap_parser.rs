@@ -56,7 +56,7 @@ pub struct CliArgs {
     pub body: Option<String>,
 
     /// Sets a custom header to request, you must use 'key=value' format
-    #[arg(long, value_name = "HEADER")]
+    #[arg(long, value_name = "KEY=VALUE")]
     pub header: Vec<String>,
 
     /// Sets automatically the Content-Type:application/json in headers
