@@ -1,4 +1,4 @@
-use std::io::stdout;
+use std::io::{stdout, stderr};
 
 use async_trait::async_trait;
 
@@ -22,14 +22,15 @@ pub enum AppCommand {
 
 impl AppCommand {
     pub fn get_executor(&self) -> Box<dyn AppCommandExecutor> {
-        let stdout = stdout();
-        let writer = CrosstermCliWriter { stdout };
+        let writer_stderr = CrosstermCliWriter { stdout: Box::new(stderr()) };
+        let writer_stdout = CrosstermCliWriter { stdout: Box::new(stdout()) };
 
         use AppCommand as E;
         match self {
             E::BasicRequest { req } => Box::new(BasicRequestExecutor {
                 req: req.clone(),
-                writer,
+                writer_stdout,
+                writer_stderr,
             }),
         }
     }

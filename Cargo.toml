@@ -4,6 +4,7 @@ version = "1.0.0"
 edition = "2021"
 authors = [ "Talis-Fb" ]
 license = "GPL-3.0"
+description = "A Cli client to make HTTP requests for Hacker Users"
 # homepage = "https://github.com/talis-fb/TReq"
 # repository = "https://github.com/talis-fb/TReq"
 # documentation = "https://github.com/talis-fb/TReq/wiki"

@@ -36,7 +36,13 @@ pub struct RequestData {
 
 impl RequestData {
     pub fn with_url(mut self, value: impl Into<String>) -> Self {
-        self.url = value.into();
+        let mut value: String = value.into();
+
+        if !(value.starts_with("http://") || value.starts_with("https://")) {
+            value = format!("{}{}", "http://", value);
+        }
+
+        self.url = value;
         self
     }
     pub fn with_name(mut self, value: impl Into<String>) -> Self {
@@ -110,5 +116,22 @@ impl From<RequestData> for NodeHistoryRequest {
             previous: None,
             next: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RequestData;
+
+    #[test]
+    fn test_url_with_protocol_default() {
+        let start_with_https = RequestData::default().with_url("https://google.com");
+        assert_eq!("https://google.com", start_with_https.url);
+
+        let start_with_http = RequestData::default().with_url("http://duck.com");
+        assert_eq!("http://duck.com", start_with_http.url);
+
+        let start_without_protocol = RequestData::default().with_url("duck.com");
+        assert_eq!("http://duck.com", start_without_protocol.url);
     }
 }

@@ -13,7 +13,8 @@ where
     Writer: CliWriterRepository + Send,
 {
     pub req: RequestData,
-    pub writer: Writer,
+    pub writer_stdout: Writer,
+    pub writer_stderr: Writer,
 }
 
 #[async_trait]
@@ -22,7 +23,7 @@ where
     W: CliWriterRepository + Send,
 {
     async fn execute(&mut self, mut provider: Box<dyn Provider + Send>) -> anyhow::Result<()> {
-        self.writer.print_lines_styled([Vec::from([
+        self.writer_stderr.print_lines_styled([Vec::from([
             StyledString::from(self.req.method.to_string()).with_text_style(TextStyle::Bold),
             StyledString::from(" "),
             StyledString::from(self.req.url.clone()).with_color_text(Color::Blue),
@@ -45,7 +46,7 @@ where
             "⣷ Loading...",
         ];
 
-        self.writer.print_animation_single_line(
+        self.writer_stderr.print_animation_single_line(
             loading_sprites,
             std::time::Duration::from_millis(300),
             notify_submit,
@@ -54,7 +55,7 @@ where
         let response_to_show = response_submit.await?;
 
         if let Err(err_message) = response_to_show {
-            self.writer.print_lines_styled([
+            self.writer_stderr.print_lines_styled([
                 Vec::from([
                     "-------------- ".into(),
                     StyledString::from("ERROR").with_color_text(Color::Red),
@@ -69,7 +70,8 @@ where
 
         let response = response_to_show.unwrap();
 
-        self.writer.print_lines_styled([
+
+        self.writer_stderr.print_lines_styled([
             create_vec_styled_string_from(["----------------------------------------"]),
             Vec::from([
                 StyledString::from(" STATUS: "),
@@ -83,8 +85,9 @@ where
                 }),
             ]),
             create_vec_styled_string_from(["----------------------------------------"]),
-            create_vec_styled_string_from([response.body]),
         ]);
+
+        self.writer_stdout.print_lines([response.body]);
 
         Ok(())
     }

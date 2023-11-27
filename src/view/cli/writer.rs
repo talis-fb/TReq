@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use std::io::{Stdout, Write};
+use std::io::Write;
 
 use crossterm::cursor::{RestorePosition, SavePosition};
 use crossterm::style::{Print, PrintStyledContent};
@@ -36,7 +36,7 @@ pub trait CliWriterRepository {
 }
 
 pub struct CrosstermCliWriter {
-    pub stdout: Stdout,
+    pub stdout: Box<dyn Write + Send>,
 }
 
 impl CliWriterRepository for CrosstermCliWriter {
