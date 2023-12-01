@@ -1,0 +1,32 @@
+name: CI - Testing Rust Code
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build mock API container
+      run: docker build -t mockapi-image --file tests/mock_api/Dockerfile tests/mock_api
+
+    - name: Start Mock API container
+      run: docker run -d -p 7777:7777 --name mockapi mockapi-image
+
+    - name: Install cargo nextest
+      uses: taiki-e/install-action@v2
+      with:
+        tool: nextest
+
+    - name: Run tests
+      run: cargo nextest run
