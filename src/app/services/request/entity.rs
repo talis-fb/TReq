@@ -13,6 +13,11 @@ pub enum METHODS {
 }
 impl ToString for METHODS {
     fn to_string(&self) -> String {
+        self.as_str().into()
+    }
+}
+impl METHODS {
+    pub fn as_str(&self) -> &'static str {
         match self {
             METHODS::GET => "GET",
             METHODS::POST => "POST",
@@ -21,7 +26,6 @@ impl ToString for METHODS {
             METHODS::HEAD => "HEAD",
             METHODS::PATCH => "PATCH",
         }
-        .into()
     }
 }
 

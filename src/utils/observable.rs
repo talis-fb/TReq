@@ -1,6 +1,6 @@
 use tokio::sync::oneshot::{self, Receiver};
 
-pub fn observable<T>(receiver: Receiver<T>) -> (Receiver<T>, Receiver<()>)
+pub fn chain_listener_to_receiver<T>(receiver: Receiver<T>) -> (Receiver<T>, Receiver<()>)
 where
     T: Send + 'static,
 {

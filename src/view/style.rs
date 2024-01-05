@@ -40,14 +40,14 @@ impl From<Color> for ColorCrossterm {
 // Styled Structs to manipulate
 // ----------------
 #[derive(Clone, Default)]
-pub struct StyledString {
-    pub value: String,
+pub struct StyledStr<'a> {
+    pub value: &'a str,
     color_text: Option<Color>,
     color_bg: Option<Color>,
     style_text: Option<TextStyle>,
 }
 
-impl StyledString {
+impl StyledStr<'_> {
     pub fn with_color_text(mut self, color: Color) -> Self {
         self.color_text = Some(color);
         self
@@ -63,14 +63,14 @@ impl StyledString {
     }
 }
 
-impl From<StyledString> for String {
-    fn from(val: StyledString) -> Self {
-        val.value
+impl From<StyledStr<'_>> for String {
+    fn from(val: StyledStr) -> Self {
+        val.value.to_string()
     }
 }
 
-impl From<String> for StyledString {
-    fn from(value: String) -> Self {
+impl<'a> From<&'a str> for StyledStr<'a> {
+    fn from(value: &'a str) -> Self {
         Self {
             value,
             color_text: None,
@@ -80,10 +80,10 @@ impl From<String> for StyledString {
     }
 }
 
-impl From<&str> for StyledString {
-    fn from(value: &str) -> Self {
+impl<'a> From<&'a String> for StyledStr<'a> {
+    fn from(value: &'a String) -> Self {
         Self {
-            value: value.to_string(),
+            value,
             color_text: None,
             color_bg: None,
             style_text: None,
@@ -97,9 +97,9 @@ impl From<&str> for StyledString {
 
 use crossterm::style::{ContentStyle, StyledContent, Stylize};
 
-impl From<StyledString> for StyledContent<String> {
-    fn from(val: StyledString) -> Self {
-        let mut style_text = StyledContent::new(ContentStyle::default(), val.value);
+impl From<StyledStr<'_>> for StyledContent<String> {
+    fn from(val: StyledStr) -> Self {
+        let mut style_text = StyledContent::new(ContentStyle::default(), val.value.to_string());
 
         if let Some(color) = val.color_text {
             style_text = style_text.with(color.into());
@@ -120,12 +120,8 @@ impl From<StyledString> for StyledContent<String> {
 // ------------------
 // Utils
 // ------------------
-pub fn create_vec_styled_string_from<T: Into<String>>(
-    values: impl IntoIterator<Item = T>,
-) -> Vec<StyledString> {
-    values
-        .into_iter()
-        .map(|item| item.into())
-        .map(StyledString::from)
-        .collect()
+pub fn create_vec_styled_string_from<'a>(
+    values: impl IntoIterator<Item = &'a str>,
+) -> Vec<StyledStr<'a>> {
+    values.into_iter().map(StyledStr::from).collect()
 }

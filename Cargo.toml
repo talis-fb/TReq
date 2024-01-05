@@ -32,5 +32,6 @@ anyhow = "1.0.75"
 async-trait = "0.1.73"
 
 mockall = "0.11.4" # TODO: Move it to dev-dependencies, but it breaks with web_client integration test. Importing Mock of HttpRepository
+indicatif = "0.17.7"
 
 [dev-dependencies]

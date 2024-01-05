@@ -5,7 +5,6 @@ use clap::{Parser, Subcommand};
 use crate::app::services::request::entity::{RequestData, METHODS};
 use crate::view::commands::AppCommand;
 
-
 const USAGE: &str = r#"
 Basic GET request
     treq [OPTIONS] [URL] 
@@ -37,7 +36,6 @@ Examples
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, override_usage=USAGE)]
 pub struct CliArgs {
-
     // ------------------------------
     // Subcommands
     // ------------------------------
@@ -50,7 +48,6 @@ pub struct CliArgs {
     // ------------------------------
     // Request args
     // ------------------------------
-
     /// Sets the body raw value of request
     #[arg(short, long, value_name = "BODY")]
     pub body: Option<String>,
@@ -62,7 +59,6 @@ pub struct CliArgs {
     /// Sets automatically the Content-Type:application/json in headers
     #[arg(long)]
     pub json: bool,
-
     // ------------------------------
     // Options
     // ------------------------------
@@ -81,7 +77,6 @@ pub struct CliArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-
     /// Does a GET request
     GET {
         /// The url of Request
