@@ -29,7 +29,12 @@ pub trait Provider {
         &mut self,
         id: UUID,
     ) -> Result<oneshot::Receiver<Result<Response, String>>>;
-}
+
+    async fn save_request_datas_as(&mut self, name: String, request_data: RequestData) -> Result<()>;
+    async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
+    async fn remove_request_saved(&mut self, name: String) -> Result<()>;
+    async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
+    }
 
 // ESSE é o cara que vai ter as instancais dos runners de cada serviço
 //  ele será a unica depedência (via composição) das Views, no caso, a CLI e TUI
@@ -110,5 +115,17 @@ impl Provider for AppProvider {
         let (command, resp) = WebClientCommandsFactory::submit((*request_data).clone());
         self.web_client.command_channel.send(command).await?;
         Ok(resp)
+    }
+    async fn save_request_datas_as(&mut self, name: String, request_data: RequestData) -> Result<()> {
+        todo!()
+    }
+    async fn get_request_saved(&mut self, name: String) -> Result<RequestData> {
+        todo!()
+    }
+    async fn remove_request_saved(&mut self, name: String) -> Result<()> {
+        todo!()
+    }
+    async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()> {
+        todo!()
     }
 }
