@@ -1,7 +1,8 @@
-use std::io::Write;
 use std::path::PathBuf;
-use super::facade::Facade;
 
+use super::facade::FileServiceFacade;
+
+pub type FileServiceInstance = Box<dyn FileServiceFacade + Send>;
 pub struct FileService {
     config_root_path: PathBuf,
     data_app_root_path: PathBuf,
@@ -9,11 +10,15 @@ pub struct FileService {
 }
 
 impl FileService {
-    pub fn from(config_root_path: impl Into<PathBuf>, data_app_root_path: impl Into<PathBuf>) -> Self {
+    pub fn init(
+        config_root_path: impl Into<PathBuf>,
+        data_app_root_path: impl Into<PathBuf>,
+        temp_root_path: impl Into<PathBuf>,
+    ) -> Self {
         Self {
             config_root_path: config_root_path.into(),
             data_app_root_path: data_app_root_path.into(),
-            temp_root_path: data_app_root_path.into(),
+            temp_root_path: temp_root_path.into(),
         }
     }
 }
@@ -33,7 +38,7 @@ impl FileService {
     }
 }
 
-impl Facade for FileService {
+impl FileServiceFacade for FileService {
     fn get_or_create_config_file(&self, path: String) -> Result<PathBuf, String> {
         let file_path = FileService::build_path(&self.config_root_path, path);
         FileService::create_file_if_not_exists(file_path)
@@ -52,15 +57,4 @@ impl Facade for FileService {
     fn remove_file(&self, path: PathBuf) -> Result<(), String> {
         std::fs::remove_file(&path).map_err(|err| err.to_string())
     }
-
-    fn write_to_file(&self, path: PathBuf, content: &str) -> Result<(), String> {
-        std::fs::write(&path, content).map_err(|err| err.to_string())
-    }
-
-    fn append_to_file(&self, path: PathBuf, content: &str) -> Result<(), String> {
-        std::fs::OpenOptions::new()
-            .append(true)
-            .open(&path)
-            .and_then(|mut file| file.write_all(content.as_bytes()))
-            .map_err(|err| err.to_string())
-    }}
+}

@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use indicatif::{HumanDuration, MultiProgress, ProgressBar, ProgressState, ProgressStyle};
 
 use crate::app::provider::Provider;
 use crate::app::services::request::entity::RequestData;
@@ -7,8 +8,6 @@ use crate::utils::observable::chain_listener_to_receiver;
 use crate::view::cli::writer::CliWriterRepository;
 use crate::view::commands::AppCommandExecutor;
 use crate::view::style::{create_vec_styled_string_from, Color, StyledStr, TextStyle};
-
-use indicatif::{HumanDuration, MultiProgress, ProgressBar, ProgressStyle, ProgressState};
 
 #[derive(Debug)]
 pub struct BasicRequestExecutor<Writer>
@@ -36,8 +35,7 @@ where
         let single_space_styled = StyledStr::from(SINGLE_SPACE);
 
         let title = {
-            let method =
-                StyledStr::from(self.req.method.as_str()).with_text_style(TextStyle::Bold);
+            let method = StyledStr::from(self.req.method.as_str()).with_text_style(TextStyle::Bold);
             let url = StyledStr::from(self.req.url.as_str()).with_color_text(Color::Blue);
 
             [

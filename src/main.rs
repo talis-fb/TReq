@@ -4,6 +4,7 @@
 
 use clap::Parser;
 use treq::app::provider::AppProvider;
+use treq::app::services::files::service::FileService;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
@@ -31,7 +32,8 @@ async fn main() -> anyhow::Result<()> {
     // ----------------------------
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
-    let provider = AppProvider::init(req, web).await;
+    let files = FileService::init("", "", "");
+    let provider = AppProvider::init(req, web, files).await;
 
     // ----------------------------
     //  Execute command received
