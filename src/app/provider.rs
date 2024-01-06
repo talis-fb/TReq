@@ -19,7 +19,6 @@ use crate::app::services::request::service::RequestServiceInstance;
 use crate::utils::files::file_utils;
 use crate::utils::uuid::UUID;
 
-// Basicamente TODOS os endpoints do app, é de fato a interface para o backend
 #[async_trait]
 pub trait Provider {
     async fn add_request(&mut self, request: RequestData) -> Result<UUID>;
@@ -40,6 +39,8 @@ pub trait Provider {
         request_data: RequestData,
     ) -> Result<()>;
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
+    // Pending...
+    // async fn get_all_files_in_folder(&mut self, names: &[str]) -> Result<Vec<String>>;
     // async fn remove_request_saved(&mut self, name: String) -> Result<()>;
     // async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
 }

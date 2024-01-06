@@ -1,13 +1,13 @@
 use async_trait::async_trait;
-use indicatif::{HumanDuration, MultiProgress, ProgressBar, ProgressState, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::app::provider::Provider;
 use crate::app::services::request::entity::RequestData;
 use crate::app::services::web_client::entity::get_status_code_message;
 use crate::utils::observable::chain_listener_to_receiver;
-use crate::view::cli::writer::CliWriterRepository;
-use crate::view::commands::AppCommandExecutor;
-use crate::view::style::{create_vec_styled_string_from, Color, StyledStr, TextStyle};
+use crate::view::cli::command_runners::CliCommandRunner;
+use crate::view::cli::output::writer::CliWriterRepository;
+use crate::view::style::{Color, StyledStr, TextStyle};
 
 #[derive(Debug)]
 pub struct BasicRequestExecutor<Writer>
@@ -20,11 +20,11 @@ where
 }
 
 #[async_trait]
-impl<W> AppCommandExecutor for BasicRequestExecutor<W>
+impl<W> CliCommandRunner for BasicRequestExecutor<W>
 where
     W: CliWriterRepository + Send,
 {
-    async fn execute(&mut self, mut provider: Box<dyn Provider + Send>) -> anyhow::Result<()> {
+    async fn execute(&mut self, provider: impl Provider + Send) -> anyhow::Result<()> {
         const BREAK_LINE: &str = "----------------------------------------";
         const BREAK_LINE_WITH_GAP: &str = "  ------------------------------------";
 

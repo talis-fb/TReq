@@ -1354,6 +1354,7 @@ dependencies = [
  "crossterm",
  "indicatif",
  "mockall",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
