@@ -14,22 +14,22 @@ pub fn parse(args: ArgMatches) -> Result<CliCommand, String> {
 
     let request_from_subcommand = match args.subcommand().unwrap() {
         ("GET", args) => {
-            let mut request = mount_req_with_args(&args)?;
+            let mut request = mount_req_with_args(args)?;
             request.method = METHODS::GET;
             Some(request)
         }
         ("POST", args) => {
-            let mut request = mount_req_with_args(&args)?;
+            let mut request = mount_req_with_args(args)?;
             request.method = METHODS::POST;
             Some(request)
         }
         ("PUT", args) => {
-            let mut request = mount_req_with_args(&args)?;
+            let mut request = mount_req_with_args(args)?;
             request.method = METHODS::PUT;
             Some(request)
         }
         ("DELETE", args) => {
-            let mut request = mount_req_with_args(&args)?;
+            let mut request = mount_req_with_args(args)?;
             request.method = METHODS::DELETE;
             Some(request)
         }
@@ -45,7 +45,7 @@ pub fn parse(args: ArgMatches) -> Result<CliCommand, String> {
 
 fn mount_req_with_args(args: &ArgMatches) -> Result<RequestData, String> {
     let inputs: Vec<&String> = args.get_many::<String>("inputs").unwrap().collect();
-    Ok(mount_req(inputs)?)
+    mount_req(inputs)
 }
 
 fn mount_req(inputs: Vec<&String>) -> Result<RequestData, String> {
@@ -53,12 +53,12 @@ fn mount_req(inputs: Vec<&String>) -> Result<RequestData, String> {
     let mut headers = HashMap::<String, String>::new();
 
     inputs.into_iter().for_each(|input| {
-        if url.is_none() && validators::is_url(&input) {
+        if url.is_none() && validators::is_url(input) {
             url = Some(input.to_owned());
             return;
         }
 
-        if validators::is_header_input(&input) {
+        if validators::is_header_input(input) {
             let (key, value) = input.split_once(':').unwrap();
             headers.insert(key.to_owned(), value.to_owned());
         }

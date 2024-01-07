@@ -23,7 +23,7 @@ pub fn get_runner_of_command(command: CliCommand) -> impl CliCommandRunner {
 
     match command {
         CliCommand::BasicRequest { request } => {
-            return submit_request::BasicRequestExecutor {
+            submit_request::BasicRequestExecutor {
                 request,
                 writer_stdout,
                 writer_stderr,
