@@ -2,30 +2,25 @@
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 
-use clap::Parser;
 use treq::app::provider::AppProvider;
 use treq::app::services::files::service::FileService;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
-use treq::view::cli::clap_parser::{parse_cli_args_to_app_command, CliArgs};
+use treq::view::cli::command_runners::{get_runner_of_command, CliCommandRunner};
+use treq::view::cli::input::clap_definition::root_command;
+use treq::view::cli::input::parser::parse;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = CliArgs::parse();
-
-    if args.url_manual.is_none() && args.command.is_none() {
-        println!("Nothing to do");
-        println!("Run follow command: ");
-        println!("$ treq --help");
+    let args = root_command().get_matches();
+    let command_to_exec = parse(args);
+    if let Err(message) = command_to_exec {
+        println!("ERRO: {message}");
         return Ok(());
     }
 
-    // ----------------------------
-    //  VIEW
-    // ----------------------------
-    let command = parse_cli_args_to_app_command(args);
-    let mut command_executor = command.get_executor();
+    let mut command_executor = get_runner_of_command(command_to_exec.unwrap());
 
     // ----------------------------
     //  BACKEND
@@ -38,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
     // ----------------------------
     //  Execute command received
     // ----------------------------
-    command_executor.execute(Box::new(provider)).await.unwrap();
+    command_executor.execute(provider).await?;
 
     Ok(())
 }

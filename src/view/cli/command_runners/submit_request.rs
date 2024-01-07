@@ -10,21 +10,23 @@ use crate::view::cli::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr, TextStyle};
 
 #[derive(Debug)]
-pub struct BasicRequestExecutor<Writer>
+pub struct BasicRequestExecutor<WriterStdout, WriterStderr>
 where
-    Writer: CliWriterRepository + Send,
+    WriterStdout: CliWriterRepository + Send,
+    WriterStderr: CliWriterRepository + Send,
 {
-    pub req: RequestData,
-    pub writer_stdout: Writer,
-    pub writer_stderr: Writer,
+    pub request: RequestData,
+    pub writer_stdout: WriterStdout,
+    pub writer_stderr: WriterStderr,
 }
 
 #[async_trait]
-impl<W> CliCommandRunner for BasicRequestExecutor<W>
+impl<W1, W2> CliCommandRunner for BasicRequestExecutor<W1, W2>
 where
-    W: CliWriterRepository + Send,
+    W1: CliWriterRepository + Send,
+    W2: CliWriterRepository + Send,
 {
-    async fn execute(&mut self, provider: impl Provider + Send) -> anyhow::Result<()> {
+    async fn execute(&mut self, mut provider: impl Provider + Send) -> anyhow::Result<()> {
         const BREAK_LINE: &str = "----------------------------------------";
         const BREAK_LINE_WITH_GAP: &str = "  ------------------------------------";
 
@@ -35,8 +37,9 @@ where
         let single_space_styled = StyledStr::from(SINGLE_SPACE);
 
         let title = {
-            let method = StyledStr::from(self.req.method.as_str()).with_text_style(TextStyle::Bold);
-            let url = StyledStr::from(self.req.url.as_str()).with_color_text(Color::Blue);
+            let method =
+                StyledStr::from(self.request.method.as_str()).with_text_style(TextStyle::Bold);
+            let url = StyledStr::from(self.request.url.as_str()).with_color_text(Color::Blue);
 
             [
                 tab_space_styled.clone(),
@@ -47,7 +50,7 @@ where
         };
 
         let headers: Vec<[StyledStr; 5]> = {
-            self.req
+            self.request
                 .headers
                 .iter()
                 .map(|(k, v)| {
@@ -67,7 +70,7 @@ where
         self.writer_stderr.print_lines_styled(headers);
         self.writer_stderr.print_lines([BREAK_LINE]);
 
-        let request_to_do = std::mem::take(&mut self.req);
+        let request_to_do = std::mem::take(&mut self.request);
         let id = provider.add_request(request_to_do).await?;
 
         let response_submit = provider.submit_request_async(id).await?;
