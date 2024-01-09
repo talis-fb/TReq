@@ -133,12 +133,10 @@ fn test_run_command_with_additional_datas() {
     };
 
     assert_eq!(
-        Vec::from([
-            CliCommand::SubmitSavedRequestWithAdditionalData {
-                request_name: "create_user".into(),
-                request_data: expected_request_data
-            },
-        ]),
+        Vec::from([CliCommand::SubmitSavedRequestWithAdditionalData {
+            request_name: "create_user".into(),
+            request_data: expected_request_data
+        },]),
         parse_clap_input_to_commands(input).unwrap(),
     );
 }
@@ -167,7 +165,7 @@ fn test_run_command_with_additional_datas_and_save_as() {
                 request: expected_request_data.clone(),
                 request_name: "new_create_user".into(),
             },
-            CliCommand::SubmitSavedRequestWithAdditionalData  {
+            CliCommand::SubmitSavedRequestWithAdditionalData {
                 request_name: "create_user".into(),
                 request_data: expected_request_data
             },

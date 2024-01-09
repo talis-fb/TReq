@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let commands_executors = match commands_to_exec {
         Ok(commands) => commands
             .into_iter()
-            .map(|d| get_runner_of_command(d))
+            .map(get_runner_of_command)
             .map(Box::new)
             .collect::<Vec<Box<_>>>(),
         Err(message) => {

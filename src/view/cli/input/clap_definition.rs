@@ -158,7 +158,7 @@ mod tests {
 
         let (name_subcommand, matches_subcommand) = root_matches.subcommand().unwrap();
         assert_eq!(name_subcommand, "GET");
-        assert_eq!(matches_subcommand.args_present(), true);
+        assert!(matches_subcommand.args_present());
 
         let inputs: Vec<&String> = matches_subcommand
             .get_many::<String>("inputs")
@@ -184,6 +184,6 @@ mod tests {
 
         let (name_subcommand, matches_subcommand) = root_matches.subcommand().unwrap();
         assert_eq!(name_subcommand, "POST");
-        assert_eq!(matches_subcommand.args_present(), true);
+        assert!(matches_subcommand.args_present());
     }
 }

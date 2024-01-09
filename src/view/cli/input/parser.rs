@@ -48,7 +48,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(request_name) = has_save_as_flag {
                 commands.push(CliCommand::SaveRequest {
-                    request: OptionalRequestData::from(optional_request.clone()),
+                    request: optional_request.clone(),
                     request_name: request_name.clone(),
                 })
             }
@@ -62,7 +62,8 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
         ("edit", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
             let (name_saved_request, extra_inputs) = inputs.split_first().ok_or("No inputs")?;
-            let mut optional_request_data = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
+            let mut optional_request_data =
+                parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
 
             let mut commands = Vec::new();
 
@@ -116,7 +117,8 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
                 return Ok(commands);
             }
 
-            let mut optional_request_data = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
+            let mut optional_request_data =
+                parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
 
             let has_manual_url_flag = matches.get_one::<String>("url_manual");
             if let Some(url) = has_manual_url_flag {
@@ -151,7 +153,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
 
             Ok(commands)
         }
-        _ => return Err("No valid subcommand".into()),
+        _ => Err("No valid subcommand".into()),
     }
 }
 
@@ -179,7 +181,7 @@ fn parse_list_of_data_to_request_data<'a>(
     });
 
     request.body = {
-        if body_data_values.len() > 0 {
+        if !body_data_values.is_empty() {
             Some(
                 serde_json::to_string(&body_data_values)
                     .map_err(|_| "Error to parse data body to json")?,
