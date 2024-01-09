@@ -5,7 +5,7 @@ use crate::app::provider::Provider;
 use crate::app::services::request::entity::RequestData;
 use crate::app::services::web_client::entity::get_status_code_message;
 use crate::utils::observable::chain_listener_to_receiver;
-use crate::view::cli::command_runners::CliCommandRunner;
+use crate::view::cli::command_executors::CliCommandExecutor;
 use crate::view::cli::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr, TextStyle};
 
@@ -21,12 +21,12 @@ where
 }
 
 #[async_trait]
-impl<W1, W2> CliCommandRunner for BasicRequestExecutor<W1, W2>
+impl<W1, W2> CliCommandExecutor for BasicRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository + Send,
     W2: CliWriterRepository + Send,
 {
-    async fn execute(&mut self, mut provider: impl Provider + Send) -> anyhow::Result<()> {
+    async fn execute(&mut self, provider: &mut dyn Provider) -> anyhow::Result<()> {
         const BREAK_LINE: &str = "----------------------------------------";
         const BREAK_LINE_WITH_GAP: &str = "  ------------------------------------";
 

@@ -9,11 +9,11 @@ use crate::app::provider::Provider;
 pub mod submit_request;
 
 #[async_trait]
-pub trait CliCommandRunner {
-    async fn execute(&mut self, provider: impl Provider + Send) -> anyhow::Result<()>;
+pub trait CliCommandExecutor {
+    async fn execute(&mut self, provider: &mut dyn Provider) -> anyhow::Result<()>;
 }
 
-pub fn get_runner_of_command(command: CliCommand) -> impl CliCommandRunner {
+pub fn get_runner_of_command(command: CliCommand) -> impl CliCommandExecutor {
     let writer_stdout = CrosstermCliWriter {
         stdout: Box::new(stdout()),
     };
@@ -22,12 +22,11 @@ pub fn get_runner_of_command(command: CliCommand) -> impl CliCommandRunner {
     };
 
     match command {
-        CliCommand::BasicRequest { request } => {
-            submit_request::BasicRequestExecutor {
-                request,
-                writer_stdout,
-                writer_stderr,
-            }
-        }
+        CliCommand::SubmitRequest { request } => submit_request::BasicRequestExecutor {
+            request,
+            writer_stdout,
+            writer_stderr,
+        },
+        _ => todo!(),
     }
 }

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -13,6 +14,22 @@ pub enum METHODS {
     HEAD,
     PATCH,
 }
+
+impl FromStr for METHODS {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "GET" => METHODS::GET,
+            "POST" => METHODS::POST,
+            "PUT" => METHODS::PUT,
+            "DELETE" => METHODS::DELETE,
+            "HEAD" => METHODS::HEAD,
+            "PATCH" => METHODS::PATCH,
+            _ => return Err("No valid METHOD".into()),
+        })
+    }
+}
+
 impl ToString for METHODS {
     fn to_string(&self) -> String {
         self.as_str().into()

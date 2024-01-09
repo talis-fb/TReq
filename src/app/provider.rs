@@ -20,7 +20,7 @@ use crate::utils::files::file_utils;
 use crate::utils::uuid::UUID;
 
 #[async_trait]
-pub trait Provider {
+pub trait Provider: Send {
     async fn add_request(&mut self, request: RequestData) -> Result<UUID>;
     async fn edit_request(&mut self, id: UUID, request: RequestData) -> Result<()>;
     async fn delete_request(&mut self, id: UUID) -> Result<()>;
@@ -103,21 +103,6 @@ where
     let (command, resp) = command;
     sender.send(command).await?;
     Ok(resp.await?)
-}
-
-async fn run_commands_with_response<CommandFn, Response>(
-    commands: impl IntoIterator<Item = (CommandFn, oneshot::Receiver<Response>)>,
-    sender: &mpsc::Sender<CommandFn>,
-) -> Result<Vec<Response>>
-where
-    CommandFn: Sync + Send + 'static,
-{
-    let mut responses = vec![];
-    for (command, resp) in commands {
-        sender.send(command).await?;
-        responses.push(resp.await?);
-    }
-    Ok(responses)
 }
 
 #[async_trait]

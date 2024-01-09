@@ -7,20 +7,26 @@ use treq::app::services::files::service::FileService;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
-use treq::view::cli::command_runners::{get_runner_of_command, CliCommandRunner};
+use treq::view::cli::command_executors::{get_runner_of_command, CliCommandExecutor};
 use treq::view::cli::input::clap_definition::root_command;
-use treq::view::cli::input::parser::parse;
+use treq::view::cli::input::parser::parse_clap_input_to_commands;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = root_command().get_matches();
-    let command_to_exec = parse(args);
-    if let Err(message) = command_to_exec {
-        println!("ERRO: {message}");
-        return Ok(());
-    }
 
-    let mut command_executor = get_runner_of_command(command_to_exec.unwrap());
+    let commands_to_exec = parse_clap_input_to_commands(args);
+    let commands_executors = match commands_to_exec {
+        Ok(commands) => commands
+            .into_iter()
+            .map(|d| get_runner_of_command(d))
+            .map(Box::new)
+            .collect::<Vec<Box<_>>>(),
+        Err(message) => {
+            println!("ERRO: {message}");
+            return Ok(());
+        }
+    };
 
     // ----------------------------
     //  BACKEND
@@ -28,12 +34,14 @@ async fn main() -> anyhow::Result<()> {
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
     let files = FileService::init("", "", "");
-    let provider = AppProvider::init(req, web, files).await;
+    let mut provider = AppProvider::init(req, web, files).await;
 
     // ----------------------------
     //  Execute command received
     // ----------------------------
-    command_executor.execute(provider).await?;
+    for mut command in commands_executors {
+        command.execute(&mut provider).await?;
+    }
 
     Ok(())
 }
