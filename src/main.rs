@@ -26,15 +26,27 @@ async fn main() -> anyhow::Result<()> {
     // ----------------------------
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
-    let files = FileService::init("", "", "");
+    let files = FileService::init(
+        "/home/talis/Documentos/treq/data",
+        "/home/talis/Documentos/treq/config",
+        "/home/talis/Documentos/treq/tmp",
+    );
     let backend = AppBackend::init(req, web, files);
     let provider = Arc::new(Mutex::new(backend));
 
     // ----------------------------
     //  Execute commands
     // ----------------------------
-    for executor in commands_executors {
-        executor(provider.clone()).await??;
+    for (index, executor) in commands_executors.enumerate() {
+        let output_command = executor(provider.clone()).await?;
+
+        if let Err(err) = output_command {
+            eprintln!("#>------------");
+            eprintln!("#> Error running command {}", index);
+            eprintln!("#> {}", err);
+            eprintln!("#>------------");
+            return Err(err);
+        }
     }
 
     Ok(())

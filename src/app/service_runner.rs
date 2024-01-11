@@ -14,7 +14,7 @@ where
 }
 
 impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
-    pub fn from(service: ServiceInstance) -> Self {
+    pub fn from(service: ServiceInstance, service_name: &'static str) -> Self {
         let (tx_command_channel, mut rx_command_channel) =
             mpsc::channel::<CommandClosureType<ServiceInstance>>(32);
         let (tx_error_channel, _) = broadcast::channel::<String>(16);
@@ -37,6 +37,7 @@ impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
                             },
                             Err(error) => {
                                 service_instance = error.snapshot;
+                                eprintln!(" #> Error running command at service {}\n #> {}", service_name, error.error_message);
                                 let _ = error_channel.send(error.error_message);
                             }
                         }

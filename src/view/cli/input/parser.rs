@@ -22,13 +22,30 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
         let mut optional_request = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
         optional_request.url = Some(url.to_string());
 
-        if optional_request.body.is_some() && optional_request.method.is_none() {
-            optional_request.method = Some(METHODS::POST);
+        if optional_request.method.is_none() {
+            optional_request.method = {
+                if optional_request.body.is_some() {
+                    Some(METHODS::POST)
+                } else {
+                    Some(METHODS::GET)
+                }
+            };
+        }
+
+        let mut commands = Vec::new();
+
+        let has_save_as_flag = args.get_one::<String>("save-as");
+        if let Some(request_name) = has_save_as_flag {
+            commands.push(CliCommand::SaveRequest {
+                request_data: optional_request.clone(),
+                request_name: request_name.clone(),
+            })
         }
 
         let request = optional_request.to_request_data();
+        commands.push(CliCommand::SubmitRequest { request });
 
-        return Ok(vec![CliCommand::SubmitRequest { request }]);
+        return Ok(commands);
     }
 
     let subcommand = args.subcommand().unwrap();
@@ -48,7 +65,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(request_name) = has_save_as_flag {
                 commands.push(CliCommand::SaveRequest {
-                    request: optional_request.clone(),
+                    request_data: optional_request.clone(),
                     request_name: request_name.clone(),
                 })
             }
@@ -80,13 +97,13 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(request_name) = has_save_as_flag {
                 commands.push(CliCommand::SaveRequest {
-                    request: optional_request_data.clone(),
+                    request_data: optional_request_data.clone(),
                     request_name: request_name.clone(),
                 })
             }
 
             Ok(Vec::from([CliCommand::SaveRequest {
-                request: optional_request_data,
+                request_data: optional_request_data,
                 request_name: name_saved_request.to_string(),
             }]))
         }
@@ -133,16 +150,16 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
             let has_save_current_flag = matches.get_one::<bool>("save");
             if let Some(&true) = has_save_current_flag {
                 commands.push(CliCommand::SaveRequest {
-                    request: optional_request_data.clone(),
+                    request_data: optional_request_data.clone(),
                     request_name: request_name.clone(),
                 })
             }
 
             let has_save_as_flag = matches.get_one::<String>("save-as");
-            if let Some(request_name) = has_save_as_flag {
+            if let Some(new_request_name) = has_save_as_flag {
                 commands.push(CliCommand::SaveRequest {
-                    request: optional_request_data.clone(),
-                    request_name: request_name.clone(),
+                    request_data: optional_request_data.clone(),
+                    request_name: new_request_name.clone(),
                 })
             }
 

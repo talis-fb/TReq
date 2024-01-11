@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
 
@@ -59,17 +59,17 @@ impl AppBackend {
     ) -> Self {
         let request_service = {
             let request_service = Box::new(request_service);
-            ServiceRunner::<RequestServiceInstance>::from(request_service)
+            ServiceRunner::<RequestServiceInstance>::from(request_service, "RequestService")
         };
 
         let web_client = {
             let web_client = Box::new(web_client);
-            ServiceRunner::<WebClientInstance>::from(web_client)
+            ServiceRunner::<WebClientInstance>::from(web_client, "WebClientService")
         };
 
         let file_service = {
             let file_service = Box::new(file_service);
-            ServiceRunner::<FileServiceInstance>::from(file_service)
+            ServiceRunner::<FileServiceInstance>::from(file_service, "FileService")
         };
 
         Self {
@@ -196,7 +196,16 @@ impl Backend for AppBackend {
         )
         .await?;
 
-        let request_data = file_utils::read_from_file(path).await?;
+        let request_data = file_utils::read_from_file(path.clone()).await?;
+        if request_data.is_empty() {
+            run_commands(
+                [FileServiceCommandsFactory::remove_file(path)],
+                &self.file_service.command_channel,
+            )
+            .await?;
+            return Err(Error::msg("This request does not exist"));
+        }
+
         let request_data: RequestData = serde_json::from_str(&request_data)?;
         Ok(request_data)
     }

@@ -9,6 +9,7 @@ use tokio::sync::Mutex;
 use super::submit_request::basic_request_executor;
 use super::CommandExecutor;
 use crate::app::backend::Backend;
+use crate::app::services::request::entities::OptionalRequestData;
 use crate::view::cli::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
@@ -18,8 +19,9 @@ const BREAK_LINE_WITH_GAP: &str = "  --------------------------------------";
 const TAB_SPACE: &str = "  ";
 const SINGLE_SPACE: &str = " ";
 
-pub fn submit_saved_request_executor(
+pub fn submit_saved_request_with_additional_data_executor(
     request_name: String,
+    optional_request_data: OptionalRequestData,
     writer_stdout: impl CliWriterRepository + 'static,
     mut writer_stderr: impl CliWriterRepository + 'static,
 ) -> CommandExecutor {
@@ -33,14 +35,16 @@ pub fn submit_saved_request_executor(
                 .get_request_saved(request_name.clone())
                 .await?;
 
+            let request_data = optional_request_data.merge_with(request);
+
             writer_stderr.print_lines([BREAK_LINE]);
             writer_stderr.print_lines_styled([[
-                StyledStr::from(" Submiting ").with_color_text(Color::Yellow),
+                StyledStr::from(" Submiting with changes... ").with_color_text(Color::Yellow),
                 StyledStr::from(" -> "),
                 StyledStr::from(&request_name).with_color_text(Color::Blue),
             ]]);
 
-            basic_request_executor(request, writer_stdout, writer_stderr)(provider).await??;
+            basic_request_executor(request_data, writer_stdout, writer_stderr)(provider).await??;
 
             Ok(())
         })

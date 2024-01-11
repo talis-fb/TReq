@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+
 use std::sync::Arc;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -61,7 +65,11 @@ pub fn basic_request_executor(
             writer_stderr.print_lines([BREAK_LINE]);
 
             let request_id = provider.lock().await.add_request(request).await?;
-            let response_submit = provider.lock().await.submit_request_async(request_id).await?;
+            let response_submit = provider
+                .lock()
+                .await
+                .submit_request_async(request_id)
+                .await?;
             let (response_submit, mut listener_submit) =
                 chain_listener_to_receiver(response_submit);
 
