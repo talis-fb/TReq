@@ -1,8 +1,8 @@
 use tokio::sync::oneshot::{self, Receiver};
 
 // use super::commands::CommandRequestService as Command;
-use super::{entity::Response, service::WebClientInstance};
-use crate::app::services::request::entity::RequestData;
+use super::{entities::Response, service::WebClientInstance};
+use crate::app::services::request::entities::RequestData;
 use crate::utils::commands::CommandClosureType;
 
 pub type CommandWebClient = CommandClosureType<WebClientInstance>;

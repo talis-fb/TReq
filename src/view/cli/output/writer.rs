@@ -10,7 +10,7 @@ use tokio::time::Duration;
 
 use crate::view::style::StyledStr;
 
-pub trait CliWriterRepository {
+pub trait CliWriterRepository: Send {
     fn clear_current_line(&mut self);
 
     fn print_lines<T: Display>(&mut self, lines: impl IntoIterator<Item = T>);
@@ -32,11 +32,26 @@ pub trait CliWriterRepository {
         StyledValues: IntoIterator<Item = StyledStr<'a>>;
 }
 
-pub struct CrosstermCliWriter {
-    pub stdout: Box<dyn Write + Send>,
+pub struct CrosstermCliWriter<Writer>
+where
+    Writer: Write + Send,
+{
+    pub stdout: Writer,
 }
 
-impl CliWriterRepository for CrosstermCliWriter {
+impl<W> CrosstermCliWriter<W>
+where
+    W: Write + Send,
+{
+    pub fn from(writer: W) -> Self {
+        Self { stdout: writer }
+    }
+}
+
+impl<W> CliWriterRepository for CrosstermCliWriter<W>
+where
+    W: Write + Send,
+{
     fn clear_current_line(&mut self) {
         self.stdout.queue(Clear(ClearType::CurrentLine)).unwrap();
         self.stdout.flush().unwrap();

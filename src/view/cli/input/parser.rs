@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use clap::ArgMatches;
 
-use crate::app::services::request::entity::{OptionalRequestData, METHODS};
+use crate::app::services::request::entities::{OptionalRequestData, METHODS};
 use crate::view::cli::commands::CliCommand;
 use crate::view::cli::validators;
 

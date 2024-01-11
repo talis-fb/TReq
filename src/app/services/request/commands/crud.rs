@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::sync::oneshot::{self, Receiver};
 
-use super::super::entity::RequestData;
+use super::super::entities::RequestData;
 use super::{CommandRequestService as Command, CommandsFactory};
 use crate::utils::uuid::UUID;
 

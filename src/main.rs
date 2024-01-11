@@ -2,12 +2,15 @@
 // #![allow(unused_variables)]
 // #![allow(unused_imports)]
 
-use treq::app::provider::AppProvider;
+use std::sync::Arc;
+
+use tokio::sync::Mutex;
+use treq::app::backend::AppBackend;
 use treq::app::services::files::service::FileService;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
-use treq::view::cli::command_executors::{get_runner_of_command, CliCommandExecutor};
+use treq::view::cli::commands::get_executor_of_cli_command;
 use treq::view::cli::input::clap_definition::root_command;
 use treq::view::cli::input::parser::parse_clap_input_to_commands;
 
@@ -15,18 +18,8 @@ use treq::view::cli::input::parser::parse_clap_input_to_commands;
 async fn main() -> anyhow::Result<()> {
     let args = root_command().get_matches();
 
-    let commands_to_exec = parse_clap_input_to_commands(args);
-    let commands_executors = match commands_to_exec {
-        Ok(commands) => commands
-            .into_iter()
-            .map(get_runner_of_command)
-            .map(Box::new)
-            .collect::<Vec<Box<_>>>(),
-        Err(message) => {
-            println!("ERRO: {message}");
-            return Ok(());
-        }
-    };
+    let cli_commands = parse_clap_input_to_commands(args).unwrap();
+    let commands_executors = cli_commands.into_iter().map(get_executor_of_cli_command);
 
     // ----------------------------
     //  BACKEND
@@ -34,13 +27,14 @@ async fn main() -> anyhow::Result<()> {
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
     let files = FileService::init("", "", "");
-    let mut provider = AppProvider::init(req, web, files).await;
+    let backend = AppBackend::init(req, web, files);
+    let provider = Arc::new(Mutex::new(backend));
 
     // ----------------------------
-    //  Execute command received
+    //  Execute commands
     // ----------------------------
-    for mut command in commands_executors {
-        command.execute(&mut provider).await?;
+    for executor in commands_executors {
+        executor(provider.clone()).await??;
     }
 
     Ok(())

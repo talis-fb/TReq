@@ -1,5 +1,5 @@
-use treq::app::provider::Provider;
-use treq::app::services::request::entity::{RequestData, METHODS};
+use treq::app::backend::Backend;
+use treq::app::services::request::entities::{RequestData, METHODS};
 
 use crate::provider::factory_provider::create_default_provider;
 

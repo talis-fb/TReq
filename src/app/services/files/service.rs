@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use super::facade::FileServiceFacade;
 
-pub type FileServiceInstance = Box<dyn FileServiceFacade + Send>;
+pub type FileServiceInstance = Box<dyn FileServiceFacade>;
+
 pub struct FileService {
     config_root_path: PathBuf,
     data_app_root_path: PathBuf,

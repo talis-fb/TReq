@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use treq::app::provider::{AppProvider, Provider};
-use treq::app::services::request::entity::{RequestData, METHODS};
+use treq::app::backend::{AppBackend, Backend};
+use treq::app::services::request::entities::{RequestData, METHODS};
 
 use crate::provider::factory_provider::create_default_provider;
 
@@ -52,7 +52,7 @@ async fn test_requests_body_get() -> Result<()> {
     make_and_validate_request(&mut provider, basic_request3, "another-name").await;
 
     async fn make_and_validate_request(
-        provider: &mut AppProvider,
+        provider: &mut AppBackend,
         req: RequestData,
         message_expected: &str,
     ) {

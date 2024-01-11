@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use super::entity::RequestData;
+use super::entities::RequestData;
 use crate::utils::uuid::UUID;
 
-pub trait RequestServiceFacade {
+pub trait RequestServiceFacade: Send {
     fn add_request(&mut self, request: RequestData) -> UUID;
     fn edit_request(&mut self, id: UUID, request: RequestData);
     fn delete_request(&mut self, id: UUID);

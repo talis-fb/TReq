@@ -7,20 +7,20 @@ use tokio::sync::{mpsc, oneshot};
 use super::services::files::facade::FileServiceFacade;
 use super::services::files::service::FileServiceInstance;
 use super::services::web_client::commands::CommandsFactory as WebClientCommandsFactory;
-use super::services::web_client::entity::Response;
+use super::services::web_client::entities::Response;
 use super::services::web_client::facade::WebClientFacade;
 use super::services::web_client::service::WebClientInstance;
 use crate::app::service_runner::ServiceRunner;
 use crate::app::services::files::commands::CommandsFactory as FileServiceCommandsFactory;
 use crate::app::services::request::commands::CommandsFactory;
-use crate::app::services::request::entity::RequestData;
+use crate::app::services::request::entities::RequestData;
 use crate::app::services::request::facade::RequestServiceFacade;
 use crate::app::services::request::service::RequestServiceInstance;
 use crate::utils::files::file_utils;
 use crate::utils::uuid::UUID;
 
 #[async_trait]
-pub trait Provider: Send {
+pub trait Backend: Send {
     async fn add_request(&mut self, request: RequestData) -> Result<UUID>;
     async fn edit_request(&mut self, id: UUID, request: RequestData) -> Result<()>;
     async fn delete_request(&mut self, id: UUID) -> Result<()>;
@@ -45,31 +45,31 @@ pub trait Provider: Send {
     // async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
 }
 
-pub struct AppProvider {
+pub struct AppBackend {
     request_service: ServiceRunner<RequestServiceInstance>,
     web_client: ServiceRunner<WebClientInstance>,
     file_service: ServiceRunner<FileServiceInstance>,
 }
 
-impl AppProvider {
-    pub async fn init(
-        request_service: impl RequestServiceFacade + Send + 'static,
-        web_client: impl WebClientFacade + Send + 'static,
-        file_service: impl FileServiceFacade + Send + 'static,
+impl AppBackend {
+    pub fn init(
+        request_service: impl RequestServiceFacade + 'static,
+        web_client: impl WebClientFacade + 'static,
+        file_service: impl FileServiceFacade + 'static,
     ) -> Self {
         let request_service = {
             let request_service = Box::new(request_service);
-            ServiceRunner::<RequestServiceInstance>::from(request_service).await
+            ServiceRunner::<RequestServiceInstance>::from(request_service)
         };
 
         let web_client = {
             let web_client = Box::new(web_client);
-            ServiceRunner::<WebClientInstance>::from(web_client).await
+            ServiceRunner::<WebClientInstance>::from(web_client)
         };
 
         let file_service = {
             let file_service = Box::new(file_service);
-            ServiceRunner::<FileServiceInstance>::from(file_service).await
+            ServiceRunner::<FileServiceInstance>::from(file_service)
         };
 
         Self {
@@ -106,7 +106,7 @@ where
 }
 
 #[async_trait]
-impl Provider for AppProvider {
+impl Backend for AppBackend {
     async fn add_request(&mut self, request: RequestData) -> Result<UUID> {
         let resp = run_command_with_response(
             CommandsFactory::add_request(request),

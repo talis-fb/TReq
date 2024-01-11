@@ -48,7 +48,6 @@ impl METHODS {
     }
 }
 
-
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RequestData {
     pub url: String,

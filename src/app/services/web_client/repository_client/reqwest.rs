@@ -4,7 +4,7 @@ use std::str::FromStr;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::Client;
 
-use super::super::entity::{Response, ResponseStage};
+use super::super::entities::{Response, ResponseStage};
 use super::{HttpClientRepository, TaskRunningRequest};
 
 #[derive(Default)]

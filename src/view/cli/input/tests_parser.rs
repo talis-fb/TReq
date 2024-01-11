@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::clap_definition::root_command;
 use super::parser::parse_clap_input_to_commands;
-use crate::app::services::request::entity::{OptionalRequestData, RequestData, METHODS};
+use crate::app::services::request::entities::{OptionalRequestData, RequestData, METHODS};
 use crate::view::cli::commands::CliCommand;
 
 #[test]

@@ -1,32 +1,11 @@
-use std::io::{stderr, stdout};
+use std::sync::Arc;
 
-use async_trait::async_trait;
+use tokio::sync::Mutex;
 
-use super::commands::CliCommand;
-use super::output::writer::CrosstermCliWriter;
-use crate::app::provider::Provider;
+use crate::app::backend::Backend;
 
 pub mod submit_request;
+pub mod submit_saved_request;
 
-#[async_trait]
-pub trait CliCommandExecutor {
-    async fn execute(&mut self, provider: &mut dyn Provider) -> anyhow::Result<()>;
-}
-
-pub fn get_runner_of_command(command: CliCommand) -> impl CliCommandExecutor {
-    let writer_stdout = CrosstermCliWriter {
-        stdout: Box::new(stdout()),
-    };
-    let writer_stderr = CrosstermCliWriter {
-        stdout: Box::new(stderr()),
-    };
-
-    match command {
-        CliCommand::SubmitRequest { request } => submit_request::BasicRequestExecutor {
-            request,
-            writer_stdout,
-            writer_stderr,
-        },
-        _ => todo!(),
-    }
-}
+pub type CommandExecutor =
+    Box<dyn FnOnce(Arc<Mutex<dyn Backend>>) -> tokio::task::JoinHandle<anyhow::Result<()>>>;
