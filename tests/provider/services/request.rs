@@ -7,9 +7,7 @@ use crate::provider::factory_provider::create_default_provider;
 async fn test_create_single_request() {
     let mut provider = create_default_provider().await;
 
-    let new_request = RequestData::default()
-        .with_name("something")
-        .with_url("duck.com");
+    let new_request = RequestData::default().with_url("duck.com");
 
     let id = provider.add_request(new_request.clone()).await.unwrap();
 
@@ -30,7 +28,7 @@ async fn test_edit_single_request() {
     let id = provider.add_request(first_req.clone()).await.unwrap();
 
     // Save second
-    let second_req = first_req.with_url("google.com").with_name("Some New Name");
+    let second_req = first_req.with_url("google.com");
 
     provider
         .edit_request(id.clone(), second_req.clone())
@@ -60,9 +58,7 @@ async fn test_edit_single_request() {
 async fn test_delete_single_request() {
     let mut provider = create_default_provider().await;
 
-    let new_request = RequestData::default()
-        .with_name("something")
-        .with_url("duck.com");
+    let new_request = RequestData::default().with_url("duck.com");
     let id = provider.add_request(new_request.clone()).await.unwrap();
 
     let request_saved = provider.get_request(id.clone()).await.unwrap();
@@ -78,19 +74,13 @@ async fn test_delete_single_request() {
 async fn test_rollback_single_request() {
     let mut provider = create_default_provider().await;
 
-    let first_request = RequestData::default()
-        .with_url("google.com")
-        .with_name("Google req");
+    let first_request = RequestData::default().with_url("google.com");
 
     let second_request = RequestData::default()
         .with_url("duck.com")
-        .with_name("Duck Duck Go")
         .with_headers([("private".into(), "higher".into())]);
 
-    let third_request = RequestData::default()
-        .with_url("bing.com")
-        .with_name("Now I_m using Bing")
-        .with_headers([]);
+    let third_request = RequestData::default().with_url("bing.com").with_headers([]);
 
     let id = provider.add_request(first_request.clone()).await.unwrap();
 

@@ -16,9 +16,7 @@ fn mock_server_url_with_route<'a>(route: impl Into<&'a str>) -> String {
 async fn test_single_request_get() -> Result<()> {
     let mut provider = create_default_provider().await;
 
-    let mut basic_request = RequestData::default()
-        .with_name("Basic")
-        .with_url(mock_server_url_with_route("/ping/"));
+    let mut basic_request = RequestData::default().with_url(mock_server_url_with_route("/ping/"));
 
     let id = provider.add_request(basic_request.clone()).await?;
 

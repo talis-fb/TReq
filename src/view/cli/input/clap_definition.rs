@@ -6,21 +6,18 @@ pub fn root_command() -> Command {
 
     for method in ["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"] {
         app = app.subcommand(
-            [Command::new(method)]
-                .into_iter()
+            Some(Command::new(method))
                 .map(add_main_input_values_request)
                 .map(add_global_utils_flag)
                 .map(add_raw_flag)
                 .map(add_save_as_flag)
-                .next()
                 .unwrap(),
         )
     }
 
     app = {
         app.subcommand(
-            [Command::new("run")]
-                .into_iter()
+            Some(Command::new("run"))
                 .map(add_main_input_values_request)
                 .map(add_global_utils_flag)
                 .map(add_raw_flag)
@@ -28,19 +25,16 @@ pub fn root_command() -> Command {
                 .map(add_save_changes_to_current_request_flag)
                 .map(add_manual_url_flag)
                 .map(add_manual_method_flag)
-                .next()
                 .unwrap(),
         )
         .subcommand(
-            [Command::new("edit")]
-                .into_iter()
+            Some(Command::new("edit"))
                 .map(add_main_input_values_request)
                 .map(add_global_utils_flag)
                 .map(add_raw_flag)
                 .map(add_save_as_flag)
                 .map(add_manual_url_flag)
                 .map(add_manual_method_flag)
-                .next()
                 .unwrap(),
         )
         .subcommand(
@@ -66,13 +60,11 @@ pub fn root_command() -> Command {
     app = app.subcommand(Command::new("collections"));
 
     // Running without a subcommand
-    app = [app]
-        .into_iter()
+    app = Some(app)
         .map(add_main_input_values_request)
         .map(add_global_utils_flag)
         .map(add_raw_flag)
         .map(add_save_as_flag)
-        .next()
         .unwrap();
 
     app

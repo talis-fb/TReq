@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 use clap::ArgMatches;
 
-use crate::app::services::request::entity::METHODS;
-use crate::view::cli::commands::{CliCommand, OptionalRequestData};
+use crate::app::services::request::entity::{OptionalRequestData, METHODS};
+use crate::view::cli::commands::CliCommand;
 use crate::view::cli::validators;
 
 fn get_inputs_from_clap_matches(args: &ArgMatches) -> Result<Vec<&String>, String> {

@@ -48,10 +48,10 @@ impl METHODS {
     }
 }
 
+
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RequestData {
     pub url: String,
-    pub name: String,
     pub method: METHODS,
     pub headers: HashMap<String, String>,
     pub body: String,
@@ -68,10 +68,6 @@ impl RequestData {
         self.url = value;
         self
     }
-    pub fn with_name(mut self, value: impl Into<String>) -> Self {
-        self.name = value.into();
-        self
-    }
     pub fn with_body(mut self, value: impl Into<String>) -> Self {
         self.body = value.into();
         self
@@ -83,6 +79,44 @@ impl RequestData {
     pub fn with_headers(mut self, values: impl Into<HashMap<String, String>>) -> Self {
         self.headers = values.into();
         self
+    }
+}
+
+// Used to
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct OptionalRequestData {
+    pub url: Option<String>,
+    pub method: Option<METHODS>,
+    pub headers: Option<HashMap<String, String>>,
+    pub body: Option<String>,
+}
+
+impl From<RequestData> for OptionalRequestData {
+    fn from(value: RequestData) -> Self {
+        Self {
+            url: Some(value.url),
+            method: Some(value.method),
+            headers: Some(value.headers),
+            body: Some(value.body),
+        }
+    }
+}
+
+impl OptionalRequestData {
+    pub fn to_request_data(self) -> RequestData {
+        RequestData::default()
+            .with_url(self.url.unwrap_or_default())
+            .with_method(self.method.unwrap_or_default())
+            .with_headers(self.headers.unwrap_or_default())
+            .with_body(self.body.unwrap_or_default())
+    }
+
+    pub fn merge_with(self, other: RequestData) -> RequestData {
+        RequestData::default()
+            .with_url(self.url.unwrap_or(other.url))
+            .with_method(self.method.unwrap_or(other.method))
+            .with_headers(self.headers.unwrap_or(other.headers))
+            .with_body(self.body.unwrap_or(other.body))
     }
 }
 
@@ -144,7 +178,7 @@ impl From<RequestData> for NodeHistoryRequest {
 
 #[cfg(test)]
 mod tests {
-    use super::RequestData;
+    use super::*;
 
     #[test]
     fn test_url_with_protocol_default() {
@@ -157,4 +191,169 @@ mod tests {
         let start_without_protocol = RequestData::default().with_url("duck.com");
         assert_eq!("http://duck.com", start_without_protocol.url);
     }
+
+    #[test]
+    fn test_url_struct_to_url() {
+        let start_with_https = RequestData::default().with_url("https://google.com");
+        assert_eq!("https://google.com", start_with_https.url);
+
+        let start_with_http = RequestData::default().with_url("http://duck.com");
+        assert_eq!("http://duck.com", start_with_http.url);
+
+        let start_without_protocol = RequestData::default().with_url("duck.com");
+        assert_eq!("http://duck.com", start_without_protocol.url);
+    }
+
+    // mod url_struct {
+    //     use super::*;
+    //
+    //     // -----------
+    //     // FromStr
+    //     // -----------
+    //     #[test]
+    //     fn test_url_struct_from_url_string() {
+    //         let basic_url = "http://google.com";
+    //
+    //         assert_eq!(
+    //             Url {
+    //                 protocol: Some("http".into()),
+    //                 domain: "google.com".to_string(),
+    //                 port: None,
+    //                 path: "".to_string(),
+    //                 query_params: None,
+    //                 anchor: None,
+    //             },
+    //             Url::from_str(basic_url).unwrap()
+    //         )
+    //     }
+    //
+    //     #[test]
+    //     fn test_url_struct_from_url_string_with_path_and_query_params() {
+    //         let basic_url = "http://google.com/api/v1/?name=John";
+    //
+    //         assert_eq!(
+    //             Url {
+    //                 protocol: Some("http".into()),
+    //                 domain: "google.com".to_string(),
+    //                 port: None,
+    //                 path: "api/v1/".to_string(),
+    //                 query_params: Some(Vec::from([("name".into(), "John".into())])),
+    //                 anchor: None,
+    //             },
+    //             Url::from_str(basic_url).unwrap()
+    //         )
+    //     }
+    //
+    //     #[test]
+    //     fn test_url_struct_from_url_string_with_query_params_and_anchor() {
+    //         // Are the same
+    //         let basic_url = "http://google.com/?name=John#Home";
+    //         let basic_url2 = "http://google.com?name=John#Home";
+    //
+    //         let expected = Url {
+    //             protocol: Some("http".into()),
+    //             domain: "google.com".to_string(),
+    //             port: None,
+    //             path: "".into(),
+    //             query_params: Some(Vec::from([("name".into(), "John".into())])),
+    //             anchor: Some("Home".into()),
+    //         };
+    //
+    //         assert_eq!(expected, Url::from_str(basic_url).unwrap());
+    //         assert_eq!(expected, Url::from_str(basic_url2).unwrap());
+    //     }
+    //
+    //     // #[test]
+    //     // fn test_url_struct_from_url_string_with_port_query_params_and_anchor() {
+    //     //     // Are the same
+    //     //     let basic_url = "http://google.com:3030/?name=John#Home";
+    //     //     let basic_url2 = "http://google.com:3030?name=John#Home";
+    //     //
+    //     //     let expected = Url {
+    //     //         protocol: Some("http".into()),
+    //     //         domain: "google.com".to_string(),
+    //     //         port: Some(3030),
+    //     //         path: "".into(),
+    //     //         query_params: Some(Vec::from([("name".into(), "John".into())])),
+    //     //         anchor: Some("Home".into()),
+    //     //     };
+    //     //
+    //     //     assert_eq!(expected, Url::from_str(basic_url).unwrap());
+    //     //     assert_eq!(expected, Url::from_str(basic_url2).unwrap());
+    //     // }
+    //
+    //     // -----------
+    //     // ToString
+    //     // -----------
+    //     #[test]
+    //     fn test_url_struct_to_string() {
+    //         let url = Url {
+    //             protocol: Some("https".into()),
+    //             domain: "google.com".to_string(),
+    //             port: None,
+    //             path: "".to_string(),
+    //             query_params: None,
+    //             anchor: None,
+    //         };
+    //
+    //         assert_eq!("https://google.com", url.to_string())
+    //     }
+    //
+    //     #[test]
+    //     fn test_url_struct_to_string_with_query_params() {
+    //         let url = Url {
+    //             protocol: None,
+    //             domain: "google.com".to_string(),
+    //             port: None,
+    //             path: "".to_string(),
+    //             query_params: Some(Vec::from([
+    //                 ("name".into(), "John".into()),
+    //                 ("sort".into(), "true".into()),
+    //             ])),
+    //             anchor: None,
+    //         };
+    //
+    //         assert_eq!("http://google.com?name=John&sort=true", url.to_string())
+    //     }
+    //
+    //     #[test]
+    //     fn test_url_struct_to_string_with_query_params_and_explicit_port() {
+    //         let url = Url {
+    //             protocol: None,
+    //             domain: "google.com".to_string(),
+    //             port: Some(3030),
+    //             path: "".to_string(),
+    //             query_params: Some(Vec::from([
+    //                 ("name".into(), "John".into()),
+    //                 ("sort".into(), "true".into()),
+    //             ])),
+    //             anchor: None,
+    //         };
+    //
+    //         assert_eq!(
+    //             "http://google.com:3030?name=John&sort=true",
+    //             url.to_string()
+    //         )
+    //     }
+    //
+    //     #[test]
+    //     fn test_url_struct_to_string_with_query_params_and_explicit_port_and_anchor() {
+    //         let url = Url {
+    //             protocol: None,
+    //             domain: "google.com".to_string(),
+    //             port: Some(3030),
+    //             path: "".to_string(),
+    //             query_params: Some(Vec::from([
+    //                 ("name".into(), "John".into()),
+    //                 ("sort".into(), "true".into()),
+    //             ])),
+    //             anchor: Some("LandingPage".into()),
+    //         };
+    //
+    //         assert_eq!(
+    //             "http://google.com:3030?name=John&sort=true#LandingPage",
+    //             url.to_string()
+    //         )
+    //     }
+    // }
 }
