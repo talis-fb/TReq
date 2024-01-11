@@ -21,6 +21,7 @@ const SINGLE_SPACE: &str = " ";
 pub fn save_request_executor(
     request_name: String,
     request_data: OptionalRequestData,
+    check_exists_before: bool,
     writer_stdout: impl CliWriterRepository + 'static,
     mut writer_stderr: impl CliWriterRepository + 'static,
 ) -> CommandExecutor {
@@ -28,18 +29,23 @@ pub fn save_request_executor(
         tokio::spawn(async move {
             let provider = provider.clone();
 
-            provider
-                .lock()
-                .await
-                .save_request_datas_as(request_name.clone(), request_data.to_request_data())
-                .await?;
-
             writer_stderr.print_lines([BREAK_LINE]);
+            writer_stderr
+                .print_lines_styled([[StyledStr::from(" Saving").with_color_text(Color::Yellow)]]);
             writer_stderr.print_lines_styled([[
-                StyledStr::from(" Saving ").with_color_text(Color::Yellow),
                 StyledStr::from(" -> "),
                 StyledStr::from(&request_name).with_color_text(Color::Blue),
             ]]);
+
+            if check_exists_before {
+                provider.lock().await.get_request_saved(request_name.clone()).await?;
+            }
+
+            provider
+                .lock()
+                .await
+                .save_request_datas_as(request_name, request_data.to_request_data())
+                .await?;
 
             Ok(())
         })

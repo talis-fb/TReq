@@ -4,6 +4,8 @@
 
 use std::sync::Arc;
 
+use anyhow::Error;
+use directories::ProjectDirs;
 use tokio::sync::Mutex;
 use treq::app::backend::AppBackend;
 use treq::app::services::files::service::FileService;
@@ -16,9 +18,24 @@ use treq::view::cli::input::parser::parse_clap_input_to_commands;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = root_command().get_matches();
+    let proj_dirs = ProjectDirs::from("com", "Talison Fabio", "TReq").ok_or(Error::msg(
+        "No possible to create or access directories of data and configuration",
+    ))?;
 
-    let cli_commands = parse_clap_input_to_commands(args).unwrap();
+    let config_dir = proj_dirs.config_dir();
+    let data_dir = proj_dirs.data_dir();
+    let tempfiles_dir = std::env::temp_dir();
+
+    [config_dir, data_dir, tempfiles_dir.as_path()]
+        .iter()
+        .filter(|dir| !dir.exists())
+        .try_for_each(std::fs::create_dir_all)?;
+
+    // ----------------------------
+    // Cli Input
+    // ----------------------------
+    let args = root_command().get_matches();
+    let cli_commands = parse_clap_input_to_commands(args)?;
     let commands_executors = cli_commands.into_iter().map(get_executor_of_cli_command);
 
     // ----------------------------
@@ -26,11 +43,7 @@ async fn main() -> anyhow::Result<()> {
     // ----------------------------
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
-    let files = FileService::init(
-        "/home/talis/Documentos/treq/data",
-        "/home/talis/Documentos/treq/config",
-        "/home/talis/Documentos/treq/tmp",
-    );
+    let files = FileService::init(config_dir, data_dir, tempfiles_dir);
     let backend = AppBackend::init(req, web, files);
     let provider = Arc::new(Mutex::new(backend));
 

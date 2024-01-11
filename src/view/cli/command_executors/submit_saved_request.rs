@@ -35,10 +35,10 @@ pub fn submit_saved_request_executor(
 
             writer_stderr.print_lines([BREAK_LINE]);
             writer_stderr.print_lines_styled([[
-                StyledStr::from(" Submiting ").with_color_text(Color::Yellow),
-                StyledStr::from(" -> "),
-                StyledStr::from(&request_name).with_color_text(Color::Blue),
+                StyledStr::from(" Submit saved request").with_color_text(Color::Blue)
             ]]);
+            writer_stderr
+                .print_lines_styled([[StyledStr::from(" | -> "), StyledStr::from(&request_name)]]);
 
             basic_request_executor(request, writer_stdout, writer_stderr)(provider).await??;
 

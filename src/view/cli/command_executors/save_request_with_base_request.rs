@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use super::submit_request::basic_request_executor;
 use super::CommandExecutor;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::OptionalRequestData;
@@ -19,9 +18,11 @@ const BREAK_LINE_WITH_GAP: &str = "  --------------------------------------";
 const TAB_SPACE: &str = "  ";
 const SINGLE_SPACE: &str = " ";
 
-pub fn submit_saved_request_with_additional_data_executor(
+pub fn save_request_with_base_request_executor(
     request_name: String,
-    optional_request_data: OptionalRequestData,
+    base_request_name: String,
+    request_data: OptionalRequestData,
+    check_exists_before: bool,
     writer_stdout: impl CliWriterRepository + 'static,
     mut writer_stderr: impl CliWriterRepository + 'static,
 ) -> CommandExecutor {
@@ -29,21 +30,31 @@ pub fn submit_saved_request_with_additional_data_executor(
         tokio::spawn(async move {
             let provider = provider.clone();
 
-            let request = provider
+            let base_request_data = provider
                 .lock()
                 .await
-                .get_request_saved(request_name.clone())
+                .get_request_saved(base_request_name.clone())
                 .await?;
-
-            let request_data = optional_request_data.merge_with(request);
 
             writer_stderr.print_lines([BREAK_LINE]);
             writer_stderr
-                .print_lines_styled([[StyledStr::from(" Submit").with_color_text(Color::Blue)]]);
-            writer_stderr
-                .print_lines_styled([[StyledStr::from(" | -> "), StyledStr::from(&request_name)]]);
+                .print_lines_styled([[StyledStr::from(" Saving").with_color_text(Color::Blue)]]);
+            writer_stderr.print_lines_styled([[StyledStr::from(&format!(
+                " | {} -> {}",
+                &base_request_name, &request_name
+            ))]]);
 
-            basic_request_executor(request_data, writer_stdout, writer_stderr)(provider).await??;
+            if check_exists_before {
+                provider.lock().await.get_request_saved(request_name.clone()).await?;
+            }
+
+            let final_request_data = request_data.merge_with(base_request_data);
+
+            provider
+                .lock()
+                .await
+                .save_request_datas_as(request_name, final_request_data)
+                .await?;
 
             Ok(())
         })

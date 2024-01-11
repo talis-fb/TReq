@@ -16,7 +16,8 @@ pub enum METHODS {
 }
 
 impl FromStr for METHODS {
-    type Err = String;
+    type Err = anyhow::Error;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "GET" => METHODS::GET,
@@ -25,7 +26,7 @@ impl FromStr for METHODS {
             "DELETE" => METHODS::DELETE,
             "HEAD" => METHODS::HEAD,
             "PATCH" => METHODS::PATCH,
-            _ => return Err("No valid METHOD".into()),
+            _ => return Err(anyhow::Error::msg("No valid METHOD")),
         })
     }
 }

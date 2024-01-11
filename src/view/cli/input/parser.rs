@@ -1,23 +1,24 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use anyhow::{Error, Result};
 use clap::ArgMatches;
 
 use crate::app::services::request::entities::{OptionalRequestData, METHODS};
 use crate::view::cli::commands::CliCommand;
 use crate::view::cli::validators;
 
-fn get_inputs_from_clap_matches(args: &ArgMatches) -> Result<Vec<&String>, String> {
+fn get_inputs_from_clap_matches(args: &ArgMatches) -> Result<Vec<&String>> {
     Ok(args
         .get_many::<String>("inputs")
-        .ok_or("No inputs at command")?
+        .ok_or(Error::msg("No inputs at command"))?
         .collect())
 }
 
-pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>, String> {
+pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>> {
     if args.subcommand().is_none() {
         let inputs = get_inputs_from_clap_matches(&args)?;
-        let (url, extra_inputs) = inputs.split_first().ok_or("No inputs")?;
+        let (url, extra_inputs) = inputs.split_first().ok_or(Error::msg("No inputs"))?;
 
         let mut optional_request = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
         optional_request.url = Some(url.to_string());
@@ -39,6 +40,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
             commands.push(CliCommand::SaveRequest {
                 request_data: optional_request.clone(),
                 request_name: request_name.clone(),
+                check_exists_before: false,
             })
         }
 
@@ -53,7 +55,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
     match subcommand {
         ("GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
-            let (url, extra_inputs) = inputs.split_first().ok_or("No inputs")?;
+            let (url, extra_inputs) = inputs.split_first().ok_or(Error::msg("No inputs"))?;
             let method = METHODS::from_str(subcommand.0)?;
 
             let mut optional_request = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
@@ -67,6 +69,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
                 commands.push(CliCommand::SaveRequest {
                     request_data: optional_request.clone(),
                     request_name: request_name.clone(),
+                    check_exists_before: false,
                 })
             }
 
@@ -78,7 +81,8 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
         }
         ("edit", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
-            let (name_saved_request, extra_inputs) = inputs.split_first().ok_or("No inputs")?;
+            let (name_saved_request, extra_inputs) =
+                inputs.split_first().ok_or(Error::msg("No inputs"))?;
             let mut optional_request_data =
                 parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
 
@@ -94,18 +98,22 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
                 optional_request_data.method = Some(METHODS::from_str(method)?);
             }
 
+            commands.push(CliCommand::SaveRequest {
+                request_data: optional_request_data.clone(),
+                request_name: name_saved_request.to_string(),
+                check_exists_before: true,
+            });
+
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(request_name) = has_save_as_flag {
                 commands.push(CliCommand::SaveRequest {
-                    request_data: optional_request_data.clone(),
+                    request_data: optional_request_data,
                     request_name: request_name.clone(),
+                    check_exists_before: false,
                 })
             }
 
-            Ok(Vec::from([CliCommand::SaveRequest {
-                request_data: optional_request_data,
-                request_name: name_saved_request.to_string(),
-            }]))
+            Ok(commands)
         }
         ("rename", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
@@ -127,12 +135,8 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
             let request_name = inputs[0].to_string();
             let extra_inputs = &inputs[1..];
 
-            let mut commands = Vec::new();
 
-            if extra_inputs.is_empty() {
-                commands.push(CliCommand::SubmitSavedRequest { request_name });
-                return Ok(commands);
-            }
+            let mut commands = Vec::new();
 
             let mut optional_request_data =
                 parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
@@ -152,39 +156,38 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>,
                 commands.push(CliCommand::SaveRequest {
                     request_data: optional_request_data.clone(),
                     request_name: request_name.clone(),
+                    check_exists_before: true,
                 })
             }
 
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(new_request_name) = has_save_as_flag {
-                commands.push(CliCommand::SaveRequest {
-                    request_data: optional_request_data.clone(),
+                commands.push(CliCommand::SaveRequestWithBaseRequest {
                     request_name: new_request_name.clone(),
+                    base_request_name: request_name.clone(),
+                    request_data: optional_request_data.clone(),
+                    check_exists_before: false,
                 })
             }
 
             commands.push(CliCommand::SubmitSavedRequestWithAdditionalData {
                 request_name,
-                request_data: optional_request_data,
+                request_data: optional_request_data.clone(),
             });
 
             Ok(commands)
         }
-        _ => Err("No valid subcommand".into()),
+        _ => Err(Error::msg("No valid subcommand")),
     }
 }
 
 fn parse_list_of_data_to_request_data<'a>(
     inputs: impl IntoIterator<Item = &'a String>,
-) -> Result<OptionalRequestData, String> {
+) -> Result<OptionalRequestData> {
     let mut request = OptionalRequestData::default();
     let mut body_data_values = HashMap::new();
 
     inputs.into_iter().for_each(|input| {
-        if request.url.is_none() && validators::is_url(input) {
-            request.url = Some(input.to_owned());
-        }
-
         if validators::is_header_input(input) {
             let (key, value) = input.split_once(':').unwrap();
             request
@@ -197,16 +200,18 @@ fn parse_list_of_data_to_request_data<'a>(
         }
     });
 
-    request.body = {
-        if !body_data_values.is_empty() {
-            Some(
-                serde_json::to_string(&body_data_values)
-                    .map_err(|_| "Error to parse data body to json")?,
-            )
-        } else {
-            None
+    if !body_data_values.is_empty() {
+        request.body = {
+            let raw_json = serde_json::to_string(&body_data_values).map_err(|err| {
+                Error::msg(format!(
+                    "Error to parse data body to json: {}",
+                    err.to_string()
+                ))
+            })?;
+
+            Some(raw_json)
         }
-    };
+    }
 
     Ok(request)
 }

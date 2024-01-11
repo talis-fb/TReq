@@ -99,7 +99,7 @@ fn test_parse_basic_post_with_save_as() {
         parse_clap_input_to_commands(input).unwrap(),
         Vec::from([
             CliCommand::SaveRequest {
-                request: expected_request_data.clone(),
+                request_data: expected_request_data.clone(),
                 request_name: "create_user".to_string()
             },
             CliCommand::SubmitRequest {
@@ -162,7 +162,7 @@ fn test_run_command_with_additional_datas_and_save_as() {
     assert_eq!(
         Vec::from([
             CliCommand::SaveRequest {
-                request: expected_request_data.clone(),
+                request_data: expected_request_data.clone(),
                 request_name: "new_create_user".into(),
             },
             CliCommand::SubmitSavedRequestWithAdditionalData {
@@ -189,7 +189,7 @@ fn test_edit_command() {
     assert_eq!(
         Vec::from([CliCommand::SaveRequest {
             request_name: "create_user".into(),
-            request: OptionalRequestData {
+            request_data: OptionalRequestData {
                 url: Some("url.com".into()),
                 headers: Some(HashMap::from([("Content-type".into(), "something".into())])),
                 method: None,
