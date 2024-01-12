@@ -3,7 +3,7 @@ use treq::app::services::request::entities::RequestData;
 use treq::app::services::web_client::entities::Response;
 use treq::app::services::web_client::repository_client::MockHttpClientRepository;
 
-use crate::provider::factory_provider::create_provider_with_mock_web_client;
+use crate::utils::factory_provider::create_provider_with_mock_web_client;
 
 #[tokio::test]
 async fn test_basic_call_get() {

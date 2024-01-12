@@ -37,3 +37,7 @@ regex = "1.10.2"
 directories = "5.0.1"
 
 [dev-dependencies]
+insta = "1.34.0"
+
+[features]
+e2e = []

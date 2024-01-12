@@ -61,6 +61,7 @@ impl RequestData {
     pub fn with_url(mut self, value: impl Into<String>) -> Self {
         let mut value: String = value.into();
 
+        // TODO: Remove it, this is a side effect hidden that will lead to an unexpected behavior
         if !(value.starts_with("http://") || value.starts_with("https://")) {
             value = format!("{}{}", "http://", value);
         }

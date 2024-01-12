@@ -1,7 +1,7 @@
 use treq::app::backend::Backend;
 use treq::app::services::request::entities::{RequestData, METHODS};
 
-use crate::provider::factory_provider::create_default_provider;
+use crate::utils::factory_provider::create_default_provider;
 
 #[tokio::test]
 async fn test_create_single_request() {

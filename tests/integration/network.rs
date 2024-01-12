@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use treq::app::backend::{AppBackend, Backend};
 use treq::app::services::request::entities::{RequestData, METHODS};
 
-use crate::provider::factory_provider::create_default_provider;
+use crate::utils::factory_provider::create_default_provider;
 
 const DEFAULT_HOST_MOCK_API: &str = "http://localhost:7777";
 fn mock_server_url_with_route<'a>(route: impl Into<&'a str>) -> String {

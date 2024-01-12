@@ -18,7 +18,7 @@ RUN cargo build --release
 # ------------
 # Runner
 # ------------
-FROM debian:bullseye AS RUNNER
+FROM debian:bullseye-slim AS RUNNER
 
 COPY --from=BUILD /app/target/release/treq /usr/local/bin/treq
 
@@ -27,5 +27,3 @@ RUN chmod +x /usr/local/bin/treq
 RUN useradd -ms /bin/bash wizard
 USER wizard
 WORKDIR /home/wizard
-
-CMD ["/bin/bash"]
