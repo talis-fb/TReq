@@ -18,9 +18,6 @@ pub enum CliCommand {
 
     SubmitSavedRequest {
         request_name: String,
-    },
-    SubmitSavedRequestWithAdditionalData {
-        request_name: String,
         request_data: OptionalRequestData,
     },
 
@@ -62,26 +59,14 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
     use command_executors::save_request::save_request_executor;
     use command_executors::submit_request::basic_request_executor;
     use command_executors::submit_saved_request::submit_saved_request_executor;
-    use command_executors::submit_saved_request_with_additional_data::submit_saved_request_with_additional_data_executor;
 
     match command {
         CliCommand::SubmitRequest { request } => {
             basic_request_executor(request, writer_stdout, writer_stderr)
         }
-
-        CliCommand::SubmitSavedRequest { request_name } => {
-            submit_saved_request_executor(request_name, writer_stdout, writer_stderr)
+        CliCommand::SubmitSavedRequest { request_name, request_data } => {
+            submit_saved_request_executor(request_name, request_data, writer_stdout, writer_stderr)
         }
-
-        CliCommand::SubmitSavedRequestWithAdditionalData {
-            request_name,
-            request_data,
-        } => submit_saved_request_with_additional_data_executor(
-            request_name,
-            request_data,
-            writer_stdout,
-            writer_stderr,
-        ),
 
         CliCommand::SaveRequest {
             request_name,

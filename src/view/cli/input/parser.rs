@@ -170,7 +170,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
                 })
             }
 
-            commands.push(CliCommand::SubmitSavedRequestWithAdditionalData {
+            commands.push(CliCommand::SubmitSavedRequest {
                 request_name,
                 request_data: optional_request_data.clone(),
             });
