@@ -1,8 +1,6 @@
 #![allow(non_snake_case)]
 
 use insta::assert_yaml_snapshot as assert_snapshot;
-// use treq::app::services::request::entities::METHODS;
-// use treq::view::cli::commands::CliCommand;
 use treq::view::cli::input::clap_definition::root_command;
 use treq::view::cli::input::parser::parse_clap_input_to_commands;
 
@@ -17,7 +15,8 @@ fn should_parse_to_normal_GET_submit_without_passing_method_as_subcommand_and_no
 }
 
 #[test]
-fn should_parse_to_normal_POST_submit_without_passing_method_as_subcommand_but_passing_some_body_data() {
+fn should_parse_to_normal_POST_submit_without_passing_method_as_subcommand_but_passing_some_body_data(
+) {
     let input = "treq url.com Hello=World";
     let matches = root_command().get_matches_from(input.split_whitespace());
     let result = parse_clap_input_to_commands(matches).unwrap();
@@ -28,14 +27,7 @@ fn should_parse_to_normal_POST_submit_without_passing_method_as_subcommand_but_p
 
 #[test]
 fn should_parse_all_methods_subcommands_to_normal_submits() {
-    let all_methods = [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "HEAD",
-        "PATCH",
-    ];
+    let all_methods = ["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"];
 
     let inputs = all_methods
         .iter()
@@ -72,7 +64,6 @@ fn should_error_if_no_input() {
     assert!(result.is_err());
 }
 
-
 // TODO Fix it in parser using regex validator
 #[test]
 fn should_error_if_subcommand_is_not_supported() {
@@ -81,8 +72,6 @@ fn should_error_if_subcommand_is_not_supported() {
     // let result = parse_clap_input_to_commands(matches);
     // assert!(result.is_err());
 }
-
-
 
 // TODO: The body value has changed in ever iteration, once it's a HashMap and order of elements is
 // changed. This test will be fixed

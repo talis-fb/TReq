@@ -1,8 +1,9 @@
 #![allow(unused_variables)]
 
 use std::io::{stderr, stdout};
-use serde::Serialize;
+
 use async_trait::async_trait;
+use serde::Serialize;
 
 use super::command_executors::{self, CommandExecutor};
 use super::output::writer::CrosstermCliWriter;
