@@ -45,7 +45,11 @@ pub fn save_request_with_base_request_executor(
             ))]]);
 
             if check_exists_before {
-                provider.lock().await.get_request_saved(request_name.clone()).await?;
+                provider
+                    .lock()
+                    .await
+                    .get_request_saved(request_name.clone())
+                    .await?;
             }
 
             let final_request_data = request_data.merge_with(base_request_data);

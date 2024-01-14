@@ -37,7 +37,8 @@ regex = "1.10.2"
 directories = "5.0.1"
 
 [dev-dependencies]
-insta = "1.34.0"
+assert_cmd = "2.0.13"
+insta = { version = "1.34.0", features = ["yaml"] }
 
 [features]
-e2e = []
+run_e2e_tests = []

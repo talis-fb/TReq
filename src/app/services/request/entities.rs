@@ -84,7 +84,7 @@ impl RequestData {
 }
 
 // Used to
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OptionalRequestData {
     pub url: Option<String>,
     pub method: Option<METHODS>,

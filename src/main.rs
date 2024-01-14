@@ -16,9 +16,12 @@ use treq::view::cli::commands::get_executor_of_cli_command;
 use treq::view::cli::input::clap_definition::root_command;
 use treq::view::cli::input::parser::parse_clap_input_to_commands;
 
+const APP_NAME: &str = env!("CARGO_PKG_NAME");
+const APP_AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let proj_dirs = ProjectDirs::from("com", "Talison Fabio", "TReq").ok_or(Error::msg(
+    let proj_dirs = ProjectDirs::from("com", APP_AUTHOR, APP_NAME).ok_or(Error::msg(
         "No possible to create or access directories of data and configuration",
     ))?;
 

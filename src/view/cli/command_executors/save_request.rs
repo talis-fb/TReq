@@ -38,7 +38,11 @@ pub fn save_request_executor(
             ]]);
 
             if check_exists_before {
-                provider.lock().await.get_request_saved(request_name.clone()).await?;
+                provider
+                    .lock()
+                    .await
+                    .get_request_saved(request_name.clone())
+                    .await?;
             }
 
             provider

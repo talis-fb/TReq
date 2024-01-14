@@ -1,7 +1,7 @@
 #![allow(unused_variables)]
 
 use std::io::{stderr, stdout};
-
+use serde::Serialize;
 use async_trait::async_trait;
 
 use super::command_executors::{self, CommandExecutor};
@@ -10,7 +10,7 @@ use crate::app::backend::Backend;
 use crate::app::services::request::entities::{OptionalRequestData, RequestData};
 use crate::view::cli::command_executors::save_request_with_base_request::save_request_with_base_request_executor;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum CliCommand {
     SubmitRequest {
         request: RequestData,
@@ -64,7 +64,10 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
         CliCommand::SubmitRequest { request } => {
             basic_request_executor(request, writer_stdout, writer_stderr)
         }
-        CliCommand::SubmitSavedRequest { request_name, request_data } => {
+        CliCommand::SubmitSavedRequest {
+            request_name,
+            request_data,
+        } => {
             submit_saved_request_executor(request_name, request_data, writer_stdout, writer_stderr)
         }
 
@@ -72,7 +75,13 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
             request_name,
             request_data,
             check_exists_before,
-        } => save_request_executor(request_name, request_data, check_exists_before, writer_stdout, writer_stderr),
+        } => save_request_executor(
+            request_name,
+            request_data,
+            check_exists_before,
+            writer_stdout,
+            writer_stderr,
+        ),
         CliCommand::SaveRequestWithBaseRequest {
             request_name,
             base_request_name,

@@ -1,0 +1,5 @@
+HTTP/1.0 200 OK
+Server: Vanilla
+Content-Type: application/json
+
+{"message": "Hello, this is a http server to always return the same response!"}

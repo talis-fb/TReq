@@ -8,13 +8,6 @@ use crate::app::services::request::entities::{OptionalRequestData, METHODS};
 use crate::view::cli::commands::CliCommand;
 use crate::view::cli::validators;
 
-fn get_inputs_from_clap_matches(args: &ArgMatches) -> Result<Vec<&String>> {
-    Ok(args
-        .get_many::<String>("inputs")
-        .ok_or(Error::msg("No inputs at command"))?
-        .collect())
-}
-
 pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>> {
     if args.subcommand().is_none() {
         let inputs = get_inputs_from_clap_matches(&args)?;
@@ -23,15 +16,21 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
         let mut optional_request = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
         optional_request.url = Some(url.to_string());
 
-        if optional_request.method.is_none() {
-            optional_request.method = {
-                if optional_request.body.is_some() {
-                    Some(METHODS::POST)
-                } else {
-                    Some(METHODS::GET)
-                }
-            };
-        }
+        optional_request.method = optional_request.method.or_else(|| {
+            if optional_request.body.is_some() {
+                Some(METHODS::POST)
+            } else {
+                Some(METHODS::GET)
+            }
+        });
+
+        optional_request.body = optional_request.body.or_else(|| {
+            if optional_request.method == Some(METHODS::GET) {
+                Some("".to_string())
+            } else {
+                None
+            }
+        });
 
         let mut commands = Vec::new();
 
@@ -135,7 +134,6 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
             let request_name = inputs[0].to_string();
             let extra_inputs = &inputs[1..];
 
-
             let mut commands = Vec::new();
 
             let mut optional_request_data =
@@ -179,6 +177,13 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
         }
         _ => Err(Error::msg("No valid subcommand")),
     }
+}
+
+fn get_inputs_from_clap_matches(args: &ArgMatches) -> Result<Vec<&String>> {
+    Ok(args
+        .get_many::<String>("inputs")
+        .ok_or(Error::msg("No inputs at command"))?
+        .collect())
 }
 
 fn parse_list_of_data_to_request_data<'a>(
