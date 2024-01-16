@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  httpbin:
+    image: kennethreitz/httpbin
+    container_name: httpbin
+    ports:
+      - "8888:80"
+    networks:
+      - internal_net
+
+  run_e2e:
+    container_name: run_e2e
+    build:
+      context: ../.
+      dockerfile: ./tests/Containerfile
+    command: [ "cargo", "test", "--features", "run_e2e_tests" ]
+    environment:
+      - HTTPBIN_HOST=httpbin:80
+    depends_on:
+      - httpbin
+    networks:
+      - internal_net
+
+networks:
+  internal_net:
+    driver: bridge

@@ -1,0 +1,20 @@
+FROM rust:1-bullseye AS BUILD
+
+WORKDIR /app
+
+RUN cargo init
+COPY Cargo.toml .
+COPY Cargo.lock .
+RUN cargo build --release
+
+COPY src/ src/
+COPY tests/ tests/
+RUN cargo build --release
+
+RUN cargo install --path .
+
+RUN useradd -ms /bin/bash wizard
+RUN chown -R wizard:wizard /usr/local/cargo/
+RUN chown -R wizard:wizard /app/
+
+USER wizard

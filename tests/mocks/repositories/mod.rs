@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,13 +7,12 @@ use async_trait::async_trait;
 use tokio::sync::oneshot;
 use treq::app::backend::{AppBackend, Backend};
 use treq::app::services::files::service::FileService;
-use treq::app::services::request::entities::{RequestData, METHODS};
+use treq::app::services::request::entities::RequestData;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::entities::Response;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
 use treq::utils::uuid::UUID;
-use treq::view::cli::command_executors::submit_request::basic_request_executor;
 use treq::view::cli::output::writer::CliWriterRepository;
 use treq::view::style::StyledStr;
 
@@ -64,7 +63,7 @@ impl MockAppBackend {
 
 #[async_trait]
 impl Backend for MockAppBackend {
-    async fn submit_request_blocking(&mut self, id: UUID) -> Result<Response> {
+    async fn submit_request_blocking(&mut self, _id: UUID) -> Result<Response> {
         panic!("Not implemented");
     }
 

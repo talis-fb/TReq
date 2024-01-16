@@ -4,14 +4,14 @@ services:
     image: kennethreitz/httpbin
     container_name: httpbin
     ports:
-      - "8080:80"
+      - "8888:80"
     
-  netcat:
-    build:
-      context: netcat
-      dockerfile: Containerfile
-    container_name: netcat
-    ports:
-      - "9999:8000"
+  # netcat:
+  #   build:
+  #     context: netcat
+  #     dockerfile: Containerfile
+  #   container_name: netcat
+  #   ports:
+  #     - "9999:8000"
 
 

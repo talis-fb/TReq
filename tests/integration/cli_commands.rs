@@ -1,27 +1,13 @@
-use std::env::temp_dir;
-use std::fmt::Display;
 use std::sync::Arc;
-use std::time::Duration;
 
-use anyhow::Result;
-use async_trait::async_trait;
-use tokio::sync::{oneshot, Mutex};
-use treq::app::backend::{AppBackend, Backend};
-use treq::app::services::files::service::FileService;
+use tokio::sync::Mutex;
 use treq::app::services::request::entities::{OptionalRequestData, RequestData, METHODS};
-use treq::app::services::request::service::RequestService;
-use treq::app::services::web_client::entities::Response;
-use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
-use treq::app::services::web_client::service::WebClient;
-use treq::utils::uuid::UUID;
 use treq::view::cli::command_executors;
-use treq::view::cli::output::writer::CliWriterRepository;
-use treq::view::style::StyledStr;
 
 use crate::mocks::repositories::{create_mock_back_end, CliWriterUseLess};
 
 #[tokio::test]
-async fn should_submit_a_basic_request() {
+async fn should_submit_a_basic_request() -> anyhow::Result<()> {
     let mut backend = create_mock_back_end();
     let request_to_do = RequestData::default()
         .with_url("https://google.com")
@@ -33,10 +19,8 @@ async fn should_submit_a_basic_request() {
     use command_executors::submit_request::basic_request_executor;
 
     let executor = basic_request_executor(request_to_do, CliWriterUseLess, CliWriterUseLess);
-    executor(Arc::new(Mutex::new(backend)))
-        .await
-        .unwrap()
-        .unwrap();
+    executor(Arc::new(Mutex::new(backend))).await??;
+    Ok(())
 }
 
 #[tokio::test]

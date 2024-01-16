@@ -207,12 +207,8 @@ fn parse_list_of_data_to_request_data<'a>(
 
     if !body_data_values.is_empty() {
         request.body = {
-            let raw_json = serde_json::to_string(&body_data_values).map_err(|err| {
-                Error::msg(format!(
-                    "Error to parse data body to json: {}",
-                    err.to_string()
-                ))
-            })?;
+            let raw_json = serde_json::to_string(&body_data_values)
+                .map_err(|err| Error::msg(format!("Error to parse data body to json: {}", err)))?;
 
             Some(raw_json)
         }
