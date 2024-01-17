@@ -15,7 +15,7 @@ services:
       dockerfile: ./tests/Containerfile
     command: [ "cargo", "test", "--features", "run_e2e_tests" ]
     environment:
-      - HTTPBIN_HOST=httpbin:80
+      - HTTPBIN_HOST=httpbin:80 # use the docker network to connect to container
     depends_on:
       - httpbin
     networks:
