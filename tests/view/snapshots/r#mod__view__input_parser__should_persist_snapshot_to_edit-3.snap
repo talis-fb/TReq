@@ -1,0 +1,14 @@
+---
+source: tests/view/input_parser.rs
+expression: result
+---
+- SaveRequest:
+    request_name: url.com
+    request_data:
+      url: ~
+      method: ~
+      headers:
+        Auth: "'Bearer"
+      body: "{\"Hello\":\"World\",\"name\":\"Bob\"}"
+    check_exists_before: true
+

@@ -6,7 +6,7 @@ use mockall::automock;
 use mockall::predicate::*;
 use tokio::task::JoinHandle as TokioTask;
 
-use super::entity::Response;
+use super::entities::Response;
 
 pub type TaskRunningRequest = TokioTask<Result<Response, String>>;
 

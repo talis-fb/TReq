@@ -1,8 +1,8 @@
-use super::entity::Response;
-use crate::app::services::request::entity::RequestData;
+use super::entities::Response;
+use crate::app::services::request::entities::RequestData;
 use crate::utils::uuid::UUID;
 
-pub trait WebClientFacade {
+pub trait WebClientFacade: Send {
     fn submit(&mut self, request: RequestData) -> UUID;
     fn get_task_request(
         &mut self,

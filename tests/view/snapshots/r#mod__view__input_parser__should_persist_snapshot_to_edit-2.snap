@@ -1,0 +1,13 @@
+---
+source: tests/view/input_parser.rs
+expression: result
+---
+- SaveRequest:
+    request_name: url.com
+    request_data:
+      url: ~
+      method: ~
+      headers: ~
+      body: "{\"name\":\"Bob\",\"Hello\":\"World\"}"
+    check_exists_before: true
+

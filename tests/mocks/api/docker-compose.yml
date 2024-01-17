@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  httpbin:
+    image: kennethreitz/httpbin
+    container_name: httpbin
+    ports:
+      - "8888:80"
+    
+  # netcat:
+  #   build:
+  #     context: netcat
+  #     dockerfile: Containerfile
+  #   container_name: netcat
+  #   ports:
+  #     - "9999:8000"
+
+

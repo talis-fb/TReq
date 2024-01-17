@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use super::facade::WebClientFacade;
 use super::repository_client::{HttpClientRepository, TaskRunningRequest};
-use crate::app::services::request::entity::{RequestData, METHODS};
+use crate::app::services::request::entities::{RequestData, METHODS};
 use crate::utils::uuid::UUID;
 
-pub type WebClientInstance = Box<dyn WebClientFacade + Send>;
+pub type WebClientInstance = Box<dyn WebClientFacade>;
 
 pub struct WebClient {
     running_requests: HashMap<UUID, TaskRunningRequest>,

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::entity::{RequestData, RequestEntity};
+use super::entities::{RequestData, RequestEntity};
 use crate::utils::uuid::UUID;
 
-pub type RequestServiceInstance = Box<dyn RequestServiceFacade + Send>;
+pub type RequestServiceInstance = Box<dyn RequestServiceFacade>;
 
 pub struct RequestService {
     // Possible ways to store reference to another service...

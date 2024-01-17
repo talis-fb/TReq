@@ -4,7 +4,7 @@ use std::str::FromStr;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::Client;
 
-use super::super::entity::{Response, ResponseStage};
+use super::super::entities::{Response, ResponseStage};
 use super::{HttpClientRepository, TaskRunningRequest};
 
 #[derive(Default)]
@@ -26,7 +26,7 @@ impl ReqwestClientRepository {
 
     async fn convert_to_app_response(response: reqwest::Response) -> Result<Response, String> {
         let status: i32 = response.status().as_u16().into();
-        let headers: HashMap<String, String> = response
+        let mut headers: Vec<(String, String)> = response
             .headers()
             .iter()
             .map(|(key, value)| {
@@ -36,6 +36,8 @@ impl ReqwestClientRepository {
                 )
             })
             .collect();
+
+        headers.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
 
         let body = response.text().await.map_err(|e| e.to_string())?;
 

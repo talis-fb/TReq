@@ -33,5 +33,13 @@ async-trait = "0.1.73"
 
 mockall = "0.11.4" # TODO: Move it to dev-dependencies, but it breaks with web_client integration test. Importing Mock of HttpRepository
 indicatif = "0.17.7"
+regex = "1.10.2"
+directories = "5.0.1"
 
 [dev-dependencies]
+assert_cmd = "2.0.13"
+insta = { version = "1.34.0", features = ["yaml"] }
+predicates = "3.1.0"
+
+[features]
+run_e2e_tests = []

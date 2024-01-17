@@ -1,0 +1,11 @@
+---
+source: tests/view/input_parser.rs
+expression: result
+---
+- SubmitRequest:
+    request:
+      url: "http://url.com"
+      method: PATCH
+      headers: {}
+      body: ""
+

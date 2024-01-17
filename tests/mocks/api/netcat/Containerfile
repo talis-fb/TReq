@@ -1,0 +1,9 @@
+FROM alpine:latest
+
+RUN apk add --no-cache nmap-ncat
+
+WORKDIR /srv/
+
+COPY . .
+
+CMD ["/bin/sh", "server.sh"]
