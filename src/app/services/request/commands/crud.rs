@@ -1,45 +1,43 @@
 use std::sync::Arc;
 
-use tokio::sync::oneshot::{self, Receiver};
+use tokio::sync::oneshot;
 
 use super::super::entities::RequestData;
-use super::{CommandRequestService as Command, CommandsFactory};
+use super::{CommandRequestService as CommandService, CommandsFactory};
+use crate::app::services::request::service::RequestServiceInstance;
+use crate::utils::commands::Command;
 use crate::utils::uuid::UUID;
 
 impl CommandsFactory {
-    pub fn edit_request(id: UUID, request: RequestData) -> Command {
-        Box::new(move |mut service| {
+    pub fn edit_request(id: UUID, request: RequestData) -> CommandService<()> {
+        Command::from(move |mut service: RequestServiceInstance| {
             service.edit_request(id, request);
             Ok(service)
         })
     }
 
-    pub fn add_request(request: RequestData) -> (Command, Receiver<UUID>) {
+    pub fn add_request(request: RequestData) -> CommandService<UUID> {
         let (tx, rx) = oneshot::channel::<UUID>();
 
-        (
-            Box::new(|mut service| {
-                let id = service.add_request(request);
-                tx.send(id).ok();
-                Ok(service)
-            }),
-            rx,
-        )
+        Command::from(move |mut service: RequestServiceInstance| {
+            let id = service.add_request(request);
+            tx.send(id).ok();
+            Ok(service)
+        })
+        .with_response(rx)
     }
 
-    pub fn get_request_data(id: UUID) -> (Command, Receiver<Option<Arc<RequestData>>>) {
+    pub fn get_request_data(id: UUID) -> CommandService<Option<Arc<RequestData>>> {
         let (tx, rx) = oneshot::channel::<Option<Arc<RequestData>>>();
-        (
-            Box::new(move |service| {
-                tx.send(service.get_request_data(id)).ok();
-                Ok(service)
-            }),
-            rx,
-        )
+        Command::from(move |service: RequestServiceInstance| {
+            tx.send(service.get_request_data(id)).ok();
+            Ok(service)
+        })
+        .with_response(rx)
     }
 
-    pub fn delete_request(id: UUID) -> Command {
-        Box::new(move |mut service| {
+    pub fn delete_request(id: UUID) -> CommandService<()> {
+        CommandService::from(move |mut service| {
             service.delete_request(id);
             Ok(service)
         })

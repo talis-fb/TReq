@@ -1,10 +1,42 @@
 use std::ops::FnOnce;
 
+use tokio::sync::oneshot;
+
 pub type CommandClosureType<ServiceInstance> = Box<
     dyn FnOnce(ServiceInstance) -> Result<ServiceInstance, ErrAtomic<ServiceInstance>>
         + Send
         + Sync,
 >;
+
+pub struct Command<ServiceInstance, Resp> {
+    pub command: CommandClosureType<ServiceInstance>,
+    pub response: Option<oneshot::Receiver<Resp>>,
+}
+
+impl<ServiceInstance, Resp> Command<ServiceInstance, Resp> {
+    pub fn from<F>(command: F) -> Command<ServiceInstance, Resp>
+    where
+        F: FnOnce(ServiceInstance) -> Result<ServiceInstance, ErrAtomic<ServiceInstance>>
+            + Send
+            + Sync
+            + 'static,
+    {
+        Command {
+            command: Box::new(command),
+            response: None,
+        }
+    }
+
+    pub fn with_response(
+        self,
+        response: oneshot::Receiver<Resp>,
+    ) -> Command<ServiceInstance, Resp> {
+        Self {
+            command: self.command,
+            response: Some(response),
+        }
+    }
+}
 
 // Result and errors
 // IDEIA IMPROVEMENT: Maybe you could call for something with term "atomic" or "transacional"
@@ -16,24 +48,3 @@ where
     pub error_message: String,
 }
 
-// pub type ResultCommandService<T, Service> = Result<T, ErrCommandService<Service>>;
-
-// pub fn from<Facade, Param, Return>(cl: impl FnOnce(Param) -> Return) -> Command<Facade> {
-//     todo!()
-// }
-
-pub struct CommandsUtils;
-impl CommandsUtils {
-    pub fn chain<ServiceInstance>(
-        iters_commands: impl IntoIterator<Item = CommandClosureType<ServiceInstance>>
-            + Send
-            + Sync
-            + 'static,
-    ) -> CommandClosureType<ServiceInstance> {
-        Box::new(|service| {
-            iters_commands
-                .into_iter()
-                .try_fold(service, |acc, command| command(acc))
-        })
-    }
-}

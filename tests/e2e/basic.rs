@@ -48,7 +48,6 @@ fn should_assert_process_return_with_no_saved_requests_call() {
     cmd.assert().success();
 }
 
-
 #[test]
 fn should_assert_list_saved_requests() {
     let requests_to_save = ["simple-get", "some-put", "a-great-post"];
@@ -93,7 +92,7 @@ fn should_inspect_command_show_info_about_a_saved_request() {
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World"))
             .and(predicate::str::contains(format!("{}/post", host())))
-            .and(predicate::str::contains("POST"))
+            .and(predicate::str::contains("POST")),
     );
 }
 

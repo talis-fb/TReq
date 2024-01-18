@@ -27,13 +27,20 @@ pub fn inspect_request_executor(
             let provider = provider.clone();
 
             writer.print_lines([BREAK_LINE]);
-            writer.print_lines_styled([[ StyledStr::from(" Request data of "), StyledStr::from(&request_name).with_color_text(Color::Yellow) ]]);
+            writer.print_lines_styled([[
+                StyledStr::from(" Request data of "),
+                StyledStr::from(&request_name).with_color_text(Color::Yellow),
+            ]]);
             writer.print_lines([BREAK_LINE]);
 
-            let request_data = provider.lock().await.get_request_saved(request_name).await?;
+            let request_data = provider
+                .lock()
+                .await
+                .get_request_saved(request_name)
+                .await?;
             let output = serde_json::to_string_pretty(&request_data)?;
 
-            writer.print_lines([ output ]);
+            writer.print_lines([output]);
             writer.print_lines([BREAK_LINE]);
 
             Ok(())
