@@ -9,7 +9,6 @@ use super::command_executors::{self, CommandExecutor};
 use super::output::writer::CrosstermCliWriter;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::{OptionalRequestData, RequestData};
-use crate::view::cli::command_executors::save_request_with_base_request::save_request_with_base_request_executor;
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum CliCommand {
@@ -44,6 +43,9 @@ pub enum CliCommand {
     },
 
     ShowRequests,
+    InspectRequest {
+        request_name: String,
+    },
 }
 
 // ---------------
@@ -63,6 +65,8 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
     use command_executors::submit_request::basic_request_executor;
     use command_executors::submit_saved_request::submit_saved_request_executor;
     use command_executors::show_list_all_request::show_list_all_request_executor;
+    use command_executors::inspect_request::inspect_request_executor;
+    use command_executors::save_request_with_base_request::save_request_with_base_request_executor;
 
     match command {
         CliCommand::SubmitRequest { request } => {
@@ -101,6 +105,7 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
         ),
 
         CliCommand::ShowRequests => show_list_all_request_executor(writer_stdout),
+        CliCommand::InspectRequest { request_name } => inspect_request_executor(request_name, writer_stdout),
 
         CliCommand::RenameSavedRequest {
             request_name,

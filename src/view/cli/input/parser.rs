@@ -159,6 +159,11 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
         ("ls", _) => {
             Ok(Vec::from([CliCommand::ShowRequests]))
         },
+        ("inspect", matches) => {
+            let inputs = get_inputs_from_clap_matches(matches)?;
+            let request_name = inputs[0].to_string();
+            Ok(Vec::from([CliCommand::InspectRequest { request_name }]))
+        },
         ("run", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
 

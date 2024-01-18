@@ -27,37 +27,46 @@ pub fn root_command() -> Command {
                 .map(add_manual_method_flag)
                 .unwrap(),
         )
-        .subcommand(
-            Some(Command::new("edit"))
-                .map(add_main_input_values_request)
-                .map(add_global_utils_flag)
-                .map(add_raw_flag)
-                .map(add_save_as_flag)
-                .map(add_manual_url_flag)
-                .map(add_manual_method_flag)
-                .unwrap(),
-        )
-        .subcommand(
-            Command::new("remove").arg(
-                Arg::new("inputs")
-                    .value_name("inputs")
-                    .required(true)
-                    .num_args(1)
-                    .help("All entrys"),
-            ),
-        )
-        .subcommand(
-            Command::new("rename").arg(
-                Arg::new("inputs")
-                    .value_name("inputs")
-                    .required(true)
-                    .num_args(2)
-                    .help("All entrys"),
-            ),
-        )
-        .subcommand(
-            Command::new("ls"),
-        )
+            .subcommand(
+                Some(Command::new("edit"))
+                    .map(add_main_input_values_request)
+                    .map(add_global_utils_flag)
+                    .map(add_raw_flag)
+                    .map(add_save_as_flag)
+                    .map(add_manual_url_flag)
+                    .map(add_manual_method_flag)
+                    .unwrap(),
+            )
+            .subcommand(
+                Command::new("remove").arg(
+                    Arg::new("inputs")
+                        .value_name("inputs")
+                        .required(true)
+                        .num_args(1)
+                        .help("All entrys"),
+                ),
+            )
+            .subcommand(
+                Command::new("rename").arg(
+                    Arg::new("inputs")
+                        .value_name("inputs")
+                        .required(true)
+                        .num_args(2)
+                        .help("All entrys"),
+                ),
+            )
+            .subcommand(
+                Command::new("ls"),
+            )
+            .subcommand(
+                Command::new("inspect").arg(
+                    Arg::new("inputs")
+                        .value_name("REQUEST_NAME")
+                        .required(true)
+                        .num_args(1)
+                        .help("Request name to inspect"),
+                ),
+            )
     };
 
     app = app.subcommand(Command::new("collections"));

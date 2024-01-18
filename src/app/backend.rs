@@ -39,8 +39,9 @@ pub trait Backend: Send {
         request_data: RequestData,
     ) -> Result<()>;
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
-    // Pending...
     async fn find_all_request_name(&mut self) -> Result<Vec<String>>;
+
+    // Pending...
     // async fn remove_request_saved(&mut self, name: String) -> Result<()>;
     // async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
 }

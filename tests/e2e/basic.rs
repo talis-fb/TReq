@@ -73,6 +73,30 @@ fn should_assert_list_saved_requests() {
             .and(predicate::str::contains(requests_to_save[2])),
     );
 }
+
+#[test]
+fn should_inspect_command_show_info_about_a_saved_request() {
+    // Setup
+    let input = format!(
+        "treq POST {}/post Hello=World --save-as some-cool-request",
+        host()
+    );
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq inspect some-cool-request";
+    let mut cmd = run_cmd(input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        // Request data should be printed in stdout
+        predicate::str::contains("some-cool-request")
+            .and(predicate::str::contains("Hello"))
+            .and(predicate::str::contains("World"))
+            .and(predicate::str::contains(format!("{}/post", host())))
+            .and(predicate::str::contains("POST"))
+    );
+}
+
 // ------------------
 // UTILS
 // ------------------
