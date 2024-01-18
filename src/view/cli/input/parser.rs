@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use anyhow::{Error, Result};
 use clap::ArgMatches;
+use serde_json::Value;
 
 use crate::app::services::request::entities::{OptionalRequestData, METHODS};
 use crate::view::cli::commands::CliCommand;
@@ -11,7 +12,13 @@ use crate::view::cli::validators;
 pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>> {
     if args.subcommand().is_none() {
         let inputs = get_inputs_from_clap_matches(&args)?;
-        let (url, extra_inputs) = inputs.split_first().ok_or(Error::msg("No inputs"))?;
+        let (url, extra_inputs) = inputs
+            .split_first()
+            .ok_or(Error::msg("No inputs"))
+            .and_then(|(url, rest)| match validators::is_url(url) {
+                true => Ok((url, rest)),
+                false => Err(Error::msg(format!("Invalid URL: {url}"))),
+            })?;
 
         let mut optional_request = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
         optional_request.url = Some(url.to_string());
@@ -21,14 +28,6 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
                 Some(METHODS::POST)
             } else {
                 Some(METHODS::GET)
-            }
-        });
-
-        optional_request.body = optional_request.body.or_else(|| {
-            if optional_request.method == Some(METHODS::GET) {
-                Some("".to_string())
-            } else {
-                None
             }
         });
 
@@ -54,12 +53,41 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
     match subcommand {
         ("GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
-            let (url, extra_inputs) = inputs.split_first().ok_or(Error::msg("No inputs"))?;
             let method = METHODS::from_str(subcommand.0)?;
+
+            let (url, extra_inputs) = inputs
+                .split_first()
+                .ok_or(Error::msg("No inputs"))
+                .and_then(|(url, rest)| match validators::is_url(url) {
+                    true => Ok((url, rest)),
+                    false => Err(Error::msg(format!("Invalid URL: {url}"))),
+                })?;
 
             let mut optional_request = parse_list_of_data_to_request_data(extra_inputs.to_vec())?;
             optional_request.url = Some(url.to_string());
             optional_request.method = Some(method);
+
+            optional_request.body = optional_request.body.and_then(|body| {
+                if method == METHODS::GET {
+                    None
+                } else {
+                    Some(body)
+                }
+            });
+
+            let has_raw_body_input_flag = matches.get_one::<String>("raw");
+            if let Some(raw_body) = has_raw_body_input_flag {
+                if optional_request.body.is_some() {
+                    return Err(Error::msg(
+                        "You can't use --raw and --body at the same time".to_string(),
+                    ));
+                }
+
+                let _: Value =
+                    serde_json::from_str(raw_body).map_err(|err| Error::msg(format!("{err}")))?;
+
+                optional_request.body = Some(raw_body.to_string());
+            }
 
             let mut commands = Vec::new();
 

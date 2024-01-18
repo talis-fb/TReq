@@ -26,6 +26,16 @@ fn should_parse_to_normal_POST_submit_without_passing_method_as_subcommand_but_p
 }
 
 #[test]
+fn should_ignore_body_inputs_in_GET_request() {
+    let input = "treq GET url.com Hello=World";
+    let matches = root_command().get_matches_from(input.split_whitespace());
+    let result = parse_clap_input_to_commands(matches).unwrap();
+
+    assert!(result.len() == 1);
+    assert_snapshot!(result);
+}
+
+#[test]
 fn should_parse_all_methods_subcommands_to_normal_submits() {
     let all_methods = ["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"];
 
@@ -62,39 +72,46 @@ fn should_error_if_no_input() {
     let matches = root_command().get_matches_from(input.split_whitespace());
     let result = parse_clap_input_to_commands(matches);
     assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("No inputs"));
 }
 
-// TODO Fix it in parser using regex validator
 #[test]
 fn should_error_if_subcommand_is_not_supported() {
-    // let input = "treq unknown url.com";
-    // let matches = root_command().get_matches_from(input.split_whitespace());
-    // let result = parse_clap_input_to_commands(matches);
-    // assert!(result.is_err());
+    let input = "treq unknown url.com";
+    let matches = root_command().get_matches_from(input.split_whitespace());
+    let result = parse_clap_input_to_commands(matches);
+    assert!(result.is_err());
 }
 
-// TODO: The body value has changed in ever iteration, once it's a HashMap and order of elements is
-// changed. This test will be fixed
+#[test]
+fn should_error_if_url_value_iS_not_a_valid_url() {
+    let input = "treq GET invalid-url#value";
+    let matches = root_command().get_matches_from(input.split_whitespace());
+    let result = parse_clap_input_to_commands(matches);
+    assert!(result.is_err());
+}
 
-// #[test]
-// fn should_persist_snapshot_to_edit() {
-//     let input = "treq edit url.com";
-//     let matches = root_command().get_matches_from(input.split_whitespace());
-//     let result = parse_clap_input_to_commands(matches).unwrap();
-//     assert_snapshot!(result);
-//
-//     let input_with_body = "treq edit url.com Hello=World name=Bob";
-//     let matches = root_command().get_matches_from(input_with_body.split_whitespace());
-//     let result = parse_clap_input_to_commands(matches).unwrap();
-//     assert_snapshot!(result);
-//
-//     let input_with_body_with_header = "treq edit url.com Auth:'Bearer token' Hello=World name=Bob";
-//     let matches = root_command().get_matches_from(input_with_body_with_header.split_whitespace());
-//     let result = parse_clap_input_to_commands(matches).unwrap();
-//     assert_snapshot!(result);
-//
-//     let input_with_other_url_and_method = "treq edit url.com --method GET --url http://some_another_api.com";
-//     let matches = root_command().get_matches_from(input_with_other_url_and_method.split_whitespace());
-//     let result = parse_clap_input_to_commands(matches).unwrap();
-//     assert_snapshot!(result);
-// }
+#[test]
+fn should_raw_flag_work_equal_param_body_definition() {
+    let input1 = "treq POST url.com Hello=World";
+    let matches1 = root_command().get_matches_from(input1.split_whitespace());
+
+    let input2 = r#"treq POST url.com --raw {"Hello":"World"}"#;
+    let matches2 = root_command().get_matches_from(input2.split_whitespace());
+
+    let result1 = parse_clap_input_to_commands(matches1);
+    let result2 = parse_clap_input_to_commands(matches2);
+
+    assert!(result1.is_ok());
+    assert!(result2.is_ok());
+    assert_eq!(result1.unwrap(), result2.unwrap());
+}
+
+#[test]
+fn should_return_error_if_raw_flag_and_param_body_are_both_used() {
+    let input = r#"treq POST url.com --raw {"Hello":"World"}" Hello=World"#;
+    let matches = root_command().get_matches_from(input.split_whitespace());
+    let result = parse_clap_input_to_commands(matches);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("--raw"));
+}

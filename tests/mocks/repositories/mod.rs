@@ -53,11 +53,12 @@ impl MockAppBackend {
         }
     }
 
-    pub fn set_expected_requests(
-        &mut self,
+    pub fn with_expected_requests(
+        mut self,
         expected_requests: impl IntoIterator<Item = RequestData>,
-    ) {
+    ) -> Self {
         self.expected_requests = expected_requests.into_iter().collect();
+        self
     }
 }
 
@@ -116,6 +117,10 @@ impl Backend for MockAppBackend {
 
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData> {
         self.app_backend.get_request_saved(name).await
+    }
+
+    async fn get_all_request_names(&mut self) -> Result<Vec<String>> {
+        self.app_backend.get_all_request_names().await
     }
 }
 
