@@ -40,7 +40,7 @@ pub trait Backend: Send {
     ) -> Result<()>;
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
     // Pending...
-    // async fn get_all_files_in_folder(&mut self, names: &[str]) -> Result<Vec<String>>;
+    async fn find_all_request_name(&mut self) -> Result<Vec<String>>;
     // async fn remove_request_saved(&mut self, name: String) -> Result<()>;
     // async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
 }
@@ -208,5 +208,18 @@ impl Backend for AppBackend {
 
         let request_data: RequestData = serde_json::from_str(&request_data)?;
         Ok(request_data)
+    }
+
+    async fn find_all_request_name(&mut self) -> Result<Vec<String>> {
+        let response = run_command_with_response(
+            FileServiceCommandsFactory::find_all_data_files(),
+            &self.file_service.command_channel,
+        )
+        .await?;
+        let file_names = response
+            .into_iter()
+            .map(|path| path.file_name().unwrap().to_str().unwrap().to_string())
+            .collect();
+        Ok(file_names)
     }
 }

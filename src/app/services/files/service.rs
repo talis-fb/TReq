@@ -55,6 +55,16 @@ impl FileServiceFacade for FileService {
         FileService::create_file_if_not_exists(file_path)
     }
 
+    fn find_all_data_files(&self) -> Result<Vec<PathBuf>, String> {
+        let files = std::fs::read_dir(&self.data_app_root_path)
+            .map_err(|err| format!("No possible to read data folder: {err}"))?
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| !path.is_dir())
+            .collect::<Vec<_>>();
+        Ok(files)
+    }
+
     fn remove_file(&self, path: PathBuf) -> Result<(), String> {
         std::fs::remove_file(path).map_err(|err| err.to_string())
     }

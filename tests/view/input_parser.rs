@@ -76,11 +76,18 @@ fn should_error_if_no_input() {
 }
 
 #[test]
-fn should_error_if_subcommand_is_not_supported() {
-    let input = "treq unknown url.com";
-    let matches = root_command().get_matches_from(input.split_whitespace());
-    let result = parse_clap_input_to_commands(matches);
-    assert!(result.is_err());
+fn should_error_if_url_is_invalid() {
+    let invalid_urls = [
+        "treq htp://url",
+        "treq url,io",
+        "treq url-io:",
+    ];
+
+    let matches = invalid_urls.map(|input| {
+        root_command().get_matches_from(input.split_whitespace())
+    });
+    let mut results = matches.into_iter().map(|matches| parse_clap_input_to_commands(matches));
+    assert!(results.all(|result| result.is_err()));
 }
 
 #[test]

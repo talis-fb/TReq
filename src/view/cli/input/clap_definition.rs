@@ -55,6 +55,9 @@ pub fn root_command() -> Command {
                     .help("All entrys"),
             ),
         )
+        .subcommand(
+            Command::new("ls"),
+        )
     };
 
     app = app.subcommand(Command::new("collections"));

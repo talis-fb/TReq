@@ -119,8 +119,8 @@ impl Backend for MockAppBackend {
         self.app_backend.get_request_saved(name).await
     }
 
-    async fn get_all_request_names(&mut self) -> Result<Vec<String>> {
-        self.app_backend.get_all_request_names().await
+    async fn find_all_request_name(&mut self) -> Result<Vec<String>> {
+        self.app_backend.find_all_request_name().await
     }
 }
 

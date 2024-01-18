@@ -73,6 +73,27 @@ impl CommandsFactory {
         (command, rx)
     }
 
+    pub fn find_all_data_files() -> (CommandFileService, Receiver<Vec<PathBuf>>) {
+        let (tx, rx) = oneshot::channel();
+
+        let command: CommandFileService = Box::new(|service| {
+            let files = service.find_all_data_files();
+
+            match files {
+                Ok(files) => {
+                    tx.send(files).ok();
+                    Ok(service)
+                }
+                Err(error_message) => Err(ErrAtomic {
+                    snapshot: service,
+                    error_message,
+                }),
+            }
+        });
+
+        (command, rx)
+    }
+
     pub fn remove_file(path: PathBuf) -> CommandFileService {
         Box::new(|service| match service.remove_file(path) {
             Ok(_) => Ok(service),

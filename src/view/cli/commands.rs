@@ -42,6 +42,8 @@ pub enum CliCommand {
         request_name: String,
         new_name: String,
     },
+
+    ShowRequests,
 }
 
 // ---------------
@@ -60,6 +62,7 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
     use command_executors::save_request::save_request_executor;
     use command_executors::submit_request::basic_request_executor;
     use command_executors::submit_saved_request::submit_saved_request_executor;
+    use command_executors::show_list_all_request::show_list_all_request_executor;
 
     match command {
         CliCommand::SubmitRequest { request } => {
@@ -96,6 +99,8 @@ pub fn get_executor_of_cli_command(command: CliCommand) -> CommandExecutor {
             writer_stdout,
             writer_stderr,
         ),
+
+        CliCommand::ShowRequests => show_list_all_request_executor(writer_stdout),
 
         CliCommand::RenameSavedRequest {
             request_name,

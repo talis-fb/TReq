@@ -5,13 +5,15 @@ WORKDIR /app
 RUN cargo init
 COPY Cargo.toml .
 COPY Cargo.lock .
-RUN cargo build --release
+
+# To cache dependecies
+RUN cargo build --release && cargo test
 
 COPY src/ src/
-COPY tests/ tests/
 RUN cargo build --release
+RUN cp target/release/treq /usr/local/bin && chmod +x /usr/local/bin/treq
 
-RUN cargo install --path .
+COPY tests/ tests/
 
 RUN useradd -ms /bin/bash wizard
 RUN chown -R wizard:wizard /usr/local/cargo/
