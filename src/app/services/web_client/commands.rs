@@ -13,19 +13,11 @@ impl CommandsFactory {
     pub fn submit(request: RequestData) -> CommandWebClient<Result<Response, String>> {
         let (tx, rx) = oneshot::channel();
         Command::from(move |mut service: WebClientInstance| {
-            let id_task = service.submit(request);
-            let gg = service.get_task_request(id_task);
-
-            if let Some(task) = gg {
-                tokio::task::spawn(async move {
-                    let response = task.await.map_err(|e| e.to_string());
-
-                    match response {
-                        Ok(response) => tx.send(response),
-                        Err(err) => tx.send(Err(err)),
-                    }
-                });
-            }
+            let task = service.submit_async(request);
+            tokio::task::spawn(async move {
+                let response = task.await.map_err(|e| e.to_string()).and_then(|resp| resp);
+                tx.send(response).ok();
+            });
             service
         })
         .with_response(rx)
