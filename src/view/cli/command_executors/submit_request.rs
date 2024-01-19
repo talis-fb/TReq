@@ -12,7 +12,7 @@ use super::CommandExecutor;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::RequestData;
 use crate::app::services::web_client::entities::get_status_code_message;
-use crate::utils::observable::chain_listener_to_receiver;
+use crate::utils::channels::chain_listener_to_receiver;
 use crate::view::cli::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr, TextStyle};
 

@@ -10,14 +10,14 @@ use super::services::web_client::commands::CommandsFactory as WebClientCommandsF
 use super::services::web_client::entities::Response;
 use super::services::web_client::facade::WebClientFacade;
 use super::services::web_client::service::WebClientInstance;
+use crate::app::service_commands::Command;
 use crate::app::service_runner::ServiceRunner;
 use crate::app::services::files::commands::CommandsFactory as FileServiceCommandsFactory;
-use crate::app::services::request::commands::CommandsFactory;
+use crate::app::services::request::commands::CommandsFactory as RequestServCommandsFactory;
 use crate::app::services::request::entities::RequestData;
 use crate::app::services::request::facade::RequestServiceFacade;
 use crate::app::services::request::service::RequestServiceInstance;
-use crate::utils::commands::Command;
-use crate::utils::files::file_utils;
+use crate::utils::files as file_utils;
 use crate::utils::uuid::UUID;
 
 #[async_trait]
@@ -82,42 +82,12 @@ impl AppBackend {
     }
 }
 
-async fn run_commands<Service, Resp>(
-    service: &ServiceRunner<Service>,
-    commands: impl IntoIterator<Item = Command<Service, Resp>>,
-) -> Result<()>
-where
-    Service: Send + 'static,
-{
-    for command in commands {
-        let Command { command, .. } = command;
-        service.command_channel.send(command).await?;
-    }
-    Ok(())
-}
-
-async fn run_command_waiting_response<Service, Resp>(
-    service: &ServiceRunner<Service>,
-    command: Command<Service, Resp>,
-) -> Result<Resp>
-where
-    Service: Send + 'static,
-{
-    let Command { command, response } = command;
-    service.command_channel.send(command).await?;
-    if let Some(listener) = response {
-        Ok(listener.await?)
-    } else {
-        Err(Error::msg("No response listener"))
-    }
-}
-
 #[async_trait]
 impl Backend for AppBackend {
     async fn add_request(&mut self, request: RequestData) -> Result<UUID> {
         let resp = run_command_waiting_response(
             &self.request_service,
-            CommandsFactory::add_request(request),
+            RequestServCommandsFactory::add_request(request),
         )
         .await?;
         Ok(resp)
@@ -125,7 +95,7 @@ impl Backend for AppBackend {
     async fn edit_request(&mut self, id: UUID, request: RequestData) -> Result<()> {
         run_commands(
             &self.request_service,
-            [CommandsFactory::edit_request(id, request)],
+            [RequestServCommandsFactory::edit_request(id, request)],
         )
         .await?;
         Ok(())
@@ -133,19 +103,23 @@ impl Backend for AppBackend {
     async fn get_request(&mut self, id: UUID) -> Result<Option<Arc<RequestData>>> {
         let request = run_command_waiting_response(
             &self.request_service,
-            CommandsFactory::get_request_data(id),
+            RequestServCommandsFactory::get_request_data(id),
         )
         .await?;
         Ok(request)
     }
     async fn delete_request(&mut self, id: UUID) -> Result<()> {
-        run_commands(&self.request_service, [CommandsFactory::delete_request(id)]).await?;
+        run_commands(
+            &self.request_service,
+            [RequestServCommandsFactory::delete_request(id)],
+        )
+        .await?;
         Ok(())
     }
     async fn undo_request(&mut self, id: UUID) -> Result<()> {
         run_commands(
             &self.request_service,
-            [CommandsFactory::undo_request_data(id)],
+            [RequestServCommandsFactory::undo_request_data(id)],
         )
         .await?;
         Ok(())
@@ -153,7 +127,7 @@ impl Backend for AppBackend {
     async fn redo_request(&mut self, id: UUID) -> Result<()> {
         run_commands(
             &self.request_service,
-            [CommandsFactory::redo_request_data(id)],
+            [RequestServCommandsFactory::redo_request_data(id)],
         )
         .await?;
         Ok(())
@@ -175,9 +149,11 @@ impl Backend for AppBackend {
         id: UUID,
     ) -> Result<oneshot::Receiver<Result<Response, String>>> {
         let request_data = self.get_request(id).await?.unwrap();
-        let Command { command, response } =
-            WebClientCommandsFactory::submit((*request_data).clone());
-        self.web_client.command_channel.send(command).await?;
+        let Command {
+            command_fn,
+            response,
+        } = WebClientCommandsFactory::submit((*request_data).clone());
+        self.web_client.command_channel.send(command_fn).await?;
         Ok(response.unwrap())
     }
     async fn save_request_datas_as(
@@ -228,5 +204,38 @@ impl Backend for AppBackend {
             .map(|path| path.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
         Ok(file_names)
+    }
+}
+
+async fn run_commands<Service, Resp>(
+    service: &ServiceRunner<Service>,
+    commands: impl IntoIterator<Item = Command<Service, Resp>>,
+) -> Result<()>
+where
+    Service: Send + 'static,
+{
+    for Command { command_fn, .. } in commands {
+        service.command_channel.send(command_fn).await?;
+    }
+    Ok(())
+}
+
+async fn run_command_waiting_response<Service, Resp>(
+    service: &ServiceRunner<Service>,
+    command: Command<Service, Resp>,
+) -> Result<Resp>
+where
+    Service: Send + 'static,
+{
+    let Command {
+        command_fn,
+        response,
+    } = command;
+
+    service.command_channel.send(command_fn).await?;
+    if let Some(listener) = response {
+        Ok(listener.await?)
+    } else {
+        Err(Error::msg("No response listener"))
     }
 }

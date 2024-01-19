@@ -2,18 +2,14 @@ use tokio::sync::oneshot;
 
 use super::entities::Response;
 use super::service::WebClientInstance;
+use crate::app::service_commands::Command;
 use crate::app::services::request::entities::RequestData;
-use crate::utils::commands::Command;
 
 pub type CommandWebClient<Resp> = Command<WebClientInstance, Resp>;
 
 pub struct CommandsFactory;
 
 impl CommandsFactory {
-    pub fn do_nothing() -> CommandWebClient<()> {
-        Command::from(|service| Ok(service))
-    }
-
     pub fn submit(request: RequestData) -> CommandWebClient<Result<Response, String>> {
         let (tx, rx) = oneshot::channel();
         Command::from(move |mut service: WebClientInstance| {
@@ -30,7 +26,7 @@ impl CommandsFactory {
                     }
                 });
             }
-            Ok(service)
+            service
         })
         .with_response(rx)
     }

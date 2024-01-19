@@ -9,14 +9,14 @@ COPY Cargo.lock .
 # To cache dependecies
 RUN cargo build --release && cargo test
 
+RUN useradd -ms /bin/bash wizard
+RUN chown -R wizard:wizard /usr/local/cargo/
+RUN chown -R wizard:wizard /app/
+
 COPY src/ src/
 RUN cargo build --release
 RUN cp target/release/treq /usr/local/bin && chmod +x /usr/local/bin/treq
 
 COPY tests/ tests/
-
-RUN useradd -ms /bin/bash wizard
-RUN chown -R wizard:wizard /usr/local/cargo/
-RUN chown -R wizard:wizard /app/
 
 USER wizard

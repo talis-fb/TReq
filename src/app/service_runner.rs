@@ -1,48 +1,32 @@
-use tokio::sync::{broadcast, mpsc, oneshot};
+use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
-use crate::utils::commands::CommandClosureType;
+use crate::app::service_commands::Functor;
 
 pub struct ServiceRunner<ServiceInstance>
 where
     ServiceInstance: Sized + Send,
 {
-    pub command_channel: mpsc::Sender<CommandClosureType<ServiceInstance>>,
+    pub service_name: String,
+    pub command_channel: mpsc::Sender<Functor<ServiceInstance>>,
     shutdown_channel: oneshot::Sender<()>,
-    tx_error_channel: broadcast::Sender<String>,
-    task: JoinHandle<()>,
+    runner_thread: JoinHandle<()>,
 }
 
 impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
-    pub fn from(service: ServiceInstance, service_name: &'static str) -> Self {
+    pub fn from(mut service_instance: ServiceInstance, service_name: &'static str) -> Self {
+        let (tx_shutdown_channel, rx_shutdown_channel) = oneshot::channel::<()>();
         let (tx_command_channel, mut rx_command_channel) =
-            mpsc::channel::<CommandClosureType<ServiceInstance>>(32);
-        let (tx_error_channel, _) = broadcast::channel::<String>(16);
+            mpsc::channel::<Functor<ServiceInstance>>(32);
 
-        let (tx_cancel_channel, rx_cancel_channel) = oneshot::channel::<()>();
-
-        let error_channel = tx_error_channel.clone();
-        let task = tokio::task::spawn(async move {
-            let mut service_instance = service;
-            let mut cancel_channel = rx_cancel_channel;
-
+        let runner_thread = tokio::task::spawn(async move {
+            let mut rx_shutdown_channel = rx_shutdown_channel;
             loop {
                 tokio::select! {
-                    Some(command) = rx_command_channel.recv() => {
-                        let output_command = command(service_instance);
-
-                        match output_command {
-                            Ok(service_result) => {
-                                service_instance = service_result;
-                            },
-                            Err(error) => {
-                                service_instance = error.snapshot;
-                                eprintln!(" #> Error running command at service {}\n #> {}", service_name, error.error_message);
-                                let _ = error_channel.send(error.error_message);
-                            }
-                        }
+                    Some(command_fn) = rx_command_channel.recv() => {
+                        service_instance = command_fn(service_instance);
                     },
-                    Ok(_) = &mut cancel_channel => {
+                    Ok(_) = &mut rx_shutdown_channel => {
                         break;
                     },
                     else => {
@@ -53,22 +37,16 @@ impl<ServiceInstance: Send + 'static> ServiceRunner<ServiceInstance> {
         });
 
         Self {
+            service_name: service_name.into(),
             command_channel: tx_command_channel,
-            shutdown_channel: tx_cancel_channel,
-            tx_error_channel,
-            task,
+            shutdown_channel: tx_shutdown_channel,
+            runner_thread,
         }
     }
 
-    pub fn get_error_listener(&self) -> broadcast::Receiver<String> {
-        self.tx_error_channel.subscribe()
-    }
-
-    pub fn close(&mut self) -> Option<()> {
-        let (tx, _) = oneshot::channel::<()>();
-        let shutdown_channel = std::mem::replace(&mut self.shutdown_channel, tx);
-        shutdown_channel.send(()).ok()?;
-        self.task.abort();
+    pub fn close(self) -> Option<()> {
+        self.shutdown_channel.send(()).ok()?;
+        self.runner_thread.abort();
         Some(())
     }
 }

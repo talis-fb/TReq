@@ -1,5 +1,4 @@
-pub mod commands;
+pub mod channels;
 pub mod files;
-pub mod observable;
 pub mod uuid;
 pub mod validators;
