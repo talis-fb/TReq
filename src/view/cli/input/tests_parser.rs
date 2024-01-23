@@ -163,8 +163,7 @@ fn test_run_command_with_additional_datas_and_save_as() {
 
     assert_eq!(
         Vec::from([
-            CliCommandChoice::SaveRequestWithBaseRequest {
-                base_request_name: "create_user".into(),
+            CliCommandChoice::SaveRequest {
                 request_name: "new_create_user".into(),
                 request_data: expected_request_data.clone(),
                 check_exists_before: false,

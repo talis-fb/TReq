@@ -50,7 +50,6 @@ pub enum CliCommandChoice {
     },
     SaveRequestWithBaseRequest {
         request_name: String,
-        base_request_name: String,
         request_data: OptionalRequestData,
         check_exists_before: bool,
     },
@@ -106,12 +105,10 @@ pub fn get_executor_of_cli_command(command: CliCommandChoice) -> Box<dyn CliComm
         .into(),
         CliCommandChoice::SaveRequestWithBaseRequest {
             request_name,
-            base_request_name,
             request_data,
             check_exists_before,
         } => SaveRequestWithBaseRequestExecutor {
             request_name,
-            base_request_name,
             request_data,
             check_exists_before,
             writer_stdout,

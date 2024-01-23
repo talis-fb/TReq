@@ -52,35 +52,3 @@ where
         Ok(())
     }
 }
-
-// pub fn submit_saved_request_executor(
-//     request_name: String,
-//     optional_request_data: OptionalRequestData,
-//     writer_stdout: impl CliWriterRepository + 'static,
-//     mut writer_stderr: impl CliWriterRepository + 'static,
-// ) -> CommandExecutor {
-//     Box::new(move |provider: Arc<Mutex<dyn Backend>>| {
-//         tokio::spawn(async move {
-//             let provider = provider.clone();
-//
-//             let request = provider
-//                 .lock()
-//                 .await
-//                 .get_request_saved(request_name.clone())
-//                 .await?;
-//
-//             let request_data = optional_request_data.merge_with(request);
-//
-//             writer_stderr.print_lines([BREAK_LINE]);
-//             writer_stderr.print_lines_styled([[
-//                 StyledStr::from(" Submit saved request").with_color_text(Color::Blue)
-//             ]]);
-//             writer_stderr
-//                 .print_lines_styled([[StyledStr::from(" | -> "), StyledStr::from(&request_name)]]);
-//
-//             basic_request_executor(request_data, writer_stdout, writer_stderr)(provider).await??;
-//
-//             Ok(())
-//         })
-//     })
-// }
