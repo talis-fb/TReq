@@ -134,8 +134,11 @@ impl Backend for AppBackend {
     }
 
     async fn submit_request_blocking(&mut self, id: UUID) -> Result<Response> {
-        // TODO: Remove this unwrap to a Option -> Result
-        let request_data = self.get_request(id).await?.unwrap();
+        let request_data = self
+            .get_request(id)
+            .await?
+            .ok_or(Error::msg("Not found request to given ID"))?;
+
         let resp = run_command_waiting_response(
             &self.web_client,
             WebClientCommandsFactory::submit((*request_data).clone()),
@@ -165,7 +168,7 @@ impl Backend for AppBackend {
             &self.file_service,
             FileServiceCommandsFactory::get_or_create_data_file(name),
         )
-        .await?;
+        .await??;
 
         let request_data = serde_json::to_string(&request_data)?;
         file_utils::write_to_file(path, &request_data).await?;
@@ -177,7 +180,7 @@ impl Backend for AppBackend {
             &self.file_service,
             FileServiceCommandsFactory::get_or_create_data_file(name),
         )
-        .await?;
+        .await??;
 
         let request_data = file_utils::read_from_file(path.clone()).await?;
         if request_data.is_empty() {
@@ -198,7 +201,7 @@ impl Backend for AppBackend {
             &self.file_service,
             FileServiceCommandsFactory::find_all_data_files(),
         )
-        .await?;
+        .await??;
         let file_names = response
             .into_iter()
             .map(|path| path.file_name().unwrap().to_str().unwrap().to_string())

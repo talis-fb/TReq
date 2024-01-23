@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use tempfile::{tempdir, TempDir};
 use tokio::sync::oneshot;
 use treq::app::backend::{AppBackend, Backend};
 use treq::app::services::files::service::FileService;
@@ -17,39 +18,37 @@ use treq::view::cli::output::writer::CliWriterRepository;
 use treq::view::style::StyledStr;
 
 pub fn create_mock_back_end() -> MockAppBackend {
-    let temp_dir = std::env::temp_dir();
+    let temp_root = tempdir().unwrap();
 
-    let config_dir = temp_dir.join("config");
-    let data_dir = temp_dir.join("data");
-    let tempfiles_dir = temp_dir.join("tmp");
+    let config_dir = temp_root.path().join("config");
+    let data_dir = temp_root.path().join("data");
+    let tempfiles_dir = temp_root.path().join("tempfiles");
 
-    [
-        config_dir.as_path(),
-        data_dir.as_path(),
-        tempfiles_dir.as_path(),
-    ]
-    .iter()
-    .filter(|dir| !dir.exists())
-    .try_for_each(std::fs::create_dir_all)
-    .unwrap();
+    [&config_dir, &data_dir, &tempfiles_dir]
+        .iter()
+        .filter(|dir| !dir.exists())
+        .try_for_each(std::fs::create_dir_all)
+        .unwrap();
 
     let req = RequestService::init();
     let web = WebClient::init(ReqwestClientRepository);
     let files = FileService::init(config_dir, data_dir, tempfiles_dir);
     let backend = AppBackend::init(req, web, files);
-    MockAppBackend::new(backend)
+    MockAppBackend::new(backend, temp_root)
 }
 
 pub struct MockAppBackend {
     app_backend: AppBackend,
     expected_requests: Vec<RequestData>,
+    _temp_dir: TempDir,
 }
 
 impl MockAppBackend {
-    pub fn new(app_backend: AppBackend) -> Self {
+    pub fn new(app_backend: AppBackend, temp_dir: TempDir) -> Self {
         Self {
             app_backend,
             expected_requests: vec![],
+            _temp_dir: temp_dir,
         }
     }
 
@@ -74,7 +73,7 @@ impl Backend for MockAppBackend {
     ) -> Result<oneshot::Receiver<Result<Response, String>>> {
         let request = self.app_backend.get_request(id).await?.unwrap();
         let expected_request = self.expected_requests.remove(0);
-        assert_eq!(request, expected_request.into());
+        assert_eq!(Arc::new(expected_request), request);
 
         let (tx, rx) = oneshot::channel();
         tx.send(Ok(Response::default())).unwrap();

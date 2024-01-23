@@ -96,6 +96,41 @@ fn should_inspect_command_show_info_about_a_saved_request() {
     );
 }
 
+#[test]
+fn should_submit_save_edit_and_submit_corretly_in_sequence() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as my-request", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = format!("treq edit my-request --url {}/post --method POST", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(predicate::str::contains("/post"));
+
+    let input = "treq run my-request Hello=World --save";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("/post")
+            .and(predicate::str::contains("Hello"))
+            .and(predicate::str::contains("World")),
+    );
+
+    let input = "treq inspect my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains(format!("{}/post", host()))
+            .and(predicate::str::contains("Hello"))
+            .and(predicate::str::contains("World")),
+    );
+}
+
 // ------------------
 // UTILS
 // ------------------

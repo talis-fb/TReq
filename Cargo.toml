@@ -40,6 +40,7 @@ regex = "1.10.2"
 directories = "5.0.1"
 uuid = { version = "1.5.0", features = ["v4","fast-rng"]}
 mockall = "0.11.4" # TODO: Move it to dev-dependencies, but it breaks with web_client integration test. Importing Mock of HttpRepository
+tempfile = "3.9.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.13"

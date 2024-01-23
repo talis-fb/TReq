@@ -34,14 +34,20 @@ where
             StyledStr::from(&self.request_name).with_color_text(Color::Blue),
         ]]);
 
-        if self.check_exists_before {
-            provider
-                .get_request_saved(self.request_name.clone())
-                .await?;
-        }
+        let request_data_to_save = {
+            if self.check_exists_before {
+                let saved_request = provider
+                    .get_request_saved(self.request_name.clone())
+                    .await?;
+
+                self.request_data.merge_with(saved_request)
+            } else {
+                self.request_data.to_request_data()
+            }
+        };
 
         provider
-            .save_request_datas_as(self.request_name, self.request_data.to_request_data())
+            .save_request_datas_as(self.request_name, request_data_to_save)
             .await?;
 
         Ok(())

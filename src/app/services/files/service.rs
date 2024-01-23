@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
+
 use super::facade::FileServiceFacade;
 
 pub type FileServiceInstance = Box<dyn FileServiceFacade>;
@@ -25,24 +27,23 @@ impl FileService {
 }
 
 impl FileServiceFacade for FileService {
-    fn get_or_create_config_file(&self, path: String) -> Result<PathBuf, String> {
+    fn get_or_create_config_file(&self, path: String) -> Result<PathBuf> {
         let file_path = FileService::build_path(&self.config_root_path, path);
         FileService::create_file_if_not_exists(file_path)
     }
 
-    fn get_or_create_data_file(&self, path: String) -> Result<PathBuf, String> {
+    fn get_or_create_data_file(&self, path: String) -> Result<PathBuf> {
         let file_path = FileService::build_path(&self.data_app_root_path, path);
         FileService::create_file_if_not_exists(file_path)
     }
 
-    fn get_or_create_temp_file(&self, path: String) -> Result<PathBuf, String> {
+    fn get_or_create_temp_file(&self, path: String) -> Result<PathBuf> {
         let file_path = FileService::build_path(&self.temp_root_path, path);
         FileService::create_file_if_not_exists(file_path)
     }
 
-    fn find_all_data_files(&self) -> Result<Vec<PathBuf>, String> {
-        let files = std::fs::read_dir(&self.data_app_root_path)
-            .map_err(|err| format!("No possible to read data folder: {err}"))?
+    fn find_all_data_files(&self) -> Result<Vec<PathBuf>> {
+        let files = std::fs::read_dir(&self.data_app_root_path)?
             .filter_map(Result::ok)
             .map(|entry| entry.path())
             .filter(|path| !path.is_dir())
@@ -50,8 +51,8 @@ impl FileServiceFacade for FileService {
         Ok(files)
     }
 
-    fn remove_file(&self, path: PathBuf) -> Result<(), String> {
-        std::fs::remove_file(path).map_err(|err| err.to_string())
+    fn remove_file(&self, path: PathBuf) -> Result<()> {
+        Ok(std::fs::remove_file(path)?)
     }
 }
 
@@ -62,9 +63,9 @@ impl FileService {
         path
     }
 
-    fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf, String> {
+    fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf> {
         if !path.exists() {
-            std::fs::File::create(&path).map_err(|err| err.to_string())?;
+            std::fs::File::create(&path)?;
         }
         Ok(path)
     }

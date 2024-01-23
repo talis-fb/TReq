@@ -74,8 +74,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandCh
             Ok(commands)
         }
         ("edit", matches) => {
-            let (name_saved_request, inputs_data) =
-                get_inputs_from_clap_matches_splitted(matches)?;
+            let (name_saved_request, inputs_data) = get_inputs_from_clap_matches_splitted(matches)?;
 
             let mut request_data = parse_list_of_data_to_request_data(inputs_data.to_vec())?;
 
@@ -127,7 +126,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandCh
         ("run", matches) => {
             let (request_name, inputs_data) = get_inputs_from_clap_matches_splitted(matches)?;
 
-            let mut request_data = parse_list_of_data_to_request_data(inputs_data.to_vec())?;
+            let mut request_data = parse_list_of_data_to_request_data(inputs_data)?;
             request_data = [
                 parses_input_to_request_data::url_manual,
                 parses_input_to_request_data::method_manual,
@@ -203,6 +202,9 @@ mod parses_input_to_request_data {
     ) -> anyhow::Result<OptionalRequestData> {
         let has_manual_url_flag = matches.get_one::<String>("url_manual");
         if let Some(url) = has_manual_url_flag {
+            if !validators::is_url(url) {
+                return Err(Error::msg(format!("Invalid URL: {url}")));
+            }
             request_data.url = Some(url.clone());
         }
         Ok(request_data)
