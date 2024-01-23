@@ -24,21 +24,6 @@ impl FileService {
     }
 }
 
-impl FileService {
-    fn build_path(base_path: &PathBuf, file_name: String) -> PathBuf {
-        let mut path = base_path.clone();
-        path.push(file_name);
-        path
-    }
-
-    fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf, String> {
-        if !path.exists() {
-            std::fs::File::create(&path).map_err(|err| err.to_string())?;
-        }
-        Ok(path)
-    }
-}
-
 impl FileServiceFacade for FileService {
     fn get_or_create_config_file(&self, path: String) -> Result<PathBuf, String> {
         let file_path = FileService::build_path(&self.config_root_path, path);
@@ -67,5 +52,20 @@ impl FileServiceFacade for FileService {
 
     fn remove_file(&self, path: PathBuf) -> Result<(), String> {
         std::fs::remove_file(path).map_err(|err| err.to_string())
+    }
+}
+
+impl FileService {
+    fn build_path(base_path: &PathBuf, file_name: String) -> PathBuf {
+        let mut path = base_path.clone();
+        path.push(file_name);
+        path
+    }
+
+    fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf, String> {
+        if !path.exists() {
+            std::fs::File::create(&path).map_err(|err| err.to_string())?;
+        }
+        Ok(path)
     }
 }

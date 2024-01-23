@@ -81,9 +81,7 @@ fn should_error_if_url_is_invalid() {
 
     let matches =
         invalid_urls.map(|input| root_command().get_matches_from(input.split_whitespace()));
-    let mut results = matches
-        .into_iter()
-        .map(|matches| parse_clap_input_to_commands(matches));
+    let mut results = matches.into_iter().map(parse_clap_input_to_commands);
     assert!(results.all(|result| result.is_err()));
 }
 

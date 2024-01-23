@@ -7,9 +7,9 @@ use serde_json::Value;
 
 use crate::app::services::request::entities::{OptionalRequestData, METHODS};
 use crate::utils::validators;
-use crate::view::cli::commands::CliCommand;
+use crate::view::cli::commands::CliCommandChoice;
 
-pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>> {
+pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandChoice>> {
     if args.subcommand().is_none() {
         let inputs = get_inputs_from_clap_matches(&args)?;
         let (url, extra_inputs) = inputs
@@ -35,7 +35,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
 
         let has_save_as_flag = args.get_one::<String>("save-as");
         if let Some(request_name) = has_save_as_flag {
-            commands.push(CliCommand::SaveRequest {
+            commands.push(CliCommandChoice::SaveRequest {
                 request_data: optional_request.clone(),
                 request_name: request_name.clone(),
                 check_exists_before: false,
@@ -43,7 +43,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
         }
 
         let request = optional_request.to_request_data();
-        commands.push(CliCommand::SubmitRequest { request });
+        commands.push(CliCommandChoice::SubmitRequest { request });
 
         return Ok(commands);
     }
@@ -93,7 +93,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
 
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(request_name) = has_save_as_flag {
-                commands.push(CliCommand::SaveRequest {
+                commands.push(CliCommandChoice::SaveRequest {
                     request_data: optional_request.clone(),
                     request_name: request_name.clone(),
                     check_exists_before: false,
@@ -102,7 +102,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
 
             let request = optional_request.to_request_data();
 
-            commands.push(CliCommand::SubmitRequest { request });
+            commands.push(CliCommandChoice::SubmitRequest { request });
 
             Ok(commands)
         }
@@ -125,7 +125,21 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
                 optional_request_data.method = Some(METHODS::from_str(method)?);
             }
 
-            commands.push(CliCommand::SaveRequest {
+            let has_raw_body_input_flag = matches.get_one::<String>("raw");
+            if let Some(raw_body) = has_raw_body_input_flag {
+                if optional_request_data.body.is_some() {
+                    return Err(Error::msg(
+                        "You can't use --raw and --body at the same time".to_string(),
+                    ));
+                }
+
+                let _: Value =
+                    serde_json::from_str(raw_body).map_err(|err| Error::msg(format!("{err}")))?;
+
+                optional_request_data.body = Some(raw_body.to_string());
+            }
+
+            commands.push(CliCommandChoice::SaveRequest {
                 request_data: optional_request_data.clone(),
                 request_name: name_saved_request.to_string(),
                 check_exists_before: true,
@@ -133,7 +147,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
 
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(request_name) = has_save_as_flag {
-                commands.push(CliCommand::SaveRequest {
+                commands.push(CliCommandChoice::SaveRequest {
                     request_data: optional_request_data,
                     request_name: request_name.clone(),
                     check_exists_before: false,
@@ -146,7 +160,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
             let inputs = get_inputs_from_clap_matches(matches)?;
             let old_name = inputs[0];
             let new_name = inputs[1];
-            Ok(Vec::from([CliCommand::RenameSavedRequest {
+            Ok(Vec::from([CliCommandChoice::RenameSavedRequest {
                 request_name: old_name.to_string(),
                 new_name: new_name.to_string(),
             }]))
@@ -154,13 +168,17 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
         ("remove", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
             let request_name = inputs[0].to_string();
-            Ok(Vec::from([CliCommand::RemoveSavedRequest { request_name }]))
+            Ok(Vec::from([CliCommandChoice::RemoveSavedRequest {
+                request_name,
+            }]))
         }
-        ("ls", _) => Ok(Vec::from([CliCommand::ShowRequests])),
+        ("ls", _) => Ok(Vec::from([CliCommandChoice::ShowRequests])),
         ("inspect", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
             let request_name = inputs[0].to_string();
-            Ok(Vec::from([CliCommand::InspectRequest { request_name }]))
+            Ok(Vec::from([CliCommandChoice::InspectRequest {
+                request_name,
+            }]))
         }
         ("run", matches) => {
             let inputs = get_inputs_from_clap_matches(matches)?;
@@ -185,7 +203,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
 
             let has_save_current_flag = matches.get_one::<bool>("save");
             if let Some(&true) = has_save_current_flag {
-                commands.push(CliCommand::SaveRequest {
+                commands.push(CliCommandChoice::SaveRequest {
                     request_data: optional_request_data.clone(),
                     request_name: request_name.clone(),
                     check_exists_before: true,
@@ -194,7 +212,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
 
             let has_save_as_flag = matches.get_one::<String>("save-as");
             if let Some(new_request_name) = has_save_as_flag {
-                commands.push(CliCommand::SaveRequestWithBaseRequest {
+                commands.push(CliCommandChoice::SaveRequestWithBaseRequest {
                     request_name: new_request_name.clone(),
                     base_request_name: request_name.clone(),
                     request_data: optional_request_data.clone(),
@@ -202,7 +220,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
                 })
             }
 
-            commands.push(CliCommand::SubmitSavedRequest {
+            commands.push(CliCommandChoice::SubmitSavedRequest {
                 request_name,
                 request_data: optional_request_data.clone(),
             });
@@ -210,6 +228,53 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommand>>
             Ok(commands)
         }
         _ => Err(Error::msg("No valid subcommand")),
+    }
+}
+
+mod parses_input_to_request_data {
+    use super::*;
+
+    pub fn url_manual(
+        matches: &ArgMatches,
+        mut request_data: OptionalRequestData,
+    ) -> anyhow::Result<OptionalRequestData> {
+        let has_manual_url_flag = matches.get_one::<String>("url_manual");
+        if let Some(url) = has_manual_url_flag {
+            request_data.url = Some(url.clone());
+        }
+        Ok(request_data)
+    }
+
+    pub fn method_manual(
+        matches: &ArgMatches,
+        mut request_data: OptionalRequestData,
+    ) -> anyhow::Result<OptionalRequestData> {
+        let has_manual_method_flag = matches.get_one::<String>("method_manual");
+        if let Some(method) = has_manual_method_flag {
+            request_data.method = Some(METHODS::from_str(method)?);
+        }
+        Ok(request_data)
+    }
+
+    pub fn raw_body(
+        matches: &ArgMatches,
+        mut request_data: OptionalRequestData,
+    ) -> anyhow::Result<OptionalRequestData> {
+        let has_raw_body_input_flag = matches.get_one::<String>("raw");
+        if let Some(raw_body) = has_raw_body_input_flag {
+            if request_data.body.is_some() {
+                return Err(Error::msg(
+                    "You can't use --raw and --body at the same time".to_string(),
+                ));
+            }
+
+            let _: Value =
+                serde_json::from_str(raw_body).map_err(|err| Error::msg(format!("{err}")))?;
+
+            request_data.body = Some(raw_body.to_string());
+        }
+
+        Ok(request_data)
     }
 }
 
