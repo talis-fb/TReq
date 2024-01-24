@@ -8,10 +8,14 @@ use serde_json::Value;
 use crate::app::services::request::entities::{OptionalRequestData, METHODS};
 use crate::utils::validators;
 use crate::view::cli::commands::CliCommandChoice;
+use crate::view::cli::input::clap_definition::root_command;
 
 pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandChoice>> {
     if args.subcommand().is_none() {
-        let (url, inputs_data) = get_inputs_from_clap_matches_splitted(&args)?;
+        let (url, inputs_data) = get_inputs_from_clap_matches_splitted(&args).map_err(|err| {
+            root_command().print_help().unwrap();
+            err
+        })?;
 
         if !validators::is_url(url) {
             return Err(Error::msg(format!("Invalid URL: {url}")));

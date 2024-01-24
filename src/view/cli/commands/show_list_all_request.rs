@@ -22,6 +22,14 @@ where
         let mut requests_names = provider.find_all_request_name().await?;
         requests_names.sort();
 
+        if requests_names.is_empty() {
+            self.writer.print_lines([BREAK_LINE]);
+            self.writer
+                .print_lines_styled([[StyledStr::from(" No requests found")]]);
+            self.writer.print_lines([BREAK_LINE]);
+            return Ok(());
+        }
+
         self.writer.print_lines([BREAK_LINE]);
         self.writer
             .print_lines_styled([[StyledStr::from(" Requests").with_color_text(Color::Yellow)]]);

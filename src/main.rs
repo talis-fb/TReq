@@ -1,7 +1,3 @@
-// #![allow(dead_code)]
-// #![allow(unused_variables)]
-// #![allow(unused_imports)]
-
 use anyhow::Error;
 use directories::ProjectDirs;
 use treq::app::backend::AppBackend;
@@ -19,6 +15,10 @@ const APP_AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    runner().await.map_err(print_pretty_error)
+}
+
+async fn runner() -> anyhow::Result<()> {
     let proj_dirs = ProjectDirs::from("com", APP_AUTHOR, APP_NAME).ok_or(Error::msg(
         "No possible to create or access directories of data and configuration",
     ))?;

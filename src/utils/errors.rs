@@ -2,7 +2,10 @@ use std::error::Error;
 
 use crossterm::style::{Color, SetForegroundColor};
 
-pub fn print_pretty_error(error: impl AsRef<dyn Error>) {
+pub fn print_pretty_error<E>(error: E) -> E
+where
+    E: AsRef<dyn Error>,
+{
     let set_color = SetForegroundColor(Color::Red);
     let reset_color = SetForegroundColor(Color::Reset);
 
@@ -25,4 +28,6 @@ pub fn print_pretty_error(error: impl AsRef<dyn Error>) {
     eprint!("{}", set_color);
     eprintln!("-------------------------------");
     eprint!("{}", reset_color);
+
+    error
 }
