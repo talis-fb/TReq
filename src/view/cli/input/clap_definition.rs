@@ -114,7 +114,10 @@ pub fn root_command() -> Command {
         r#"
 ----------------------------------------
 For more information, see 'treq --help'
-----------------------------------------"#,
+----------------------------------------
+>>>> Feel free to submit any issue or pull requests on our GitHub repository.
+>>>> https://github.com/talis-fb/TReq
+"#,
     );
 
     app = app.after_long_help(
@@ -158,6 +161,10 @@ Examples
 
     # For more complex data, you can use JSON object directly with `--raw`
     $ treq run example.com --raw '{ names: ["John", "Doe"] }' 'Content-Type:application/json'
+
+----------------------------------------
+>>>> Feel free to submit any issue or pull requests on our GitHub repository.
+>>>> https://github.com/talis-fb/TReq
 "#
         .trim(),
     );

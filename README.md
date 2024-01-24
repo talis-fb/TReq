@@ -1,68 +1,76 @@
+<p align="center">
+<img src="https://res.cloudinary.com/dfjn94vg8/image/upload/v1676658471/TReq/dino_hnxml5.png" height="120px" />
+</p>
+
 # TReq
 
-A <b>T</b>erminal <b>Req</b>uest App. 
+A <b>T</b>erminal <b>Req</b>uest HTTP Client.
 
-This application is a rewrite of the old TReq, which is no longer maintained. It aims to implement everything that it had done, with additions on a Command Line Interface (CLI).
-
-> It's like those apps, you know, like Curl ot Httpie. But it tries to be better
+TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be simple and a complete CLI tool to interact with APIs
 
 
-Upcoming features
-- [ ] TUI view like https://github.com/talis-fb/TReq
-- [ ] Remain requests in files to submit them again later
-- [ ] Enviroment Variables in Request payloads
+> TReq, short for Terminal Request, is a user-friendly Command Line Interface (CLI) HTTP client that goes beyond the stateless nature of typical CLI HTTP clients. It's designed to offer a complete tool for interacting with APIs in the terminal. 
+> 
+> While traditional CLI HTTP clients excel at quick tasks and small tests, TReq aims to bridge the gap by introducing statefulness, allowing users to store, handle, edit, view, and inspect requests seamlessly, all within the terminal. 
+> 
+> Inspired by HTTPie, TReq seeks to implement and extend its main features, making the experience of making HTTP calls in the terminal as simple as possible, without the need for extensive graphical tools.
 
 
-## Guide
+## Features
+* <b>Made to APIs and REST</b>: TReq is tailored for working with APIs, REST, and JSON with minimal effort.
+* <b>HTTPie based</b>: The CLI interface is entirely based on HTTPie, ensuring familiarity for existing users.
+* <b>Easy payload generation </b>: Quickly declare fields for the payload with user-friendly syntax.
+* <b>Persistent Request Storage</b>: Save and edit frequently used requests with simple commands. View details of stored requests.
+* <b>Pretty Outputs</b>: The UX is relevant in a CLI.
 
+## Installation
+For now, you only can install TReq with `cargo`
+Install cargo and then...
+
+```sh
+cargo install TReq
 ```
-A Cli client to make HTTP requests for Hacker Users
 
-Usage:
+## Usage
+For more detailed information on commands and options, refer to the built-in help:
+```sh
+treq --help
+```
+
 Basic GET request
-    treq [OPTIONS] [URL]
-Subcommands
-    treq [OPTIONS] [COMMAND] [URL]
-
-Examples
-  Basic GET request (curl like), passing url as command
-    $ treq example.com
-    $ treq https://google.com
-
-  Subcommands
-    # Does same request of above first example
-    $ treq get example.com
-
-    # A POST request with specified body
-    $ treq post example.com -b '{ "name": "John Doe" }'
-
-    # PUT request, set the header 'Content-Type:application/json' and a empty json as body
-    $ treq put example.com --json -b '{}'
-
-    # POST request, with a custom header
-    $ treq post example.com -b '{}' --header Authorization=None
-
-    # POST request storing the body of response in 'output.json' file
-    $ treq post example.com -b '{}' > output_body.json
-
-
-Commands:
-  get      Does a GET request
-  post     Does a POST request
-  put      Does a PUT request
-  patch    Does a PATCH request
-  delete   Does a DELETE request
-  options  Does a OPTIONS request
-  head     Does a HEAD request
-  help     Print this message or the help of the given subcommand(s)
-
-Arguments:
-  [URL_MANUAL]
-
-Options:
-  -b, --body <BODY>      Sets the body raw value of request
-      --header <HEADER>  Sets a custom header to request, you must use 'key=value' format
-      --json             Sets automatically the Content-Type:application/json in headers
-  -h, --help             Print help
-  -V, --version          Print version
+```sh
+$ treq example.com
+$ treq https://google.com
+$ treq GET url.org/example
 ```
+
+Requests with additional data
+```sh
+# POST request with custom Content-Type header
+$ treq POST example.com Content-Type:application/json
+
+# POST request passing a JSON object { "language": "Rust", "food": "pizza" }
+$ treq POST example.com language=Rust food=pizza
+```
+
+Saving and storing requests
+```sh
+# After requesting you can save it to do the same request later
+$ treq POST example.com name="John Doe" --save-as main-endpoint
+$ treq run main-endpoint
+
+# You can also edit the fields and insert new datas in each submit
+$ treq run main-endpoint name="Jane" another-field="value"
+$ treq run main-endpoint Authorization:None
+
+# Or save it as a new request
+$ treq run main-endpoint job="dev" --save-as endpoint-with-job
+```
+
+## Contributing
+Contributions and feature requests are welcome! Feel free to submit issues or pull requests on our [GitHub repository](https://github.com/talis-fb/TReq).
+
+## Upcoming features
+- [ ] TUI view like https://github.com/talis-fb/legacy_treq
+- [ ] Enviroment Variables in Request payloads (like {{ .env.ENV_NAME }})
+
