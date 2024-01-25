@@ -28,17 +28,17 @@ impl FileService {
 
 impl FileServiceFacade for FileService {
     fn get_or_create_config_file(&self, path: String) -> Result<PathBuf> {
-        let file_path = FileService::build_path(&self.config_root_path, path);
+        let file_path = self.config_root_path.join(path);
         FileService::create_file_if_not_exists(file_path)
     }
 
     fn get_or_create_data_file(&self, path: String) -> Result<PathBuf> {
-        let file_path = FileService::build_path(&self.data_app_root_path, path);
+        let file_path = self.data_app_root_path.join(path);
         FileService::create_file_if_not_exists(file_path)
     }
 
     fn get_or_create_temp_file(&self, path: String) -> Result<PathBuf> {
-        let file_path = FileService::build_path(&self.temp_root_path, path);
+        let file_path = self.temp_root_path.join(path);
         FileService::create_file_if_not_exists(file_path)
     }
 
@@ -51,20 +51,36 @@ impl FileServiceFacade for FileService {
         Ok(files)
     }
 
+    fn find_all_data_files_in_folders(&self, folders: &[&str]) -> Result<Vec<PathBuf>> {
+        let files = std::fs::read_dir(&self.data_app_root_path.join(folders.join("/")))?
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| !path.is_dir())
+            .collect::<Vec<_>>();
+        Ok(files)
+    }
+
     fn remove_file(&self, path: PathBuf) -> Result<()> {
         Ok(std::fs::remove_file(path)?)
+    }
+
+    fn remove_data_file(&self, path: String) -> Result<()> {
+        let file_path = self.data_app_root_path.join(path);
+        self.remove_file(file_path)
+    }
+    fn remove_temp_file(&self, path: String) -> Result<()> {
+        let file_path = self.temp_root_path.join(path);
+        self.remove_file(file_path)
     }
 }
 
 impl FileService {
-    fn build_path(base_path: &PathBuf, file_name: String) -> PathBuf {
-        let mut path = base_path.clone();
-        path.push(file_name);
-        path
-    }
-
     fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf> {
         if !path.exists() {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+
             std::fs::File::create(&path)?;
         }
         Ok(path)

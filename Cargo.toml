@@ -5,9 +5,9 @@ edition = "2021"
 authors = [ "Talis-Fb" ]
 license = "GPL-3.0"
 description = "A Cli client to make HTTP requests for Hacker Users"
-# homepage = "https://github.com/talis-fb/TReq"
-# repository = "https://github.com/talis-fb/TReq"
-# documentation = "https://github.com/talis-fb/TReq/wiki"
+homepage = "https://github.com/talis-fb/TReq"
+repository = "https://github.com/talis-fb/TReq"
+documentation = "https://github.com/talis-fb/TReq"
 categories = ["command-line-interface"]
 keywords = [
   "cli",
@@ -23,7 +23,7 @@ tokio = { version = "1.32.0", features = ["full"] }
 async-trait = "0.1.73"
 
 # CLI
-clap = { version = "4.4.7", features = ["derive"] }
+clap = { version = "4.4.7", features = ["derive", "cargo"] }
 crossterm = "0.27.0"
 indicatif = "0.17.7"
 

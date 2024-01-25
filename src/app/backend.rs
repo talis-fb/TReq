@@ -166,7 +166,7 @@ impl Backend for AppBackend {
     ) -> Result<()> {
         let path = run_command_waiting_response(
             &self.file_service,
-            FileServiceCommandsFactory::get_or_create_data_file(name),
+            FileServiceCommandsFactory::get_or_create_file_of_saved_request(name),
         )
         .await??;
 
@@ -178,7 +178,7 @@ impl Backend for AppBackend {
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData> {
         let path = run_command_waiting_response(
             &self.file_service,
-            FileServiceCommandsFactory::get_or_create_data_file(name),
+            FileServiceCommandsFactory::get_or_create_file_of_saved_request(name),
         )
         .await??;
 
@@ -199,7 +199,7 @@ impl Backend for AppBackend {
     async fn find_all_request_name(&mut self) -> Result<Vec<String>> {
         let response = run_command_waiting_response(
             &self.file_service,
-            FileServiceCommandsFactory::find_all_data_files(),
+            FileServiceCommandsFactory::find_all_files_of_saved_requests(),
         )
         .await??;
         let file_names = response
@@ -236,9 +236,9 @@ where
     } = command;
 
     service.command_channel.send(command_fn).await?;
-    if let Some(listener) = response {
-        Ok(listener.await?)
-    } else {
-        Err(Error::msg("No response listener"))
+
+    match response {
+        Some(response_listener) => Ok(response_listener.await?),
+        None => return Err(Error::msg("No response listener")),
     }
 }

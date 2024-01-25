@@ -6,6 +6,8 @@ use tokio::sync::oneshot;
 use super::service::FileServiceInstance;
 use crate::app::service_commands::Command;
 
+pub mod requests;
+
 pub type CommandFileService<Resp> = Command<FileServiceInstance, Resp>;
 
 pub struct CommandsFactory;

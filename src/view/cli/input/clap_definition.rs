@@ -1,8 +1,8 @@
 #![allow(dead_code)]
-use clap::{Arg, ArgAction, Command};
+use clap::{command, Arg, ArgAction, Command};
 
 pub fn root_command() -> Command {
-    let mut app = Command::new("treq");
+    let mut app = command!();
 
     for method in ["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"] {
         app = app.subcommand(
@@ -134,8 +134,8 @@ Examples
     # POST request with custom Content-Type header
     $ treq POST example.com Content-Type:application/json
 
-    # Same POST request passing a JSON object { "language": "Rust" }
-    $ treq POST example.com language=Rust
+    # Same POST request passing a JSON object { "language": "Rust", "food": "pizza" }
+    $ treq POST example.com language=Rust food=pizza
 
     # Using multiples datas together
     $ treq POST example.com Content-Type:application/json language=Rust

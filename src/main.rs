@@ -51,12 +51,7 @@ async fn runner() -> anyhow::Result<()> {
     //  Execute commands
     // ----------------------------
     for executor in commands_executors {
-        let output_command = executor.execute(&mut backend).await;
-
-        if let Err(err) = output_command {
-            print_pretty_error(&err);
-            return Err(err);
-        }
+        executor.execute(&mut backend).await?;
     }
 
     Ok(())
