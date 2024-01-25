@@ -27,7 +27,8 @@ async fn should_submit_a_basic_request() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
-    use commands::save_request::SaveRequestExecutor;
+    use commands::save_new_request::SaveNewRequestExecutor;
+    use commands::save_request_with_base_request::SaveRequestWithBaseRequestExecutor;
     use commands::submit_request::BasicRequestExecutor;
     use commands::submit_saved_request::SubmitSavedRequestExecutor;
 
@@ -61,20 +62,19 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
     .into();
     basic_request_executor.execute(&mut backend).await?;
 
-    let save_first_request_executor: Box<dyn CliCommand> = SaveRequestExecutor {
+    let save_first_request_executor: Box<dyn CliCommand> = SaveNewRequestExecutor {
         request_name: "some_request".into(),
         request_data: first_request_to_do.into(),
-        check_exists_before: false,
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }
     .into();
     save_first_request_executor.execute(&mut backend).await?;
 
-    let save_request_executor: Box<dyn CliCommand> = SaveRequestExecutor {
-        request_name: "some_request".into(),
+    let save_request_executor: Box<dyn CliCommand> = SaveRequestWithBaseRequestExecutor {
+        base_request_name: Some("some_request".to_string()),
+        request_name: "some_request".to_string(),
         request_data: input_second_request.clone(),
-        check_exists_before: true,
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }

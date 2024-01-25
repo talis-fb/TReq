@@ -13,8 +13,8 @@ where
     W2: CliWriterRepository,
 {
     pub request_name: String,
+    pub base_request_name: Option<String>,
     pub request_data: OptionalRequestData,
-    pub check_exists_before: bool,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -34,14 +34,18 @@ where
             StyledStr::from(&self.request_name).with_color_text(Color::Blue),
         ]]);
 
-        if self.check_exists_before {
-            provider
-                .get_request_saved(self.request_name.clone())
-                .await?;
-        }
+        let base_request_data = match self.base_request_name {
+            Some(base_request_name) => Some(provider.get_request_saved(base_request_name).await?),
+            None => None,
+        };
+
+        let request_data_to_save = match base_request_data {
+            Some(request_data) => self.request_data.merge_with(request_data),
+            None => self.request_data.to_request_data(),
+        };
 
         provider
-            .save_request_datas_as(self.request_name, self.request_data.to_request_data())
+            .save_request_datas_as(self.request_name, request_data_to_save)
             .await?;
 
         Ok(())

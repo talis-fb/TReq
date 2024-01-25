@@ -131,6 +131,23 @@ fn should_submit_save_edit_and_submit_corretly_in_sequence() {
     );
 }
 
+#[test]
+fn should_save_request_as_another_file_if_used_only_run_with_save_as_command_to_another_name() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as the-first-request", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run the-first-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run the-first-request --save-as the-second-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(predicate::str::contains("/get"));
+}
+
 // ------------------
 // UTILS
 // ------------------

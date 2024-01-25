@@ -98,10 +98,10 @@ fn test_parse_basic_post_with_save_as() {
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
         Vec::from([
-            CliCommandChoice::SaveRequest {
-                request_data: expected_request_data.clone(),
+            CliCommandChoice::SaveRequestWithBaseRequest {
+                base_request_name: None,
                 request_name: "create_user".to_string(),
-                check_exists_before: false,
+                request_data: expected_request_data.clone(),
             },
             CliCommandChoice::SubmitRequest {
                 request: expected_request_data.to_request_data(),
@@ -163,10 +163,10 @@ fn test_run_command_with_additional_datas_and_save_as() {
 
     assert_eq!(
         Vec::from([
-            CliCommandChoice::SaveRequest {
+            CliCommandChoice::SaveRequestWithBaseRequest {
                 request_name: "new_create_user".into(),
+                base_request_name: Some("create_user".into()),
                 request_data: expected_request_data.clone(),
-                check_exists_before: false,
             },
             CliCommandChoice::SubmitSavedRequest {
                 request_name: "create_user".into(),
@@ -190,15 +190,15 @@ fn test_edit_command() {
     ]);
 
     assert_eq!(
-        Vec::from([CliCommandChoice::SaveRequest {
+        Vec::from([CliCommandChoice::SaveRequestWithBaseRequest {
             request_name: "create_user".into(),
+            base_request_name: Some("create_user".into()),
             request_data: OptionalRequestData {
                 url: Some("url.com".into()),
                 headers: Some(HashMap::from([("Content-type".into(), "something".into())])),
                 method: None,
                 body: None,
-            },
-            check_exists_before: true,
+            }
         }]),
         parse_clap_input_to_commands(input).unwrap(),
     );
@@ -241,15 +241,15 @@ fn test_raw_flag_in_edit() {
     ]);
 
     assert_eq!(
-        Vec::from([CliCommandChoice::SaveRequest {
-            request_name: "create_user".into(),
+        Vec::from([CliCommandChoice::SaveRequestWithBaseRequest {
+            request_name: "create_user".to_string(),
+            base_request_name: Some("create_user".to_string()),
             request_data: OptionalRequestData {
                 url: None,
                 headers: None,
                 method: None,
                 body: Some("{ \"Hello\": \"World\" }".to_string()),
             },
-            check_exists_before: true,
         }]),
         parse_clap_input_to_commands(input).unwrap(),
     );

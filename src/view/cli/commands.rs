@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 
 use self::inspect_request::InspectRequestExecutor;
-use self::save_request::SaveRequestExecutor;
+use self::save_new_request::SaveNewRequestExecutor;
 use self::save_request_with_base_request::SaveRequestWithBaseRequestExecutor;
 use self::show_list_all_request::ShowListAllRequestExecutor;
 use self::submit_request::BasicRequestExecutor;
@@ -15,7 +15,7 @@ use crate::app::services::request::entities::{OptionalRequestData, RequestData};
 use crate::view::cli::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
-pub mod save_request;
+pub mod save_new_request;
 pub mod save_request_with_base_request;
 pub mod show_list_all_request;
 pub mod submit_request;
@@ -43,15 +43,14 @@ pub enum CliCommandChoice {
         request_data: OptionalRequestData,
     },
 
-    SaveRequest {
+    SaveNewRequest {
         request_name: String,
-        request_data: OptionalRequestData,
-        check_exists_before: bool,
+        request_data: RequestData,
     },
     SaveRequestWithBaseRequest {
         request_name: String,
+        base_request_name: Option<String>,
         request_data: OptionalRequestData,
-        check_exists_before: bool,
     },
 
     RemoveSavedRequest {
@@ -91,26 +90,24 @@ pub fn get_executor_of_cli_command(command: CliCommandChoice) -> Box<dyn CliComm
         }
         .into(),
 
-        CliCommandChoice::SaveRequest {
+        CliCommandChoice::SaveNewRequest {
             request_name,
             request_data,
-            check_exists_before,
-        } => SaveRequestExecutor {
+        } => SaveNewRequestExecutor {
             request_name,
             request_data,
-            check_exists_before,
             writer_stdout,
             writer_stderr,
         }
         .into(),
         CliCommandChoice::SaveRequestWithBaseRequest {
             request_name,
+            base_request_name,
             request_data,
-            check_exists_before,
         } => SaveRequestWithBaseRequestExecutor {
             request_name,
+            base_request_name,
             request_data,
-            check_exists_before,
             writer_stdout,
             writer_stderr,
         }

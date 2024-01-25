@@ -36,6 +36,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandCh
         commands.append(&mut parses_input_to_commands::save_as(
             &args,
             request_data.clone(),
+            None,
         ));
 
         commands.push(CliCommandChoice::SubmitRequest {
@@ -71,6 +72,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandCh
             commands.append(&mut parses_input_to_commands::save_as(
                 matches,
                 request_data.clone(),
+                None,
             ));
             commands.push(CliCommandChoice::SubmitRequest {
                 request: request_data.to_request_data(),
@@ -94,11 +96,12 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandCh
             commands.append(&mut parses_input_to_commands::save_as(
                 matches,
                 request_data.clone(),
+                Some(name_saved_request.to_string()),
             ));
-            commands.push(CliCommandChoice::SaveRequest {
-                request_data,
+            commands.push(CliCommandChoice::SaveRequestWithBaseRequest {
                 request_name: name_saved_request.to_string(),
-                check_exists_before: true,
+                base_request_name: Some(name_saved_request.to_string()),
+                request_data,
             });
 
             Ok(commands)
@@ -144,6 +147,7 @@ pub fn parse_clap_input_to_commands(args: ArgMatches) -> Result<Vec<CliCommandCh
             commands.append(&mut parses_input_to_commands::save_as(
                 matches,
                 request_data.clone(),
+                Some(request_name.to_string()),
             ));
             commands.append(&mut parses_input_to_commands::save(
                 matches,
@@ -168,12 +172,13 @@ mod parses_input_to_commands {
     pub fn save_as(
         matches: &ArgMatches,
         request_data: OptionalRequestData,
+        base_request_name: Option<String>,
     ) -> Vec<CliCommandChoice> {
-        if let Some(request_name) = matches.get_one::<String>("save-as") {
-            vec![CliCommandChoice::SaveRequest {
-                request_name: request_name.to_string(),
+        if let Some(request_name) = matches.get_one::<String>("save-as").cloned() {
+            vec![CliCommandChoice::SaveRequestWithBaseRequest {
+                request_name,
+                base_request_name,
                 request_data,
-                check_exists_before: false,
             }]
         } else {
             vec![]
@@ -186,10 +191,10 @@ mod parses_input_to_commands {
         request_name: String,
     ) -> Vec<CliCommandChoice> {
         if let Some(&true) = matches.get_one::<bool>("save") {
-            vec![CliCommandChoice::SaveRequest {
-                request_data,
+            vec![CliCommandChoice::SaveRequestWithBaseRequest {
+                base_request_name: Some(request_name.clone()),
                 request_name,
-                check_exists_before: true,
+                request_data,
             }]
         } else {
             vec![]

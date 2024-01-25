@@ -2,25 +2,24 @@ use async_trait::async_trait;
 
 use super::CliCommand;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::OptionalRequestData;
+use crate::app::services::request::entities::RequestData;
 use crate::view::cli::output::utils::BREAK_LINE;
 use crate::view::cli::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
-pub struct SaveRequestExecutor<W1, W2>
+pub struct SaveNewRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,
 {
     pub request_name: String,
-    pub request_data: OptionalRequestData,
-    pub check_exists_before: bool,
+    pub request_data: RequestData,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
 
 #[async_trait]
-impl<W1, W2> CliCommand for SaveRequestExecutor<W1, W2>
+impl<W1, W2> CliCommand for SaveNewRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,
@@ -34,20 +33,8 @@ where
             StyledStr::from(&self.request_name).with_color_text(Color::Blue),
         ]]);
 
-        let request_data_to_save = {
-            if self.check_exists_before {
-                let saved_request = provider
-                    .get_request_saved(self.request_name.clone())
-                    .await?;
-
-                self.request_data.merge_with(saved_request)
-            } else {
-                self.request_data.to_request_data()
-            }
-        };
-
         provider
-            .save_request_datas_as(self.request_name, request_data_to_save)
+            .save_request_datas_as(self.request_name, self.request_data)
             .await?;
 
         Ok(())
