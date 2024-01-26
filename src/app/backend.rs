@@ -239,6 +239,6 @@ where
 
     match response {
         Some(response_listener) => Ok(response_listener.await?),
-        None => return Err(Error::msg("No response listener")),
+        None => Err(Error::msg("No response listener")),
     }
 }

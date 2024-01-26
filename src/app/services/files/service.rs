@@ -52,7 +52,7 @@ impl FileServiceFacade for FileService {
     }
 
     fn find_all_data_files_in_folders(&self, folders: &[&str]) -> Result<Vec<PathBuf>> {
-        let files = std::fs::read_dir(&self.data_app_root_path.join(folders.join("/")))?
+        let files = std::fs::read_dir(self.data_app_root_path.join(folders.join("/")))?
             .filter_map(Result::ok)
             .map(|entry| entry.path())
             .filter(|path| !path.is_dir())

@@ -64,7 +64,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
 
     let save_first_request_executor: Box<dyn CliCommand> = SaveNewRequestExecutor {
         request_name: "some_request".into(),
-        request_data: first_request_to_do.into(),
+        request_data: first_request_to_do,
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }

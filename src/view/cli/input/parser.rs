@@ -262,8 +262,7 @@ fn get_inputs_from_clap_matches(args: &ArgMatches) -> Result<Vec<&String>> {
 fn get_inputs_from_clap_matches_splitted(args: &ArgMatches) -> Result<(&String, Vec<&String>)> {
     let mut inputs = args
         .get_many::<String>("inputs")
-        .ok_or(Error::msg("No inputs at command"))?
-        .into_iter();
+        .ok_or(Error::msg("No inputs at command"))?;
 
     let first_input: &String = inputs.next().unwrap();
     let rest: Vec<&String> = inputs.collect();
