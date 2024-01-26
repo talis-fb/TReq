@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+use crate::utils::validators;
+
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum METHODS {
     #[default]
@@ -62,8 +64,10 @@ impl RequestData {
         let mut value: String = value.into();
 
         // TODO: Remove it, this is a side effect hidden that will lead to an unexpected behavior
-        if !(value.starts_with("http://") || value.starts_with("https://")) {
-            value = format!("{}{}", "http://", value);
+        if !(value.starts_with("http://") || value.starts_with("https://"))
+            && validators::is_url(&value)
+        {
+            value = format!("http://{value}");
         }
 
         self.url = value;
@@ -106,8 +110,11 @@ impl From<RequestData> for OptionalRequestData {
 impl OptionalRequestData {
     pub fn to_request_data(self) -> RequestData {
         RequestData::default()
-            .with_url(self.url.unwrap_or_default())
-            .with_method(self.method.unwrap_or_default())
+            .with_url(self.url.expect("Url is required to define a Request Data"))
+            .with_method(
+                self.method
+                    .expect("METHOD is required to define a Request Data"),
+            )
             .with_headers(self.headers.unwrap_or_default())
             .with_body(self.body.unwrap_or_default())
     }

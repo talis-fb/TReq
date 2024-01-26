@@ -1,16 +1,9 @@
-use super::commands::CommandRequestService as Command;
 use super::service::RequestServiceInstance;
-use crate::utils::commands::CommandClosureType;
+use crate::app::service_commands::Command;
 
-pub type CommandRequestService = CommandClosureType<RequestServiceInstance>;
+pub type CommandRequestService<Resp> = Command<RequestServiceInstance, Resp>;
 
 pub struct CommandsFactory;
-
-impl CommandsFactory {
-    pub fn do_nothing() -> Command {
-        Box::new(|service| Ok(service))
-    }
-}
 
 pub mod crud;
 pub mod history;

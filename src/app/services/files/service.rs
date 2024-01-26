@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
+
 use super::facade::FileServiceFacade;
 
 pub type FileServiceInstance = Box<dyn FileServiceFacade>;
@@ -24,38 +26,63 @@ impl FileService {
     }
 }
 
-impl FileService {
-    fn build_path(base_path: &PathBuf, file_name: String) -> PathBuf {
-        let mut path = base_path.clone();
-        path.push(file_name);
-        path
+impl FileServiceFacade for FileService {
+    fn get_or_create_config_file(&self, path: String) -> Result<PathBuf> {
+        let file_path = self.config_root_path.join(path);
+        FileService::create_file_if_not_exists(file_path)
     }
 
-    fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf, String> {
-        if !path.exists() {
-            std::fs::File::create(&path).map_err(|err| err.to_string())?;
-        }
-        Ok(path)
+    fn get_or_create_data_file(&self, path: String) -> Result<PathBuf> {
+        let file_path = self.data_app_root_path.join(path);
+        FileService::create_file_if_not_exists(file_path)
+    }
+
+    fn get_or_create_temp_file(&self, path: String) -> Result<PathBuf> {
+        let file_path = self.temp_root_path.join(path);
+        FileService::create_file_if_not_exists(file_path)
+    }
+
+    fn find_all_data_files(&self) -> Result<Vec<PathBuf>> {
+        let files = std::fs::read_dir(&self.data_app_root_path)?
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| !path.is_dir())
+            .collect::<Vec<_>>();
+        Ok(files)
+    }
+
+    fn find_all_data_files_in_folders(&self, folders: &[&str]) -> Result<Vec<PathBuf>> {
+        let files = std::fs::read_dir(self.data_app_root_path.join(folders.join("/")))?
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| !path.is_dir())
+            .collect::<Vec<_>>();
+        Ok(files)
+    }
+
+    fn remove_file(&self, path: PathBuf) -> Result<()> {
+        Ok(std::fs::remove_file(path)?)
+    }
+
+    fn remove_data_file(&self, path: String) -> Result<()> {
+        let file_path = self.data_app_root_path.join(path);
+        self.remove_file(file_path)
+    }
+    fn remove_temp_file(&self, path: String) -> Result<()> {
+        let file_path = self.temp_root_path.join(path);
+        self.remove_file(file_path)
     }
 }
 
-impl FileServiceFacade for FileService {
-    fn get_or_create_config_file(&self, path: String) -> Result<PathBuf, String> {
-        let file_path = FileService::build_path(&self.config_root_path, path);
-        FileService::create_file_if_not_exists(file_path)
-    }
+impl FileService {
+    fn create_file_if_not_exists(path: PathBuf) -> Result<PathBuf> {
+        if !path.exists() {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
 
-    fn get_or_create_data_file(&self, path: String) -> Result<PathBuf, String> {
-        let file_path = FileService::build_path(&self.data_app_root_path, path);
-        FileService::create_file_if_not_exists(file_path)
-    }
-
-    fn get_or_create_temp_file(&self, path: String) -> Result<PathBuf, String> {
-        let file_path = FileService::build_path(&self.temp_root_path, path);
-        FileService::create_file_if_not_exists(file_path)
-    }
-
-    fn remove_file(&self, path: PathBuf) -> Result<(), String> {
-        std::fs::remove_file(path).map_err(|err| err.to_string())
+            std::fs::File::create(&path)?;
+        }
+        Ok(path)
     }
 }

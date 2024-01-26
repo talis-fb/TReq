@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use super::clap_definition::root_command;
 use super::parser::parse_clap_input_to_commands;
 use crate::app::services::request::entities::{OptionalRequestData, RequestData, METHODS};
-use crate::view::cli::commands::CliCommand;
+use crate::view::cli::commands::CliCommandChoice;
 
 #[test]
 fn test_parse_all_methods_command() {
@@ -18,7 +18,7 @@ fn test_parse_all_methods_command() {
         let input = root_command().get_matches_from(vec!["treq", &method.to_string(), "url.com"]);
         assert_eq!(
             parse_clap_input_to_commands(input).unwrap(),
-            Vec::from([CliCommand::SubmitRequest {
+            Vec::from([CliCommandChoice::SubmitRequest {
                 request: RequestData::default()
                     .with_method(method)
                     .with_url("url.com")
@@ -34,7 +34,7 @@ fn test_without_explicit_method_using_default_get() {
     let input = root_command().get_matches_from(vec!["treq", "url.com"]);
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
-        vec![CliCommand::SubmitRequest {
+        vec![CliCommandChoice::SubmitRequest {
             request: RequestData::default()
                 .with_method(METHODS::GET)
                 .with_url("url.com")
@@ -50,7 +50,7 @@ fn test_without_explicit_method_using_default_post() {
 
     assert_eq!(
         parse_clap_input_to_commands(arg_matches).unwrap(),
-        vec![CliCommand::SubmitRequest {
+        vec![CliCommandChoice::SubmitRequest {
             request: RequestData::default()
                 .with_method(METHODS::POST)
                 .with_url("url.com")
@@ -69,7 +69,7 @@ fn test_parse_with_header_value() {
     ]);
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
-        vec![CliCommand::SubmitRequest {
+        vec![CliCommandChoice::SubmitRequest {
             request: RequestData::default()
                 .with_method(METHODS::POST)
                 .with_headers([("Auth".into(), "Value".into())])
@@ -98,12 +98,12 @@ fn test_parse_basic_post_with_save_as() {
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
         Vec::from([
-            CliCommand::SaveRequest {
-                request_data: expected_request_data.clone(),
+            CliCommandChoice::SaveRequestWithBaseRequest {
+                base_request_name: None,
                 request_name: "create_user".to_string(),
-                check_exists_before: false,
+                request_data: expected_request_data.clone(),
             },
-            CliCommand::SubmitRequest {
+            CliCommandChoice::SubmitRequest {
                 request: expected_request_data.to_request_data(),
             }
         ])
@@ -116,7 +116,7 @@ fn test_run_command() {
 
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
-        Vec::from([CliCommand::SubmitSavedRequest {
+        Vec::from([CliCommandChoice::SubmitSavedRequest {
             request_name: "create_user".into(),
             request_data: OptionalRequestData::default(),
         }])
@@ -135,7 +135,7 @@ fn test_run_command_with_additional_datas() {
     };
 
     assert_eq!(
-        Vec::from([CliCommand::SubmitSavedRequest {
+        Vec::from([CliCommandChoice::SubmitSavedRequest {
             request_name: "create_user".into(),
             request_data: expected_request_data
         },]),
@@ -163,13 +163,12 @@ fn test_run_command_with_additional_datas_and_save_as() {
 
     assert_eq!(
         Vec::from([
-            CliCommand::SaveRequestWithBaseRequest {
-                base_request_name: "create_user".into(),
+            CliCommandChoice::SaveRequestWithBaseRequest {
                 request_name: "new_create_user".into(),
+                base_request_name: Some("create_user".into()),
                 request_data: expected_request_data.clone(),
-                check_exists_before: false,
             },
-            CliCommand::SubmitSavedRequest {
+            CliCommandChoice::SubmitSavedRequest {
                 request_name: "create_user".into(),
                 request_data: expected_request_data
             },
@@ -191,15 +190,15 @@ fn test_edit_command() {
     ]);
 
     assert_eq!(
-        Vec::from([CliCommand::SaveRequest {
+        Vec::from([CliCommandChoice::SaveRequestWithBaseRequest {
             request_name: "create_user".into(),
+            base_request_name: Some("create_user".into()),
             request_data: OptionalRequestData {
                 url: Some("url.com".into()),
                 headers: Some(HashMap::from([("Content-type".into(), "something".into())])),
                 method: None,
                 body: None,
-            },
-            check_exists_before: true,
+            }
         }]),
         parse_clap_input_to_commands(input).unwrap(),
     );
@@ -212,22 +211,46 @@ fn test_remove_command() {
 
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
-        Vec::from([CliCommand::RemoveSavedRequest {
+        Vec::from([CliCommandChoice::RemoveSavedRequest {
             request_name: "create_user".into()
         }])
     );
 }
 
-// test for "treq rename create_user" command
 #[test]
 fn test_rename_command() {
     let input = root_command().get_matches_from(vec!["treq", "rename", "create_user", "new_name"]);
 
     assert_eq!(
         parse_clap_input_to_commands(input).unwrap(),
-        Vec::from([CliCommand::RenameSavedRequest {
+        Vec::from([CliCommandChoice::RenameSavedRequest {
             request_name: "create_user".into(),
             new_name: "new_name".into()
         }])
+    );
+}
+
+#[test]
+fn test_raw_flag_in_edit() {
+    let input = root_command().get_matches_from(vec![
+        "treq",
+        "edit",
+        "create_user",
+        "--raw",
+        "{ \"Hello\": \"World\" }",
+    ]);
+
+    assert_eq!(
+        Vec::from([CliCommandChoice::SaveRequestWithBaseRequest {
+            request_name: "create_user".to_string(),
+            base_request_name: Some("create_user".to_string()),
+            request_data: OptionalRequestData {
+                url: None,
+                headers: None,
+                method: None,
+                body: Some("{ \"Hello\": \"World\" }".to_string()),
+            },
+        }]),
+        parse_clap_input_to_commands(input).unwrap(),
     );
 }

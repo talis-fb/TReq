@@ -1,76 +1,95 @@
-use std::sync::Arc;
-
-use tokio::sync::Mutex;
 use treq::app::services::request::entities::{OptionalRequestData, RequestData, METHODS};
-use treq::view::cli::command_executors;
+use treq::view::cli::commands::{self, CliCommand};
 
 use crate::mocks::repositories::{create_mock_back_end, CliWriterUseLess};
 
 #[tokio::test]
 async fn should_submit_a_basic_request() -> anyhow::Result<()> {
-    let mut backend = create_mock_back_end();
     let request_to_do = RequestData::default()
         .with_url("https://google.com")
         .with_method(METHODS::POST)
         .with_headers([("User-Agent".into(), "treq-test".into())]);
 
-    backend.set_expected_requests([request_to_do.clone()]);
+    use commands::submit_request::BasicRequestExecutor;
 
-    use command_executors::submit_request::basic_request_executor;
+    let executor: Box<dyn CliCommand> = BasicRequestExecutor {
+        request: request_to_do.clone(),
+        writer_stdout: CliWriterUseLess,
+        writer_stderr: CliWriterUseLess,
+    }
+    .into();
 
-    let executor = basic_request_executor(request_to_do, CliWriterUseLess, CliWriterUseLess);
-    executor(Arc::new(Mutex::new(backend))).await??;
+    let mut backend = create_mock_back_end().with_expected_requests([request_to_do]);
+
+    executor.execute(&mut backend).await?;
     Ok(())
 }
 
 #[tokio::test]
 async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
-    let mut backend = create_mock_back_end();
+    use commands::save_new_request::SaveNewRequestExecutor;
+    use commands::save_request_with_base_request::SaveRequestWithBaseRequestExecutor;
+    use commands::submit_request::BasicRequestExecutor;
+    use commands::submit_saved_request::SubmitSavedRequestExecutor;
 
     let first_request_to_do = RequestData::default()
         .with_url("https://google.com")
         .with_method(METHODS::GET)
         .with_headers([("User-Agent".into(), "treq-test".into())]);
 
-    let request_after_changes = OptionalRequestData {
+    let input_second_request = OptionalRequestData {
+        url: Some("https://google.com".to_string()),
         method: Some(METHODS::POST),
         body: Some(r#"{ "Hello": "World" }"#.into()),
-        url: None,
         headers: None,
     };
 
-    backend.set_expected_requests([
-        first_request_to_do.clone(),
-        request_after_changes.clone().to_request_data(),
-    ]);
+    // Merge of first and input of second request
+    let expected_second_request = RequestData::default()
+        .with_url("https://google.com")
+        .with_method(METHODS::POST)
+        .with_body(r#"{ "Hello": "World" }"#.to_string())
+        .with_headers([("User-Agent".into(), "treq-test".into())]);
 
-    use command_executors::save_request::save_request_executor;
-    use command_executors::submit_request::basic_request_executor;
-    use command_executors::submit_saved_request::submit_saved_request_executor;
+    let mut backend = create_mock_back_end()
+        .with_expected_requests([first_request_to_do.clone(), expected_second_request.clone()]);
 
-    let backend = Arc::new(Mutex::new(backend));
+    let basic_request_executor: Box<dyn CliCommand> = BasicRequestExecutor {
+        request: first_request_to_do.clone(),
+        writer_stdout: CliWriterUseLess,
+        writer_stderr: CliWriterUseLess,
+    }
+    .into();
+    basic_request_executor.execute(&mut backend).await?;
 
-    basic_request_executor(first_request_to_do, CliWriterUseLess, CliWriterUseLess)(
-        backend.clone(),
-    )
-    .await??;
+    let save_first_request_executor: Box<dyn CliCommand> = SaveNewRequestExecutor {
+        request_name: "some_request".into(),
+        request_data: first_request_to_do,
+        writer_stdout: CliWriterUseLess,
+        writer_stderr: CliWriterUseLess,
+    }
+    .into();
+    save_first_request_executor.execute(&mut backend).await?;
 
-    save_request_executor(
-        "my_request".into(),
-        request_after_changes.clone(),
-        false,
-        CliWriterUseLess,
-        CliWriterUseLess,
-    )(backend.clone())
-    .await??;
+    let save_request_executor: Box<dyn CliCommand> = SaveRequestWithBaseRequestExecutor {
+        base_request_name: Some("some_request".to_string()),
+        request_name: "some_request".to_string(),
+        request_data: input_second_request.clone(),
+        writer_stdout: CliWriterUseLess,
+        writer_stderr: CliWriterUseLess,
+    }
+    .into();
+    save_request_executor.execute(&mut backend).await?;
 
-    submit_saved_request_executor(
-        "my_request".into(),
-        OptionalRequestData::default(),
-        CliWriterUseLess,
-        CliWriterUseLess,
-    )(backend.clone())
-    .await??;
+    let submit_save_request_executor: Box<dyn CliCommand> = SubmitSavedRequestExecutor {
+        request_name: "some_request".into(),
+        request_data: OptionalRequestData::default(),
+        writer_stdout: CliWriterUseLess,
+        writer_stderr: CliWriterUseLess,
+    }
+    .into();
+
+    submit_save_request_executor.execute(&mut backend).await?;
 
     Ok(())
 }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 use async_trait::async_trait;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 
 use super::services::files::facade::FileServiceFacade;
 use super::services::files::service::FileServiceInstance;
@@ -10,13 +10,14 @@ use super::services::web_client::commands::CommandsFactory as WebClientCommandsF
 use super::services::web_client::entities::Response;
 use super::services::web_client::facade::WebClientFacade;
 use super::services::web_client::service::WebClientInstance;
+use crate::app::service_commands::Command;
 use crate::app::service_runner::ServiceRunner;
 use crate::app::services::files::commands::CommandsFactory as FileServiceCommandsFactory;
-use crate::app::services::request::commands::CommandsFactory;
+use crate::app::services::request::commands::CommandsFactory as RequestServCommandsFactory;
 use crate::app::services::request::entities::RequestData;
 use crate::app::services::request::facade::RequestServiceFacade;
 use crate::app::services::request::service::RequestServiceInstance;
-use crate::utils::files::file_utils;
+use crate::utils::files as file_utils;
 use crate::utils::uuid::UUID;
 
 #[async_trait]
@@ -39,8 +40,9 @@ pub trait Backend: Send {
         request_data: RequestData,
     ) -> Result<()>;
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
+    async fn find_all_request_name(&mut self) -> Result<Vec<String>>;
+
     // Pending...
-    // async fn get_all_files_in_folder(&mut self, names: &[str]) -> Result<Vec<String>>;
     // async fn remove_request_saved(&mut self, name: String) -> Result<()>;
     // async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
 }
@@ -80,85 +82,66 @@ impl AppBackend {
     }
 }
 
-async fn run_commands<CommandFn>(
-    commands: impl IntoIterator<Item = CommandFn>,
-    sender: &mpsc::Sender<CommandFn>,
-) -> Result<()>
-where
-    CommandFn: Sync + Send + 'static,
-{
-    for c in commands {
-        sender.send(c).await?;
-    }
-    Ok(())
-}
-
-async fn run_command_with_response<CommandFn, Response>(
-    command: (CommandFn, oneshot::Receiver<Response>),
-    sender: &mpsc::Sender<CommandFn>,
-) -> Result<Response>
-where
-    CommandFn: Sync + Send + 'static,
-{
-    let (command, resp) = command;
-    sender.send(command).await?;
-    Ok(resp.await?)
-}
-
 #[async_trait]
 impl Backend for AppBackend {
     async fn add_request(&mut self, request: RequestData) -> Result<UUID> {
-        let resp = run_command_with_response(
-            CommandsFactory::add_request(request),
-            &self.request_service.command_channel,
+        let resp = run_command_waiting_response(
+            &self.request_service,
+            RequestServCommandsFactory::add_request(request),
         )
         .await?;
         Ok(resp)
     }
     async fn edit_request(&mut self, id: UUID, request: RequestData) -> Result<()> {
         run_commands(
-            [CommandsFactory::edit_request(id, request)],
-            &self.request_service.command_channel,
+            &self.request_service,
+            [RequestServCommandsFactory::edit_request(id, request)],
         )
         .await?;
         Ok(())
     }
     async fn get_request(&mut self, id: UUID) -> Result<Option<Arc<RequestData>>> {
-        let (command, resp) = CommandsFactory::get_request_data(id);
-        self.request_service.command_channel.send(command).await?;
-        Ok(resp.await?)
+        let request = run_command_waiting_response(
+            &self.request_service,
+            RequestServCommandsFactory::get_request_data(id),
+        )
+        .await?;
+        Ok(request)
     }
     async fn delete_request(&mut self, id: UUID) -> Result<()> {
         run_commands(
-            [CommandsFactory::delete_request(id)],
-            &self.request_service.command_channel,
+            &self.request_service,
+            [RequestServCommandsFactory::delete_request(id)],
         )
         .await?;
         Ok(())
     }
     async fn undo_request(&mut self, id: UUID) -> Result<()> {
         run_commands(
-            [CommandsFactory::undo_request_data(id)],
-            &self.request_service.command_channel,
+            &self.request_service,
+            [RequestServCommandsFactory::undo_request_data(id)],
         )
         .await?;
         Ok(())
     }
     async fn redo_request(&mut self, id: UUID) -> Result<()> {
         run_commands(
-            [CommandsFactory::redo_request_data(id)],
-            &self.request_service.command_channel,
+            &self.request_service,
+            [RequestServCommandsFactory::redo_request_data(id)],
         )
         .await?;
         Ok(())
     }
 
     async fn submit_request_blocking(&mut self, id: UUID) -> Result<Response> {
-        // TODO: Remove this unwrap to a Option -> Result
-        let request_data = self.get_request(id).await?.unwrap();
-        let resp = run_command_with_response(
+        let request_data = self
+            .get_request(id)
+            .await?
+            .ok_or(Error::msg("Not found request to given ID"))?;
+
+        let resp = run_command_waiting_response(
+            &self.web_client,
             WebClientCommandsFactory::submit((*request_data).clone()),
-            &self.web_client.command_channel,
         )
         .await?;
         Ok(resp.unwrap())
@@ -169,20 +152,23 @@ impl Backend for AppBackend {
         id: UUID,
     ) -> Result<oneshot::Receiver<Result<Response, String>>> {
         let request_data = self.get_request(id).await?.unwrap();
-        let (command, resp) = WebClientCommandsFactory::submit((*request_data).clone());
-        self.web_client.command_channel.send(command).await?;
-        Ok(resp)
+        let Command {
+            command_fn,
+            response,
+        } = WebClientCommandsFactory::submit((*request_data).clone());
+        self.web_client.command_channel.send(command_fn).await?;
+        Ok(response.unwrap())
     }
     async fn save_request_datas_as(
         &mut self,
         name: String,
         request_data: RequestData,
     ) -> Result<()> {
-        let path = run_command_with_response(
-            FileServiceCommandsFactory::get_or_create_data_file(name),
-            &self.file_service.command_channel,
+        let path = run_command_waiting_response(
+            &self.file_service,
+            FileServiceCommandsFactory::get_or_create_file_of_saved_request(name),
         )
-        .await?;
+        .await??;
 
         let request_data = serde_json::to_string(&request_data)?;
         file_utils::write_to_file(path, &request_data).await?;
@@ -190,17 +176,17 @@ impl Backend for AppBackend {
     }
 
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData> {
-        let path = run_command_with_response(
-            FileServiceCommandsFactory::get_or_create_data_file(name),
-            &self.file_service.command_channel,
+        let path = run_command_waiting_response(
+            &self.file_service,
+            FileServiceCommandsFactory::get_or_create_file_of_saved_request(name),
         )
-        .await?;
+        .await??;
 
         let request_data = file_utils::read_from_file(path.clone()).await?;
         if request_data.is_empty() {
             run_commands(
+                &self.file_service,
                 [FileServiceCommandsFactory::remove_file(path)],
-                &self.file_service.command_channel,
             )
             .await?;
             return Err(Error::msg("This request does not exist"));
@@ -208,5 +194,51 @@ impl Backend for AppBackend {
 
         let request_data: RequestData = serde_json::from_str(&request_data)?;
         Ok(request_data)
+    }
+
+    async fn find_all_request_name(&mut self) -> Result<Vec<String>> {
+        let response = run_command_waiting_response(
+            &self.file_service,
+            FileServiceCommandsFactory::find_all_files_of_saved_requests(),
+        )
+        .await??;
+        let file_names = response
+            .into_iter()
+            .map(|path| path.file_name().unwrap().to_str().unwrap().to_string())
+            .collect();
+        Ok(file_names)
+    }
+}
+
+async fn run_commands<Service, Resp>(
+    service: &ServiceRunner<Service>,
+    commands: impl IntoIterator<Item = Command<Service, Resp>>,
+) -> Result<()>
+where
+    Service: Send + 'static,
+{
+    for Command { command_fn, .. } in commands {
+        service.command_channel.send(command_fn).await?;
+    }
+    Ok(())
+}
+
+async fn run_command_waiting_response<Service, Resp>(
+    service: &ServiceRunner<Service>,
+    command: Command<Service, Resp>,
+) -> Result<Resp>
+where
+    Service: Send + 'static,
+{
+    let Command {
+        command_fn,
+        response,
+    } = command;
+
+    service.command_channel.send(command_fn).await?;
+
+    match response {
+        Some(response_listener) => Ok(response_listener.await?),
+        None => Err(Error::msg("No response listener")),
     }
 }
