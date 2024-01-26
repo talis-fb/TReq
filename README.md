@@ -1,14 +1,16 @@
 <p align="center">
-<img src="https://res.cloudinary.com/dfjn94vg8/image/upload/v1676658471/TReq/dino_hnxml5.png" height="120px" />
+<img src="https://res.cloudinary.com/dfjn94vg8/image/upload/v1706297059/TReq/dino_png.png" height="250px" />
 </p>
 
 # TReq
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/talis-fb/TReq/ci.yaml)
+![GitHub repo size](https://img.shields.io/github/repo-size/talis-fb/treq)
 
 A <b>T</b>erminal <b>Req</b>uest HTTP Client.
 
 TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be simple and a complete CLI tool to interact with APIs
 
-
+> [!NOTE]
 > TReq, short for Terminal Request, is a user-friendly Command Line Interface (CLI) HTTP client that goes beyond the stateless nature of typical CLI HTTP clients. It's designed to offer a complete tool for interacting with APIs in the terminal. 
 > 
 > While traditional CLI HTTP clients excel at quick tasks and small tests, TReq aims to bridge the gap by introducing statefulness, allowing users to store, handle, edit, view, and inspect requests seamlessly, all within the terminal. 
@@ -24,12 +26,14 @@ TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be
 * <b>Pretty Outputs</b>: The UX is relevant in a CLI.
 
 ## Installation
-For now, you only can install TReq with `cargo`
-Install cargo and then...
+For now, the best way to install TReq is using `cargo`
+Install cargo using [rustup](https://rustup.rs/) and then...
 
 ```sh
-cargo install TReq
+cargo install treq
 ```
+
+You can also go to [last releases](https://github.com/talis-fb/TReq/releases/latest) and install the right binary for your OS.
 
 ## Usage
 For more detailed information on commands and options, refer to the built-in help:
