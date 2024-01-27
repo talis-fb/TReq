@@ -26,14 +26,24 @@ TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be
 * <b>Pretty Outputs</b>: The UX is relevant in a CLI.
 
 ## Installation
-For now, the best way to install TReq is using `cargo`
+
+### Linux
+Go to [last release page](https://github.com/talis-fb/TReq/releases/latest) and install the right binary for your OS. 
+
+For most Linux distributions, `treq.bin` binary can work as expected. You can download it from [here](https://github.com/talis-fb/TReq/releases/latest/download/treq.bin) and copy to `/usr/local/bin/`. As the TReq has no many dependecies it should work on most part of the systems.
+```
+cp treq.bin /usr/local/bin/treq
+```
+
+### Cargo
+For any OS, the best way to install TReq is using `cargo`
+
 Install cargo using [rustup](https://rustup.rs/) and then...
 
 ```sh
 cargo install treq
 ```
 
-You can also go to [last releases](https://github.com/talis-fb/TReq/releases/latest) and install the right binary for your OS.
 
 ## Usage
 For more detailed information on commands and options, refer to the built-in help:
