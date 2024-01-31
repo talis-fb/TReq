@@ -6,6 +6,8 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/talis-fb/TReq/ci.yaml)
 ![GitHub repo size](https://img.shields.io/github/repo-size/talis-fb/treq)
 
+![demo](https://res.cloudinary.com/dfjn94vg8/image/upload/v1706742279/TReq/demo-treq1.gif)
+
 A <b>T</b>erminal <b>Req</b>uest HTTP Client.
 
 TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be simple and a complete CLI tool to interact with APIs
@@ -27,36 +29,14 @@ TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be
 
 ## Installation
 
-- [1. Linux generic](#linux-generic)
-- [2. Cargo](#cargo)
-- [3. Ubuntu / Debian based](#ubuntu-debian-based)
-- [4. Arch / Manjaro](#arch-manjaro)
+- [1. Ubuntu / Debian based](#ubuntu--debian-based)
+- [2. Arch / Manjaro](#arch--manjaro)
+- [3. Cargo](#cargo)
+- [4. Linux generic](#linux-generic)
 - [5. Windows](#windows)
 
-### Linux generic
-Go to [last release page](https://github.com/talis-fb/TReq/releases/latest) and download the `treq.bin` file. 
-
-For most Linux distributions, treq.bin has minimal dependencies and can be placed in `/usr/local/bin/`.  You can download it from [here](https://github.com/talis-fb/TReq/releases/latest/download/treq.bin)
-```sh
-cp treq.bin /usr/local/bin/treq
-```
-
-Ensure the file has execution permissions before copying:
-```sh
-chmod +x treq.bin
-```
-
-### Cargo
-For any OS, the best way to install TReq is using `cargo`.
-
-Install cargo using [rustup](https://rustup.rs/) and then...
-
-```sh
-cargo install treq
-```
-
 ### Ubuntu / Debian based
-Download the latest .deb package from the [last release page](https://github.com/talis-fb/TReq/releases/latest). Open your terminal and navigate to the directory where the downloaded .deb file is located. Install TReq using the following command:
+Download the latest `.deb` package from the [last release page](https://github.com/talis-fb/TReq/releases/latest). Open your terminal and navigate to the directory where the downloaded `.deb` file is located. Install TReq using the following command:
 
 ```sh
 sudo dpkg -i treq-x.x.x_amd64.deb
@@ -73,8 +53,30 @@ If you're using Arch Linux, you can install TReq from the AUR using an AUR helpe
 yay -S treq-bin
 ```
 
+### Cargo
+For any OS, the best way to install TReq is using `cargo`.
+
+Install cargo using [rustup](https://rustup.rs/) and then...
+
+```sh
+cargo install treq
+```
+
+### Linux generic
+Go to [last release page](https://github.com/talis-fb/TReq/releases/latest) and download the `treq.bin` file. 
+
+For most Linux distributions, treq.bin has minimal dependencies and can be placed in `/usr/local/bin/`.  You can download it from [here](https://github.com/talis-fb/TReq/releases/latest/download/treq.bin)
+```sh
+cp treq.bin /usr/local/bin/treq
+```
+
+Ensure the file has execution permissions before copying:
+```sh
+chmod +x treq.bin
+```
+
 ### Windows
-Download the latest .exe file [last release page](https://github.com/talis-fb/TReq/releases/latest). Place the downloaded .exe file in a directory included in your system's PATH, or add the directory containing the .exe to your PATH.
+Download the latest `.exe` file at [last release page](https://github.com/talis-fb/TReq/releases/latest). Place the downloaded .exe file in a directory included in your system's PATH, or add the directory containing the .exe to your PATH.
 
 ## Usage
 For more detailed information on commands and options, refer to the built-in help:
