@@ -4,7 +4,14 @@ expression: result
 ---
 - SubmitRequest:
     request:
-      url: "http://url.com"
+      url:
+        ValidatedUrl:
+          protocol: ~
+          host: url.com
+          port: ~
+          paths: []
+          query_params: []
+          anchor: ~
       method: GET
       headers: {}
       body: ""

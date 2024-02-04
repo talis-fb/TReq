@@ -14,7 +14,7 @@ use crate::app::service_commands::Command;
 use crate::app::service_runner::ServiceRunner;
 use crate::app::services::files::commands::CommandsFactory as FileServiceCommandsFactory;
 use crate::app::services::request::commands::CommandsFactory as RequestServCommandsFactory;
-use crate::app::services::request::entities::RequestData;
+use crate::app::services::request::entities::requests::RequestData;
 use crate::app::services::request::facade::RequestServiceFacade;
 use crate::app::services::request::service::RequestServiceInstance;
 use crate::utils::files as file_utils;

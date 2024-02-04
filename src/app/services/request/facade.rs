@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::entities::RequestData;
+use super::entities::requests::RequestData;
 use crate::utils::uuid::UUID;
 
 pub trait RequestServiceFacade: Send {

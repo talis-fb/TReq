@@ -1,5 +1,5 @@
 use treq::app::backend::Backend;
-use treq::app::services::request::entities::RequestData;
+use treq::app::services::request::entities::requests::RequestData;
 use treq::app::services::web_client::entities::Response;
 use treq::app::services::web_client::repository_client::MockHttpClientRepository;
 

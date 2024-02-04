@@ -8,7 +8,7 @@ use tempfile::{tempdir, TempDir};
 use tokio::sync::oneshot;
 use treq::app::backend::{AppBackend, Backend};
 use treq::app::services::files::service::FileService;
-use treq::app::services::request::entities::RequestData;
+use treq::app::services::request::entities::requests::RequestData;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::entities::Response;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;

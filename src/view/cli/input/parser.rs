@@ -5,7 +5,8 @@ use anyhow::{Error, Result};
 use clap::ArgMatches;
 use serde_json::Value;
 
-use crate::app::services::request::entities::{OptionalRequestData, METHODS};
+use crate::app::services::request::entities::methods::METHODS;
+use crate::app::services::request::entities::requests::OptionalRequestData;
 use crate::utils::validators;
 use crate::view::cli::commands::CliCommandChoice;
 use crate::view::cli::input::clap_definition::root_command;

@@ -3,7 +3,7 @@ use tokio::sync::oneshot;
 use super::entities::Response;
 use super::service::WebClientInstance;
 use crate::app::service_commands::Command;
-use crate::app::services::request::entities::RequestData;
+use crate::app::services::request::entities::requests::RequestData;
 
 pub type CommandWebClient<Resp> = Command<WebClientInstance, Resp>;
 

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::entities::{RequestData, RequestEntity};
+use super::entities::requests::{RequestData, RequestEntity};
 use crate::utils::uuid::UUID;
 
 pub type RequestServiceInstance = Box<dyn RequestServiceFacade>;

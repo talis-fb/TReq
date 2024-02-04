@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::sync::oneshot;
 
-use super::super::entities::RequestData;
+use super::super::entities::requests::RequestData;
 use super::{CommandRequestService as CommandService, CommandsFactory};
 use crate::app::service_commands::Command;
 use crate::app::services::request::service::RequestServiceInstance;

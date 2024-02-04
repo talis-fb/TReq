@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use super::submit_request::BasicRequestExecutor;
 use super::CliCommand;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::OptionalRequestData;
+use crate::app::services::request::entities::requests::OptionalRequestData;
 use crate::view::cli::output::utils::BREAK_LINE;
 use crate::view::cli::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};

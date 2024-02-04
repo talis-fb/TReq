@@ -1,4 +1,5 @@
-use treq::app::services::request::entities::{OptionalRequestData, RequestData, METHODS};
+use treq::app::services::request::entities::methods::METHODS;
+use treq::app::services::request::entities::requests::{OptionalRequestData, RequestData};
 use treq::view::cli::commands::{self, CliCommand};
 
 use crate::mocks::repositories::{create_mock_back_end, CliWriterUseLess};

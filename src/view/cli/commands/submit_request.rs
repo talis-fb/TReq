@@ -3,7 +3,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use super::CliCommand;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::RequestData;
+use crate::app::services::request::entities::requests::RequestData;
 use crate::app::services::web_client::entities::get_status_code_message;
 use crate::utils::channels::chain_listener_to_receiver;
 use crate::view::cli::output::utils::{BREAK_LINE, BREAK_LINE_WITH_GAP, SINGLE_SPACE, TAB_SPACE};
@@ -27,10 +27,12 @@ where
     W2: CliWriterRepository,
 {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
+        let url = self.request.url.to_string();
+
         let title = {
             let method =
                 StyledStr::from(self.request.method.as_str()).with_text_style(TextStyle::Bold);
-            let url = StyledStr::from(self.request.url.as_str()).with_color_text(Color::Blue);
+            let url = StyledStr::from(&url).with_color_text(Color::Blue);
 
             [
                 StyledStr::from(TAB_SPACE),

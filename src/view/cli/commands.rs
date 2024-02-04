@@ -11,7 +11,7 @@ use self::show_list_all_request::ShowListAllRequestExecutor;
 use self::submit_request::BasicRequestExecutor;
 use self::submit_saved_request::SubmitSavedRequestExecutor;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::{OptionalRequestData, RequestData};
+use crate::app::services::request::entities::requests::{OptionalRequestData, RequestData};
 use crate::view::cli::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
