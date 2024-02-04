@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use super::url::UrlDatas;
 use crate::app::services::request::entities::methods::METHODS;
 
-
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RequestData {
     pub url: Url,

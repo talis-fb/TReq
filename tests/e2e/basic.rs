@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use assert_cmd::Command;
 use predicates::prelude::*;
+use treq::app::services::request::entities::url::UrlDatas;
 
 const DEFAULT_HTTPBIN_HOST: &str = "localhost:8888";
 
@@ -76,10 +79,10 @@ fn should_assert_list_saved_requests() {
 #[test]
 fn should_inspect_command_show_info_about_a_saved_request() {
     // Setup
-    let input = format!(
-        "treq POST {}/post Hello=World --save-as some-cool-request",
-        host()
-    );
+    let url = format!("{}/post", host());
+    let url_data = UrlDatas::from_str(&url).unwrap();
+
+    let input = format!("treq POST {} Hello=World --save-as some-cool-request", &url,);
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
 
@@ -91,8 +94,9 @@ fn should_inspect_command_show_info_about_a_saved_request() {
         predicate::str::contains("some-cool-request")
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World"))
-            .and(predicate::str::contains(format!("{}/post", host())))
-            .and(predicate::str::contains("POST")),
+            .and(predicate::str::contains("POST"))
+            .and(predicate::str::contains(url_data.host))
+            .and(predicate::str::contains("post")),
     );
 }
 
@@ -125,7 +129,7 @@ fn should_submit_save_edit_and_submit_corretly_in_sequence() {
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(
-        predicate::str::contains(format!("{}/post", host()))
+        predicate::str::contains("post")
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World")),
     );

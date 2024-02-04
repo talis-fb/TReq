@@ -32,7 +32,7 @@ pub trait Backend: Send {
     async fn submit_request_async(
         &mut self,
         id: UUID,
-    ) -> Result<oneshot::Receiver<Result<Response, String>>>;
+    ) -> Result<oneshot::Receiver<Result<Response>>>;
 
     async fn save_request_datas_as(
         &mut self,
@@ -150,7 +150,7 @@ impl Backend for AppBackend {
     async fn submit_request_async(
         &mut self,
         id: UUID,
-    ) -> Result<oneshot::Receiver<Result<Response, String>>> {
+    ) -> Result<oneshot::Receiver<Result<Response>>> {
         let request_data = self.get_request(id).await?.unwrap();
         let Command {
             command_fn,

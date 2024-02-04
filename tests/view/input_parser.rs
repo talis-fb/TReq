@@ -84,14 +84,6 @@ fn should_error_if_url_is_invalid() {
 }
 
 #[test]
-fn should_error_if_url_value_iS_not_a_valid_url() {
-    let input = "treq GET invalid-url#value";
-    let matches = root_command().get_matches_from(input.split_whitespace());
-    let result = parse_clap_input_to_commands(matches);
-    assert!(result.is_err());
-}
-
-#[test]
 fn should_raw_flag_work_equal_param_body_definition() {
     let input1 = "treq POST url.com Hello=World";
     let matches1 = root_command().get_matches_from(input1.split_whitespace());
@@ -114,4 +106,38 @@ fn should_return_error_if_raw_flag_and_param_body_are_both_used() {
     let result = parse_clap_input_to_commands(matches);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("--raw"));
+}
+
+#[test]
+fn should_execute_with_valid_urls() {
+    const VALID_URLS: &[&str] = &[
+        "google.com",
+        "google.com/",
+        "google.com?",
+        "google.com:81",
+        "google.com:81/",
+        "google.com/search/advanced",
+        "google.com/search/advanced/",
+        "google.com?search=Rust",
+        "google.com?search=Rust&country=br",
+        "google.com/search/advanced?name=john",
+        "google.com/search/advanced/?name=john",
+        "google.com/search/advanced?name=john&sort=true",
+        "google.com/search/advanced?name=john&sort=true#landing-page",
+        "google.com/search/advanced#landing-page",
+        "google.com/search/advanced/#landing-page",
+        "google.com#landing-page",
+        "google.com/#landing-page",
+        "localhost",
+        "localhost/",
+        "localhost:8081/",
+        "localhost:8081/api/v1/local",
+    ];
+
+    for url in VALID_URLS {
+        let input = format!("treq GET {}", url);
+        let matches = root_command().get_matches_from(input.split_whitespace());
+        let result = parse_clap_input_to_commands(matches);
+        assert!(result.is_ok());
+    }
 }

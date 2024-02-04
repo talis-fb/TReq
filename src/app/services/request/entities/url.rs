@@ -4,6 +4,8 @@ use anyhow::Error;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+use crate::utils::regexes::regex_url;
+
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UrlDatas {
     pub protocol: Option<String>,
@@ -106,23 +108,7 @@ impl FromStr for UrlDatas {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re_overall_url = Regex::new(
-            &[
-                r"^",
-                r"((?<protocol>https?):\/\/)?",
-                r"(?<host>[a-zA-Z0-9._@+=-]+)",
-                r"(\:(?<port>[0-9]{1,6}))?",
-                r"(\/(?<routes>[a-zA-Z0-9._@=+\/-]+))?",
-                r"(\/)?", // For accepting optional '/' at end of url
-                r"(\?)?", // For accepting optional '?' at end of url
-                r"(\?(?<query_params>[a-zA-Z0-9._@=+\&=-]+))?",
-                r"(\#(?<anchor>[a-zA-Z0-9._-]+))?",
-                r"$",
-            ]
-            .join("")
-            .to_string(),
-        )
-        .unwrap();
+        let re_overall_url = regex_url();
 
         let re_routes = Regex::new(r"[^\/]+").unwrap();
         let re_query_params = Regex::new(r"[^\&]+=[^&]+").unwrap();
@@ -283,20 +269,24 @@ mod tests_url {
             ),
         ];
 
-        let variants_with_http = valid_urls.clone().map(|(url, data)| {
-            (format!("http://{}", url), data.with_protocol("http"))
-        });
+        let variants_with_http = valid_urls
+            .clone()
+            .map(|(url, data)| (format!("http://{}", url), data.with_protocol("http")));
 
-        let variants_with_https = valid_urls.clone().map(|(url, data)| {
-            (format!("https://{}", url), data.with_protocol("https"))
-        });
+        let variants_with_https = valid_urls
+            .clone()
+            .map(|(url, data)| (format!("https://{}", url), data.with_protocol("https")));
 
         let variants_with_www = valid_urls.clone().map(|(url, data)| {
             let original_host = data.host.clone();
-            (format!("www.{}", url), data.with_host(format!("www.{original_host}")))
+            (
+                format!("www.{}", url),
+                data.with_host(format!("www.{original_host}")),
+            )
         });
 
-        let valid_urls = valid_urls.into_iter()
+        let valid_urls = valid_urls
+            .into_iter()
             .map(|(url, data)| (url.to_string(), data))
             .chain(variants_with_http)
             .chain(variants_with_https)
@@ -369,7 +359,12 @@ mod tests_url {
     fn test_url_data_to_string() {
         let valid_urls = [
             (UrlDatas::default().with_host("google.com"), "google.com"),
-            (UrlDatas::default().with_host("google.com").with_protocol("http"), "http://google.com"),
+            (
+                UrlDatas::default()
+                    .with_host("google.com")
+                    .with_protocol("http"),
+                "http://google.com",
+            ),
             (
                 UrlDatas::default().with_host("google.com").with_port(81),
                 "google.com:81",
@@ -441,10 +436,8 @@ mod tests_url {
             ),
         ];
 
-
         for (url_data, url_str_expected) in valid_urls {
             assert_eq!(url_str_expected, url_data.to_string())
         }
-
     }
 }

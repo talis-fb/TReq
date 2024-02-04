@@ -1,11 +1,9 @@
 use regex::Regex;
 
+use super::regexes::regex_url;
+
 pub fn is_url(url: &str) -> bool {
-    let re = Regex::new(
-        r"^(https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})?(?::\d{1,6})?(?:\/[^\s]*)?$",
-    )
-    .unwrap();
-    re.is_match(url)
+    regex_url().is_match(url)
 }
 
 pub fn is_url_with_localhost_alias(url: &str) -> bool {

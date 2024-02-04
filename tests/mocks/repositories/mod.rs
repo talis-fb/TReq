@@ -70,7 +70,7 @@ impl Backend for MockAppBackend {
     async fn submit_request_async(
         &mut self,
         id: UUID,
-    ) -> Result<oneshot::Receiver<Result<Response, String>>> {
+    ) -> Result<oneshot::Receiver<Result<Response>>> {
         let request = self.app_backend.get_request(id).await?.unwrap();
         let expected_request = self.expected_requests.remove(0);
         assert_eq!(Arc::new(expected_request), request);
