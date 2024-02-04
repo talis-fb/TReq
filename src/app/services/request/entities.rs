@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use anyhow::Error;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::validators;
@@ -47,6 +49,226 @@ impl METHODS {
             METHODS::DELETE => "DELETE",
             METHODS::HEAD => "HEAD",
             METHODS::PATCH => "PATCH",
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Url {
+    protocol: Option<String>,
+    host: String,
+    port: Option<u16>,
+    paths: Vec<String>,
+    query_params: Vec<(String, String)>,
+    anchor: Option<String>,
+}
+
+impl ToString for Url {
+    fn to_string(&self) -> String {
+        let protocol = self.protocol.as_ref().map(|p| format!("{}://", p)).unwrap_or_default();
+
+        let port = self.port.as_ref().map(|p| format!(":{}", p)).unwrap_or_default();
+
+        let paths = self
+            .paths
+            .iter()
+            .map(|p| format!("/{}", p))
+            .collect::<Vec<String>>()
+            .join("");
+
+        let query_params = self
+            .query_params
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<String>>()
+            .join("&");
+
+        let anchor = self
+            .anchor
+            .as_ref()
+            .map(|a| format!("#{}", a))
+            .unwrap_or_default();
+
+        format!("{}{}{}{}{}{}", protocol, self.host, port, paths, query_params, anchor)
+    }
+}
+
+impl Url {
+    pub fn with_protocol(mut self, value: impl Into<String>) -> Self {
+        self.protocol = Some(value.into());
+        self
+    }
+
+    pub fn with_host(mut self, value: impl Into<String>) -> Self {
+        self.host = value.into();
+        self
+    }
+
+    pub fn with_port(mut self, value: u16) -> Self {
+        self.port = Some(value);
+        self
+    }
+
+    pub fn with_paths<Str>(mut self, paths: impl IntoIterator<Item = Str>) -> Self
+    where
+        Str: Into<String>,
+    {
+        self.paths = paths.into_iter().map(|p| p.into()).collect();
+        self
+    }
+
+    pub fn with_query_params<Str>(mut self, params: impl IntoIterator<Item = (Str, Str)>) -> Self where Str : Into<String> {
+        self.query_params = params.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+        self
+    }
+
+    pub fn with_anchor(mut self, value: impl Into<String>) -> Self {
+        self.anchor = Some(value.into());
+        self
+    }
+}
+
+impl FromStr for Url {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let re_overall_url = Regex::new(
+            &[
+                r"^",
+                r"((?<protocol>https?):\/\/)?",
+                r"(?<host>[a-zA-Z0-9._-]+)",
+                r"(\:(?<port>[0-9]{1,6}))?",
+                r"(\/(?<routes>[a-zA-Z0-9._\/-]+))?",
+                r"(\/)?",
+                r"(\?(?<query_params>[a-zA-Z0-9._\&=-]+))?",
+                r"(\#(?<anchor>[a-zA-Z0-9._-]+))?",
+                r"$",
+            ]
+            .join("")
+            .to_string(),
+        )
+        .unwrap();
+
+        let re_routes = Regex::new(r"[^\/]+").unwrap();
+        let re_query_params = Regex::new(r"[^\&]+=[^&]+").unwrap();
+
+        let url = re_overall_url
+            .captures_iter(s)
+            .map(|matcher| {
+                let protocol = matcher
+                    .name("protocol")
+                    .map(|m| m.as_str())
+                    .map(String::from);
+
+                let host = matcher.name("host").map(|m| m.as_str()).map(String::from);
+
+                let port = matcher
+                    .name("port")
+                    .map(|m| m.as_str())
+                    .map(|port| port.parse::<u16>().unwrap());
+
+                let paths: Vec<String> = matcher
+                    .name("routes")
+                    .map(|m| m.as_str())
+                    .map(|complete_path| {
+                        re_routes
+                            .find_iter(complete_path)
+                            .map(|m| m.as_str())
+                            .map(String::from)
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                let query_params: Vec<(String, String)> = matcher
+                    .name("query_params")
+                    .map(|m| m.as_str())
+                    .map(|query_params| {
+                        re_query_params
+                            .find_iter(query_params)
+                            .map(|m| m.as_str().split_once("=").unwrap())
+                            .map(|(key, value)| (key.to_string(), value.to_string()))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                let anchor = matcher.name("anchor").map(|m| m.as_str().to_string());
+
+                Url {
+                    protocol,
+                    host: host.unwrap().to_string(),
+                    port,
+                    paths,
+                    query_params,
+                    anchor,
+                }
+            })
+            .next()
+            .ok_or(Error::msg("No url found"))?;
+
+        Ok(url)
+    }
+}
+
+#[cfg(test)]
+mod tests_url {
+    use super::*;
+
+    #[test]
+    fn test_url() {
+        let valid_urls = [
+            ("google.com", Url::default().with_host("google.com")),
+            (
+                "http://google.com",
+                Url::default().with_host("google.com").with_protocol("http"),
+            ),
+            (
+                "https://google.com",
+                Url::default()
+                    .with_host("google.com")
+                    .with_protocol("https"),
+            ),
+            (
+                "https://google.com/",
+                Url::default()
+                    .with_host("google.com")
+                    .with_protocol("https"),
+            ),
+            (
+                "https://google.com/search/advanced",
+                Url::default()
+                    .with_host("google.com")
+                    .with_protocol("https")
+                    .with_paths(["search", "advanced"]),
+            ),
+            (
+                "https://google.com/search/advanced?name=john",
+                Url::default()
+                    .with_host("google.com")
+                    .with_protocol("https")
+                    .with_paths(["search", "advanced"])
+                    .with_query_params([("name", "john")])
+            ),
+            (
+                "https://google.com/search/advanced?name=john&sort=true",
+                Url::default()
+                    .with_host("google.com")
+                    .with_protocol("https")
+                    .with_paths(["search", "advanced"])
+                    .with_query_params([("name", "john"), ("sort", "true")])
+            ),
+            (
+                "https://google.com/search/advanced?name=john&sort=true#landing-page",
+                Url::default()
+                    .with_host("google.com")
+                    .with_protocol("https")
+                    .with_paths(["search", "advanced"])
+                    .with_query_params([("name", "john"), ("sort", "true")])
+                    .with_anchor("landing-page"),
+            ),
+        ];
+
+        for (url, expected) in valid_urls {
+            assert_eq!(expected, Url::from_str(url).unwrap());
         }
     }
 }
