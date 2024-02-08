@@ -41,16 +41,33 @@ impl RequestData {
 // Used to
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OptionalRequestData {
-    pub url: Option<String>,
+    pub url: Option<Url>,
     pub method: Option<METHODS>,
     pub headers: Option<HashMap<String, String>>,
     pub body: Option<String>,
 }
 
+impl OptionalRequestData {
+    pub fn with_url(mut self, value: impl Into<String>) -> Self {
+        let value: String = value.into();
+        let url = match UrlDatas::from_str(&value) {
+            Ok(url) => Url::ValidatedUrl(url),
+            Err(_) => Url::Raw(value),
+        };
+        self.url = Some(url);
+        self
+    }
+
+    pub fn with_method(mut self, value: METHODS) -> Self {
+        self.method = Some(value);
+        self
+    }
+}
+
 impl From<RequestData> for OptionalRequestData {
     fn from(value: RequestData) -> Self {
         Self {
-            url: Some(value.url.to_string()),
+            url: Some(value.url),
             method: Some(value.method),
             headers: Some(value.headers),
             body: Some(value.body),
@@ -61,7 +78,11 @@ impl From<RequestData> for OptionalRequestData {
 impl OptionalRequestData {
     pub fn to_request_data(self) -> RequestData {
         RequestData::default()
-            .with_url(self.url.expect("Url is required to define a Request Data"))
+            .with_url(
+                self.url
+                    .expect("Url is required to define a Request Data")
+                    .to_string(),
+            )
             .with_method(
                 self.method
                     .expect("METHOD is required to define a Request Data"),
@@ -72,7 +93,7 @@ impl OptionalRequestData {
 
     pub fn merge_with(self, other: RequestData) -> RequestData {
         RequestData::default()
-            .with_url(self.url.unwrap_or(other.url.to_string()))
+            .with_url(self.url.unwrap_or(other.url).to_string())
             .with_method(self.method.unwrap_or(other.method))
             .with_headers(self.headers.unwrap_or(other.headers))
             .with_body(self.body.unwrap_or(other.body))
@@ -139,6 +160,17 @@ impl From<RequestData> for NodeHistoryRequest {
 pub enum Url {
     ValidatedUrl(UrlDatas),
     Raw(String),
+}
+
+impl FromStr for Url {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match UrlDatas::from_str(s) {
+            Ok(url) => Ok(Url::ValidatedUrl(url)),
+            Err(_) => Ok(Url::Raw(s.to_string())),
+        }
+    }
 }
 
 impl Url {

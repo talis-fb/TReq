@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use super::CliCommand;
+use super::ViewCommand;
 use crate::app::backend::Backend;
-use crate::view::cli::output::utils::{BREAK_LINE, TAB_SPACE};
-use crate::view::cli::output::writer::CliWriterRepository;
+use crate::view::output::utils::{BREAK_LINE, TAB_SPACE};
+use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
 pub struct ShowListAllRequestExecutor<W1>
@@ -14,7 +14,7 @@ where
 }
 
 #[async_trait]
-impl<W1> CliCommand for ShowListAllRequestExecutor<W1>
+impl<W1> ViewCommand for ShowListAllRequestExecutor<W1>
 where
     W1: CliWriterRepository,
 {

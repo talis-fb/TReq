@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use super::submit_request::BasicRequestExecutor;
-use super::CliCommand;
+use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::requests::OptionalRequestData;
-use crate::view::cli::output::utils::BREAK_LINE;
-use crate::view::cli::output::writer::CliWriterRepository;
+use crate::view::output::utils::BREAK_LINE;
+use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
 pub struct SubmitSavedRequestExecutor<W1, W2>
@@ -20,7 +20,7 @@ where
 }
 
 #[async_trait]
-impl<W1, W2> CliCommand for SubmitSavedRequestExecutor<W1, W2>
+impl<W1, W2> ViewCommand for SubmitSavedRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,

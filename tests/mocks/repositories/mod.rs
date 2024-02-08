@@ -14,7 +14,7 @@ use treq::app::services::web_client::entities::Response;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
 use treq::utils::uuid::UUID;
-use treq::view::cli::output::writer::CliWriterRepository;
+use treq::view::output::writer::CliWriterRepository;
 use treq::view::style::StyledStr;
 
 pub fn create_mock_back_end() -> MockAppBackend {

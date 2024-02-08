@@ -63,47 +63,6 @@ impl ToString for UrlDatas {
     }
 }
 
-impl UrlDatas {
-    pub fn with_protocol(mut self, value: impl Into<String>) -> Self {
-        self.protocol = Some(value.into());
-        self
-    }
-
-    pub fn with_host(mut self, value: impl Into<String>) -> Self {
-        self.host = value.into();
-        self
-    }
-
-    pub fn with_port(mut self, value: u16) -> Self {
-        self.port = Some(value);
-        self
-    }
-
-    pub fn with_paths<Str>(mut self, paths: impl IntoIterator<Item = Str>) -> Self
-    where
-        Str: Into<String>,
-    {
-        self.paths = paths.into_iter().map(|p| p.into()).collect();
-        self
-    }
-
-    pub fn with_query_params<Str>(mut self, params: impl IntoIterator<Item = (Str, Str)>) -> Self
-    where
-        Str: Into<String>,
-    {
-        self.query_params = params
-            .into_iter()
-            .map(|(k, v)| (k.into(), v.into()))
-            .collect();
-        self
-    }
-
-    pub fn with_anchor(mut self, value: impl Into<String>) -> Self {
-        self.anchor = Some(value.into());
-        self
-    }
-}
-
 impl FromStr for UrlDatas {
     type Err = anyhow::Error;
 
@@ -111,6 +70,8 @@ impl FromStr for UrlDatas {
         let re_overall_url = regex_url();
 
         let re_routes = Regex::new(r"[^\/]+").unwrap();
+
+        // Fix...
         let re_query_params = Regex::new(r"[^\&]+=[^&]+").unwrap();
 
         let url = re_overall_url
@@ -167,6 +128,47 @@ impl FromStr for UrlDatas {
             .ok_or(Error::msg("No valid url"))?;
 
         Ok(url)
+    }
+}
+
+impl UrlDatas {
+    pub fn with_protocol(mut self, value: impl Into<String>) -> Self {
+        self.protocol = Some(value.into());
+        self
+    }
+
+    pub fn with_host(mut self, value: impl Into<String>) -> Self {
+        self.host = value.into();
+        self
+    }
+
+    pub fn with_port(mut self, value: u16) -> Self {
+        self.port = Some(value);
+        self
+    }
+
+    pub fn with_paths<Str>(mut self, paths: impl IntoIterator<Item = Str>) -> Self
+    where
+        Str: Into<String>,
+    {
+        self.paths = paths.into_iter().map(|p| p.into()).collect();
+        self
+    }
+
+    pub fn with_query_params<Str>(mut self, params: impl IntoIterator<Item = (Str, Str)>) -> Self
+    where
+        Str: Into<String>,
+    {
+        self.query_params = params
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
+        self
+    }
+
+    pub fn with_anchor(mut self, value: impl Into<String>) -> Self {
+        self.anchor = Some(value.into());
+        self
     }
 }
 

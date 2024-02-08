@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use super::CliCommand;
+use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::requests::RequestData;
 use crate::app::services::web_client::entities::get_status_code_message;
 use crate::utils::channels::chain_listener_to_receiver;
-use crate::view::cli::output::utils::{BREAK_LINE, BREAK_LINE_WITH_GAP, SINGLE_SPACE, TAB_SPACE};
-use crate::view::cli::output::writer::CliWriterRepository;
+use crate::view::output::utils::{BREAK_LINE, BREAK_LINE_WITH_GAP, SINGLE_SPACE, TAB_SPACE};
+use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr, TextStyle};
 
 pub struct BasicRequestExecutor<W1, W2>
@@ -21,7 +21,7 @@ where
 }
 
 #[async_trait]
-impl<W1, W2> CliCommand for BasicRequestExecutor<W1, W2>
+impl<W1, W2> ViewCommand for BasicRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,
