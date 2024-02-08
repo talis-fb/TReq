@@ -1,109 +1,81 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use anyhow::Result;
 use regex::Regex;
 use serde_json::{Map, Value};
 
-use crate::app::services::request::entities::requests::OptionalRequestData;
+use super::input::cli_input::CliInputData;
+use crate::app::services::request::entities::methods::METHODS;
+use crate::app::services::request::entities::requests::{OptionalRequestData, Url};
 use crate::view::commands::ViewCommandChoice;
-use crate::view::input::cli_input::CliInput;
+use crate::view::input::cli_input::{CliInput, RequestItems};
 
-pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> {
+pub fn map_input_to_commands(input: CliInputData) -> Result<Vec<ViewCommandChoice>> {
     // -------------------------------------
     // The builded requests by inputs
+    //   It's necessary it be build in begginging
+    //   because it can be used in "save-as" command down below
+    //   Here is flags optionals in request_items
     // -------------------------------------
-    let base_request: Option<OptionalRequestData> = {
-        match input {
-            CliInput::DefaultBasicRequest {
-                url, ref request_items, ..
-            } => {
-                let base_url = url.to_string();
-                let base_request = OptionalRequestData::default().with_url(base_url);
-                let request = parser_request_items_to_data(base_request, &request_items);
-                Some(request)
-            }
-            CliInput::BasicRequest {
-                url,
-                method,
-                ref request_items,
-                ..
-            } => {
-                let base_url = url.to_string();
-                let base_request = OptionalRequestData::default()
-                    .with_url(base_url)
-                    .with_method(method);
-                let request = parser_request_items_to_data(base_request, &request_items);
-                Some(request)
-            }
-            CliInput::Run {
-                url_manual,
-                method_manual,
-                ref request_items,
-                ..
-            }
-            | CliInput::Edit {
-                url_manual,
-                method_manual,
-                ref request_items,
-                ..
-            } => {
-                let base_request = {
-                    let mut req = OptionalRequestData::default();
-                    if let Some(url) = url_manual {
-                        req = req.with_url(url.to_string());
-                    }
-                    if let Some(method) = method_manual {
-                        req = req.with_method(method);
-                    }
-                    req
-                };
+    let base_request: OptionalRequestData = {
+        let RequestItems {
+            raw_body,
+            request_items,
+            url_manual,
+            method_manual,
+        } = input.request_items;
 
-                let request = parser_request_items_to_data(base_request, &request_items);
-                Some(request)
-            }
-            _ => None,
-        }
+        let mut req = OptionalRequestData::default();
+        req.body = raw_body.map(String::from);
+        req.method = method_manual;
+        req.url = url_manual.and_then(|value| Url::from_str(value).ok());
+        req = parser_request_items_to_data(req, &request_items);
+        req
     };
+
+    // The main params of input command to set in request.
+    let base_request = match input.choice {
+        CliInput::BasicRequest { method, url } => base_request.with_method(method).with_url(url),
+        CliInput::DefaultBasicRequest { url } => {
+            let method = if base_request.body.is_some() {
+                METHODS::POST
+            } else {
+                METHODS::GET
+            };
+            base_request.with_method(method).with_url(url)
+        }
+        _ => base_request,
+        
+    };
+
 
     // -----------------------------------------------------
     // Commands to run before the main commands wished
     //   Theses commands are defined by optional flags
     //   like '--save-as' or '--save'
     // -----------------------------------------------------
-    let pre_commands: Vec<ViewCommandChoice> = {
-        let mut save_as = match input {
-            CliInput::DefaultBasicRequest {
-                save_as: Some(save_as),
-                ..
-            }
-            | CliInput::BasicRequest {
-                save_as: Some(save_as),
-                ..
-            } => Vec::from([factory_command_choices::save_as(
-                save_as.to_string(),
-                base_request.clone().unwrap(),
-                None,
-            )]),
-            _ => vec![],
-        };
+    let save_commands: Vec<ViewCommandChoice> = {
+        if let Some(request_name) = input.saving.save_as {
+            let base_request_name = match input.choice {
+                CliInput::Run { request_name, .. } | CliInput::Edit { request_name, .. } => {
+                    Some(request_name.to_string())
+                }
+                _ => None,
+            };
 
-        let save_current = match input {
-            CliInput::Run {
-                save: true,
-                request_name,
-                ..
-            } => Vec::from([factory_command_choices::save(
+            Vec::from([factory_command_choices::save_as(
                 request_name.to_string(),
-                base_request.clone().unwrap(),
-            )]),
-            _ => vec![],
-        };
-
-        save_as.extend(save_current);
-        save_as
+                base_request.clone(),
+                base_request_name,
+            )])
+        } else {
+            vec![]
+        }
     };
 
-    let main_commands: Vec<ViewCommandChoice> = match input {
+    // The main commands, run as the last on order
+    let main_commands: Vec<ViewCommandChoice> = match input.choice {
         CliInput::Ls => vec![ViewCommandChoice::ShowRequests],
         CliInput::Inspect { request_name } => vec![ViewCommandChoice::InspectRequest {
             request_name: request_name.to_string(),
@@ -120,30 +92,39 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
         }],
         CliInput::DefaultBasicRequest { .. } => {
             vec![ViewCommandChoice::SubmitRequest {
-                request: base_request.unwrap().to_request_data(),
+                request: base_request.to_request_data(),
             }]
         }
         CliInput::BasicRequest { .. } => {
             vec![ViewCommandChoice::SubmitRequest {
-                request: base_request.unwrap().to_request_data(),
+                request: base_request.to_request_data(),
             }]
         }
-        CliInput::Run { request_name, .. } => {
-            vec![ViewCommandChoice::SubmitSavedRequest {
+        CliInput::Run { request_name, save } => {
+            let main_command = ViewCommandChoice::SubmitSavedRequest {
                 request_name: request_name.to_string(),
-                request_data: base_request.unwrap().clone(),
-            }]
+                request_data: base_request.clone(),
+            };
+
+            if save {
+                Vec::from([
+                    factory_command_choices::save(request_name.to_string(), base_request.clone()),
+                    main_command,
+                ])
+            } else {
+                vec![main_command]
+            }
         }
-        CliInput::Edit { request_name, .. } => {
+        CliInput::Edit { request_name } => {
             vec![ViewCommandChoice::SaveRequestWithBaseRequest {
                 base_request_name: Some(request_name.to_string()),
                 request_name: request_name.to_string(),
-                request_data: base_request.unwrap(),
+                request_data: base_request,
             }]
         }
     };
 
-    Ok([pre_commands, main_commands]
+    Ok([save_commands, main_commands]
         .into_iter()
         .flatten()
         .collect())
@@ -155,25 +136,25 @@ fn parser_request_items_to_data<'a>(
 ) -> OptionalRequestData {
     request_items
         .into_iter()
-        .fold(base_request.clone(), |req_data, item| {
+        .fold(base_request, |req_data, item| {
+            print!("AQI: {:?}", req_data);
+            print!("AQI: {:?}", item);
+
             [
                 parsers_request_items::body_value,
                 parsers_request_items::header_value,
             ]
             .into_iter()
-            .find_map(|parser| parser(item, req_data.clone()))
-            .unwrap_or(base_request.clone())
+            .find_map(|parser| parser(item, &req_data))
+            .unwrap_or(req_data)
         })
 }
 
 mod parsers_request_items {
     use super::*;
 
-    pub fn body_value(
-        s: &str,
-        mut base_request: OptionalRequestData,
-    ) -> Option<OptionalRequestData> {
-        let re = Regex::new(r"^(?<key>[ -~])=(?<value>[ -~])$").unwrap();
+    pub fn body_value(s: &str, base_request: &OptionalRequestData) -> Option<OptionalRequestData> {
+        let re = Regex::new(r"^(?<key>[ -~]+)=(?<value>[ -~]+)$").unwrap();
         let matcher = re.captures(s)?;
 
         let key = matcher.name("key")?.as_str();
@@ -185,32 +166,36 @@ mod parsers_request_items {
             .map(|s| s.as_str())
             .unwrap_or("{}");
 
-        base_request.body = {
+        let mut request = base_request.clone();
+
+        request.body = {
             let mut json =
                 serde_json::from_str::<Map<String, Value>>(original_body).unwrap_or_default();
             json.insert(key.to_string(), Value::String(value.to_string()));
             serde_json::to_string(&json).unwrap_or_default().into()
         };
 
-        Some(base_request)
+        Some(request)
     }
 
     pub fn header_value(
         s: &str,
-        mut base_request: OptionalRequestData,
+        base_request: &OptionalRequestData,
     ) -> Option<OptionalRequestData> {
-        let re = Regex::new(r"^(?<key>[ -~]):(?<value>[ -~])$").unwrap();
+        let re = Regex::new(r"^(?<key>[ -~]+):(?<value>[ -~]+)$").unwrap();
         let matcher = re.captures(s)?;
 
         let key = matcher.name("key")?.as_str();
         let value = matcher.name("value")?.as_str();
 
-        base_request
+        let mut request = base_request.clone();
+
+        request
             .headers
             .get_or_insert(HashMap::new())
             .insert(key.to_string(), value.to_string());
 
-        Some(base_request)
+        Some(request)
     }
 }
 

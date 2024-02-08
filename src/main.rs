@@ -7,7 +7,7 @@ use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRe
 use treq::app::services::web_client::service::WebClient;
 use treq::utils::errors::print_pretty_error;
 use treq::view::input::cli_definition::root_command;
-use treq::view::input::cli_input::CliInput;
+use treq::view::input::cli_input::CliInputData;
 use treq::view::input_to_commands::map_input_to_commands;
 
 const APP_NAME: &str = env!("CARGO_PKG_NAME");
@@ -36,7 +36,7 @@ async fn runner() -> anyhow::Result<()> {
     // Cli Input
     // ----------------------------
     let args = root_command().get_matches();
-    let cli_inputs = CliInput::from_clap_matches(&args)?;
+    let cli_inputs = CliInputData::from_clap_matches(&args)?;
     let cli_commands = map_input_to_commands(cli_inputs)?;
     let commands_executors = cli_commands.into_iter().map(|choice| choice.get_executor());
 

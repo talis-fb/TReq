@@ -39,10 +39,12 @@ where
             None => None,
         };
 
+        println!("<<< BEFORE");
         let request_data_to_save = match base_request_data {
             Some(request_data) => self.request_data.merge_with(request_data),
             None => self.request_data.to_request_data(),
         };
+        println!("<<< After");
 
         provider
             .save_request_datas_as(self.request_name, request_data_to_save)
