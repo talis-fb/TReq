@@ -1,3 +1,4 @@
 pub mod methods;
-pub mod url;
+pub mod partial_entities;
 pub mod requests;
+pub mod url;

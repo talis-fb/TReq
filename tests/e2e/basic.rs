@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use treq::app::services::request::entities::url::UrlDatas;
+use treq::app::services::request::entities::url::UrlInfo;
 
 const DEFAULT_HTTPBIN_HOST: &str = "localhost:8888";
 
@@ -80,7 +80,7 @@ fn should_assert_list_saved_requests() {
 fn should_inspect_command_show_info_about_a_saved_request() {
     // Setup
     let url = format!("{}/post", host());
-    let url_data = UrlDatas::from_str(&url).unwrap();
+    let url_data = UrlInfo::from_str(&url).unwrap();
 
     let input = format!("treq POST {} Hello=World --save-as some-cool-request", &url,);
     let mut cmd = run_cmd(&input);
@@ -95,7 +95,7 @@ fn should_inspect_command_show_info_about_a_saved_request() {
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World"))
             .and(predicate::str::contains("POST"))
-            .and(predicate::str::contains(url_data.host))
+            .and(predicate::str::contains(url_data.host.unwrap()))
             .and(predicate::str::contains("post")),
     );
 }
@@ -132,6 +132,36 @@ fn should_submit_save_edit_and_submit_corretly_in_sequence() {
         predicate::str::contains("post")
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World")),
+    );
+}
+
+#[test]
+fn should_save_query_params_without_delete_already_saved_url() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as req-with-query-params", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run req-with-query-params search==Rust";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("/get")
+            .and(predicate::str::contains("search"))
+            .and(predicate::str::contains("Rust")),
+    );
+
+    let input = "treq run req-with-query-params --save search==Rust";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq inspect req-with-query-params";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("get")
+            .and(predicate::str::contains("search"))
+            .and(predicate::str::contains("Rust")),
     );
 }
 

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use anyhow::Result;
 use regex::Regex;
@@ -7,7 +6,8 @@ use serde_json::{Map, Value};
 
 use super::input::cli_input::CliInput;
 use crate::app::services::request::entities::methods::METHODS;
-use crate::app::services::request::entities::requests::{OptionalRequestData, Url};
+use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::app::services::request::entities::url::Url;
 use crate::view::commands::ViewCommandChoice;
 use crate::view::input::cli_input::{CliCommandChoice, RequestBuildingOptions};
 
@@ -18,7 +18,7 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
     //   because it can be used in "save-as" command down below
     //   Here is flags optionals in request_items
     // -------------------------------------
-    let base_request: OptionalRequestData = {
+    let base_request: PartialRequestData = {
         let RequestBuildingOptions {
             raw_body,
             url_manual,
@@ -26,10 +26,10 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
             ..
         } = input.request_input;
 
-        let mut req = OptionalRequestData::default();
+        let mut req = PartialRequestData::default();
         req.body = raw_body.map(String::from);
         req.method = method_manual;
-        req.url = url_manual.and_then(|value| Url::from_str(value).ok());
+        req.url = url_manual.map(|value| Url::from_str(value));
         req
     };
 
@@ -49,11 +49,12 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
         _ => base_request,
     };
 
-    let base_request = parser_request_items_to_data(base_request, &input.request_input.request_items);
+    let base_request =
+        parser_request_items_to_data(base_request, &input.request_input.request_items);
     // -----------------------------------------------------
     // Commands to run before the main commands wished
     //   Theses commands are defined by optional flag
-    //   '--save-as' 
+    //   '--save-as'
     // -----------------------------------------------------
     let save_commands: Vec<ViewCommandChoice> = {
         if let Some(request_name) = input.save_options.save_as {
@@ -130,9 +131,9 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
 }
 
 fn parser_request_items_to_data<'a>(
-    base_request: OptionalRequestData,
+    base_request: PartialRequestData,
     request_items: &'a [&'a str],
-) -> OptionalRequestData {
+) -> PartialRequestData {
     request_items
         .into_iter()
         .fold(base_request, |req_data, item| {
@@ -149,8 +150,9 @@ fn parser_request_items_to_data<'a>(
 
 mod parsers_request_items {
     use super::*;
+    use crate::app::services::request::entities::url::UrlInfo;
 
-    pub fn body_value(s: &str, base_request: &OptionalRequestData) -> Option<OptionalRequestData> {
+    pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
         let re = Regex::new(r"^(?<key>[ -~]+)=(?<value>[ -~]+)$").unwrap();
         let matcher = re.captures(s)?;
 
@@ -175,10 +177,7 @@ mod parsers_request_items {
         Some(request)
     }
 
-    pub fn header_value(
-        s: &str,
-        base_request: &OptionalRequestData,
-    ) -> Option<OptionalRequestData> {
+    pub fn header_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
         let re = Regex::new(r"^(?<key>[ -~]+):(?<value>[ -~]+)$").unwrap();
         let matcher = re.captures(s)?;
 
@@ -197,18 +196,28 @@ mod parsers_request_items {
 
     pub fn query_param_value(
         s: &str,
-        base_request: &OptionalRequestData,
-    ) -> Option<OptionalRequestData> {
+        base_request: &PartialRequestData,
+    ) -> Option<PartialRequestData> {
         let re = Regex::new(r"^(?<key>[ -~]+)==(?<value>[ -~]+)$").unwrap();
         let matcher = re.captures(s)?;
 
         let key = matcher.name("key")?.as_str();
         let value = matcher.name("value")?.as_str();
 
+        // TODO: RETURN THIS TO USER
+        // In this case the validation on URL is already made and is not possible to manipulate it
+        // to insert a query_param, because was not possible to create the UrlInfo using given input
+        if let Some(Url::Raw(_)) = base_request.url.as_ref() {
+            return None;
+        }
+
         let mut request = base_request.clone();
+        request.url = request.url.or(Some(Url::ValidatedUrl(UrlInfo::default())));
 
         if let Some(Url::ValidatedUrl(url_data)) = request.url.as_mut() {
-            url_data.query_params.push((key.to_string(), value.to_string()));
+            url_data
+                .query_params
+                .push((key.to_string(), value.to_string()));
         }
 
         Some(request)
@@ -220,7 +229,7 @@ mod factory_command_choices {
 
     pub fn save_as(
         request_name: String,
-        request_data: OptionalRequestData,
+        request_data: PartialRequestData,
         base_request_name: Option<String>,
     ) -> ViewCommandChoice {
         ViewCommandChoice::SaveRequestWithBaseRequest {
@@ -230,7 +239,7 @@ mod factory_command_choices {
         }
     }
 
-    pub fn save(request_name: String, request_data: OptionalRequestData) -> ViewCommandChoice {
+    pub fn save(request_name: String, request_data: PartialRequestData) -> ViewCommandChoice {
         ViewCommandChoice::SaveRequestWithBaseRequest {
             base_request_name: Some(request_name.clone()),
             request_name,

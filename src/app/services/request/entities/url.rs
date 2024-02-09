@@ -6,23 +6,53 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::regexes::regex_url;
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Url {
+    ValidatedUrl(UrlInfo),
+    Raw(String),
+}
+
+impl Url {
+    pub fn from_str(s: &str) -> Self {
+        match UrlInfo::from_str(s) {
+            Ok(url) => Url::ValidatedUrl(url),
+            Err(_) => Url::Raw(s.to_string()),
+        }
+    }
+    pub fn to_string(&self) -> String {
+        match self {
+            Url::ValidatedUrl(url) => url.to_string(),
+            Url::Raw(url) => url.clone(),
+        }
+    }
+}
+
+impl Default for Url {
+    fn default() -> Self {
+        Url::Raw(String::default())
+    }
+}
+
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UrlDatas {
+pub struct UrlInfo {
     pub protocol: Option<String>,
-    pub host: String,
+    pub host: Option<String>,
     pub port: Option<u16>,
     pub paths: Vec<String>,
     pub query_params: Vec<(String, String)>,
     pub anchor: Option<String>,
 }
 
-impl ToString for UrlDatas {
+impl ToString for UrlInfo {
     fn to_string(&self) -> String {
         let protocol = self
             .protocol
             .as_ref()
             .map(|p| format!("{}://", p))
             .unwrap_or_default();
+
+        let binding = "".to_string();
+        let host = self.host.as_ref().unwrap_or(&binding);
 
         let port = self
             .port
@@ -58,12 +88,12 @@ impl ToString for UrlDatas {
 
         format!(
             "{}{}{}{}{}{}",
-            protocol, self.host, port, paths, query_params, anchor
+            protocol, host, port, paths, query_params, anchor
         )
     }
 }
 
-impl FromStr for UrlDatas {
+impl FromStr for UrlInfo {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -115,9 +145,9 @@ impl FromStr for UrlDatas {
 
                 let anchor = matcher.name("anchor").map(|m| m.as_str().to_string());
 
-                UrlDatas {
+                UrlInfo {
                     protocol,
-                    host: host.unwrap().to_string(),
+                    host,
                     port,
                     paths,
                     query_params,
@@ -131,14 +161,35 @@ impl FromStr for UrlDatas {
     }
 }
 
-impl UrlDatas {
+impl UrlInfo {
+    pub fn merge_with(self, other: UrlInfo) -> UrlInfo {
+        UrlInfo {
+            protocol: self.protocol.or(other.protocol),
+            host: self.host.or(other.host),
+            port: self.port.or(other.port),
+            paths: {
+                if other.paths.is_empty() {
+                    self.paths
+                } else {
+                    other.paths
+                }
+            },
+            query_params: self
+                .query_params
+                .into_iter()
+                .chain(other.query_params)
+                .collect(),
+            anchor: self.anchor.or(other.anchor),
+        }
+    }
+
     pub fn with_protocol(mut self, value: impl Into<String>) -> Self {
         self.protocol = Some(value.into());
         self
     }
 
     pub fn with_host(mut self, value: impl Into<String>) -> Self {
-        self.host = value.into();
+        self.host = Some(value.into());
         self
     }
 
@@ -179,65 +230,65 @@ mod tests_url {
     #[test]
     fn test_basic_url_from_str_to_struct() -> anyhow::Result<()> {
         let valid_urls = [
-            ("google.com", UrlDatas::default().with_host("google.com")),
-            ("google.com/", UrlDatas::default().with_host("google.com")),
-            ("google.com?", UrlDatas::default().with_host("google.com")),
+            ("google.com", UrlInfo::default().with_host("google.com")),
+            ("google.com/", UrlInfo::default().with_host("google.com")),
+            ("google.com?", UrlInfo::default().with_host("google.com")),
             (
                 "google.com:81",
-                UrlDatas::default().with_host("google.com").with_port(81),
+                UrlInfo::default().with_host("google.com").with_port(81),
             ),
             (
                 "google.com:81/",
-                UrlDatas::default().with_host("google.com").with_port(81),
+                UrlInfo::default().with_host("google.com").with_port(81),
             ),
             (
                 "google.com/search/advanced",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"]),
             ),
             (
                 "google.com/search/advanced/",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"]),
             ),
             (
                 "google.com?search=Rust",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_query_params([("search", "Rust")]),
             ),
             (
                 "google.com?search=Rust&country=br",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_query_params([("search", "Rust"), ("country", "br")]),
             ),
             (
                 "google.com/search/advanced?name=john",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_query_params([("name", "john")]),
             ),
             (
                 "google.com/search/advanced/?name=john",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_query_params([("name", "john")]),
             ),
             (
                 "google.com/search/advanced?name=john&sort=true",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_query_params([("name", "john"), ("sort", "true")]),
             ),
             (
                 "google.com/search/advanced?name=john&sort=true#landing-page",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_query_params([("name", "john"), ("sort", "true")])
@@ -245,27 +296,27 @@ mod tests_url {
             ),
             (
                 "google.com/search/advanced#landing-page",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_anchor("landing-page"),
             ),
             (
                 "google.com/search/advanced/#landing-page",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_anchor("landing-page"),
             ),
             (
                 "google.com#landing-page",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_anchor("landing-page"),
             ),
             (
                 "google.com/#landing-page",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_anchor("landing-page"),
             ),
@@ -280,7 +331,7 @@ mod tests_url {
             .map(|(url, data)| (format!("https://{}", url), data.with_protocol("https")));
 
         let variants_with_www = valid_urls.clone().map(|(url, data)| {
-            let original_host = data.host.clone();
+            let original_host = data.host.clone().unwrap();
             (
                 format!("www.{}", url),
                 data.with_host(format!("www.{original_host}")),
@@ -295,7 +346,7 @@ mod tests_url {
             .chain(variants_with_www);
 
         for (url_str, expected) in valid_urls {
-            let url_data = UrlDatas::from_str(url_str.as_str());
+            let url_data = UrlInfo::from_str(url_str.as_str());
 
             match url_data {
                 Ok(url) => assert_eq!(url, expected),
@@ -311,42 +362,42 @@ mod tests_url {
         let valid_urls = [
             (
                 "example.com/page#section1",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("example.com")
                     .with_anchor("section1")
                     .with_paths(["page"]),
             ),
             (
                 "example.com:8080",
-                UrlDatas::default().with_host("example.com").with_port(8080),
+                UrlInfo::default().with_host("example.com").with_port(8080),
             ),
             (
                 "localhost:3000",
-                UrlDatas::default().with_host("localhost").with_port(3000),
+                UrlInfo::default().with_host("localhost").with_port(3000),
             ),
             (
                 "xn--bcher-kva.ch",
-                UrlDatas::default().with_host("xn--bcher-kva.ch"),
+                UrlInfo::default().with_host("xn--bcher-kva.ch"),
             ),
             (
                 "subdomain.example.com",
-                UrlDatas::default().with_host("subdomain.example.com"),
+                UrlInfo::default().with_host("subdomain.example.com"),
             ),
             (
                 "higher-subdomain.nested-subdomain.lastdomain.example.com",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("higher-subdomain.nested-subdomain.lastdomain.example.com"),
             ),
             (
                 "example.com//path//to//page",
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("example.com")
                     .with_paths(["path", "to", "page"]),
             ),
         ];
 
         for (url_str, expected) in valid_urls {
-            let url_data = UrlDatas::from_str(url_str);
+            let url_data = UrlInfo::from_str(url_str);
 
             match url_data {
                 Ok(url) => assert_eq!(url, expected),
@@ -360,50 +411,50 @@ mod tests_url {
     #[test]
     fn test_url_data_to_string() {
         let valid_urls = [
-            (UrlDatas::default().with_host("google.com"), "google.com"),
+            (UrlInfo::default().with_host("google.com"), "google.com"),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_protocol("http"),
                 "http://google.com",
             ),
             (
-                UrlDatas::default().with_host("google.com").with_port(81),
+                UrlInfo::default().with_host("google.com").with_port(81),
                 "google.com:81",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"]),
                 "google.com/search/advanced",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_query_params([("search", "Rust")]),
                 "google.com?search=Rust",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_query_params([("search", "Rust"), ("country", "br")]),
                 "google.com?search=Rust&country=br",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_anchor("landing-page"),
                 "google.com#landing-page",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_query_params([("search", "Rust"), ("country", "br")]),
                 "google.com/search/advanced?search=Rust&country=br",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_port(8080)
                     .with_paths(["search", "advanced"])
@@ -411,14 +462,14 @@ mod tests_url {
                 "google.com:8080/search/advanced?search=Rust&country=br",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_paths(["search", "advanced"])
                     .with_anchor("landing-page"),
                 "google.com/search/advanced#landing-page",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_port(8080)
                     .with_paths(["search", "advanced"])
@@ -427,7 +478,7 @@ mod tests_url {
                 "google.com:8080/search/advanced?search=Rust&country=br#landing-page",
             ),
             (
-                UrlDatas::default()
+                UrlInfo::default()
                     .with_host("google.com")
                     .with_protocol("https")
                     .with_port(8080)

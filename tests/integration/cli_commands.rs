@@ -1,7 +1,7 @@
-use std::str::FromStr;
-
 use treq::app::services::request::entities::methods::METHODS;
-use treq::app::services::request::entities::requests::{OptionalRequestData, RequestData, Url};
+use treq::app::services::request::entities::partial_entities::PartialRequestData;
+use treq::app::services::request::entities::requests::RequestData;
+use treq::app::services::request::entities::url::Url;
 use treq::view::commands::{self, ViewCommand};
 
 use crate::mocks::repositories::{create_mock_back_end, CliWriterUseLess};
@@ -40,8 +40,8 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
         .with_method(METHODS::GET)
         .with_headers([("User-Agent".into(), "treq-test".into())]);
 
-    let input_second_request = OptionalRequestData {
-        url: Some(Url::from_str("https://google.com")?),
+    let input_second_request = PartialRequestData {
+        url: Some(Url::from_str("https://google.com")),
         method: Some(METHODS::POST),
         body: Some(r#"{ "Hello": "World" }"#.into()),
         headers: None,
@@ -77,7 +77,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
     let save_request_executor: Box<dyn ViewCommand> = SaveRequestWithBaseRequestExecutor {
         base_request_name: Some("some_request".to_string()),
         request_name: "some_request".to_string(),
-        request_data: input_second_request.clone(),
+        input_request_data: input_second_request.clone(),
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }
@@ -86,7 +86,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
 
     let submit_save_request_executor: Box<dyn ViewCommand> = SubmitSavedRequestExecutor {
         request_name: "some_request".into(),
-        request_data: OptionalRequestData::default(),
+        input_request_data: PartialRequestData::default(),
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }

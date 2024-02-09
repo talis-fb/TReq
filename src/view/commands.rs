@@ -5,7 +5,8 @@ use async_trait::async_trait;
 use serde::Serialize;
 
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::requests::{OptionalRequestData, RequestData};
+use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::app::services::request::entities::requests::RequestData;
 use crate::view::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
@@ -28,7 +29,7 @@ pub enum ViewCommandChoice {
 
     SubmitSavedRequest {
         request_name: String,
-        request_data: OptionalRequestData,
+        request_data: PartialRequestData,
     },
 
     SaveNewRequest {
@@ -38,7 +39,7 @@ pub enum ViewCommandChoice {
     SaveRequestWithBaseRequest {
         request_name: String,
         base_request_name: Option<String>,
-        request_data: OptionalRequestData,
+        request_data: PartialRequestData,
     },
 
     RemoveSavedRequest {
@@ -80,7 +81,7 @@ impl ViewCommandChoice {
                 request_data,
             } => SubmitSavedRequestExecutor {
                 request_name,
-                request_data,
+                input_request_data: request_data,
                 writer_stdout,
                 writer_stderr,
             }
@@ -103,7 +104,7 @@ impl ViewCommandChoice {
             } => SaveRequestWithBaseRequestExecutor {
                 request_name,
                 base_request_name,
-                request_data,
+                input_request_data: request_data,
                 writer_stdout,
                 writer_stderr,
             }

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use super::submit_request::BasicRequestExecutor;
 use super::ViewCommand;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::requests::OptionalRequestData;
+use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::view::output::utils::BREAK_LINE;
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
@@ -14,7 +14,7 @@ where
     W2: CliWriterRepository,
 {
     pub request_name: String,
-    pub request_data: OptionalRequestData,
+    pub input_request_data: PartialRequestData,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -30,7 +30,7 @@ where
             .get_request_saved(self.request_name.clone())
             .await?;
 
-        let request_data = self.request_data.merge_with(request);
+        let request_data = self.input_request_data.merge_with(request);
 
         self.writer_stderr.print_lines([BREAK_LINE]);
         self.writer_stderr.print_lines_styled([[

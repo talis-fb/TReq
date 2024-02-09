@@ -1,6 +1,7 @@
 use super::facade::WebClientFacade;
 use super::repository_client::{HttpClientRepository, TaskRunningRequest};
-use crate::app::services::request::entities::requests::{RequestData, Url};
+use crate::app::services::request::entities::requests::RequestData;
+use crate::app::services::request::entities::url::Url;
 
 pub type WebClientInstance = Box<dyn WebClientFacade>;
 
