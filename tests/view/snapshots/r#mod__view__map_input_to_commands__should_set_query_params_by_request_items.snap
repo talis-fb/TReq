@@ -1,6 +1,6 @@
 ---
 source: tests/view/map_input_to_commands.rs
-expression: output
+expression: output.unwrap()
 ---
 - SubmitRequest:
     request:
@@ -10,9 +10,13 @@ expression: output
           host: url.com
           port: ~
           paths: []
-          query_params: []
+          query_params:
+            - - searth
+              - Rust
+            - - country
+              - br
           anchor: ~
       method: GET
       headers: {}
-      body: "{\"Hello\":\"World\"}"
+      body: ""
 

@@ -3,12 +3,12 @@
 use insta::assert_yaml_snapshot as assert_snapshot;
 use treq::view::commands::ViewCommandChoice;
 use treq::view::input::cli_definition::root_command;
-use treq::view::input::cli_input::CliInputData;
+use treq::view::input::cli_input::CliInput;
 use treq::view::input_to_commands::map_input_to_commands;
 
 fn process(input: &str) -> anyhow::Result<Vec<ViewCommandChoice>> {
     let matches = root_command().get_matches_from(input.split_whitespace());
-    let inputs = CliInputData::from_clap_matches(&matches)?;
+    let inputs = CliInput::from_clap_matches(&matches)?;
     let commands_choices = map_input_to_commands(inputs)?;
     Ok(commands_choices)
 }
@@ -49,7 +49,7 @@ fn should_parse_all_methods_subcommands_to_normal_submits() {
 
     inputs.iter().for_each(|input| {
         let output = process(input).unwrap();
-        assert!(output.len() == 1);
+        debug_assert!(output.len() == 1, "{:?}", output);
         assert_snapshot!(output);
     });
 }
@@ -82,8 +82,17 @@ fn should_raw_flag_work_equal_param_body_definition() {
 }
 
 #[test]
-fn should_merge_inputas_of_raw_flag_and_param_body() {
+fn should_merge_inputs_of_raw_flag_and_param_body() {
     let input = r#"treq POST url.com --raw {"name":"Thales"} age=40 job=Dev "#;
+    let output = process(input);
+    assert!(output.is_ok());
+    assert_snapshot!(output.unwrap());
+}
+
+#[test]
+fn should_set_query_params_by_request_items() {
+    // Url final => url.com/?search=Rust&country=br
+    let input = r#"treq GET url.com searth==Rust country==br"#;
     let output = process(input);
     assert!(output.is_ok());
     assert_snapshot!(output.unwrap());
@@ -109,6 +118,9 @@ fn should_execute_with_valid_urls() {
         "google.com/search/advanced/#landing-page",
         "google.com#landing-page",
         "google.com/#landing-page",
+        "maps.google.com/#landing-page",
+        "subdomain.from-subdomain.maps.google.com/#",
+        "subdomain.from-subdomain.maps.google.com:9999/#",
         "localhost",
         "localhost/",
         "localhost:8081/",

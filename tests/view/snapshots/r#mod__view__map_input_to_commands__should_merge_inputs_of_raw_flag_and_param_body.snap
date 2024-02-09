@@ -1,6 +1,6 @@
 ---
 source: tests/view/map_input_to_commands.rs
-expression: output
+expression: output.unwrap()
 ---
 - SubmitRequest:
     request:
@@ -12,7 +12,7 @@ expression: output
           paths: []
           query_params: []
           anchor: ~
-      method: GET
+      method: POST
       headers: {}
-      body: "{\"Hello\":\"World\"}"
+      body: "{\"age\":\"40\",\"job\":\"Dev\",\"name\":\"Thales\"}"
 
