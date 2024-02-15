@@ -5,17 +5,21 @@ use regex::Regex;
 use serde_json::{Map, Value};
 
 use super::input::cli_input::CliInput;
-use super::input::validators_input;
 use crate::app::services::request::entities::methods::METHODS;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::app::services::request::entities::url::Url;
 use crate::view::commands::ViewCommandChoice;
 use crate::view::input::cli_input::{CliCommandChoice, RequestBuildingOptions};
+use crate::view::input::validators::body_values_with_raw::validate_body_values_with_raw;
+use crate::view::input::validators::url_alias::validate_alias_url_to_localhost;
 
 pub fn validate_input_to_commands(input: CliInput) -> Result<CliInput> {
-    [validators_input::validate_alias_url_to_localhost]
-        .into_iter()
-        .fold(Ok(input), |input, validator| input.and_then(validator))
+    [
+        validate_body_values_with_raw,
+        validate_alias_url_to_localhost,
+    ]
+    .into_iter()
+    .fold(Ok(input), |input, validator| input.and_then(validator))
 }
 
 pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> {

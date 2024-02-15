@@ -1,8 +1,7 @@
 use anyhow::Result;
 use regex::Regex;
 
-use super::cli_input::CliInput;
-use crate::view::input::cli_input::CliCommandChoice;
+use crate::view::input::cli_input::{CliCommandChoice, CliInput};
 
 pub fn validate_alias_url_to_localhost(mut input: CliInput) -> Result<CliInput> {
     let url_to_validate = match &mut input.choice {

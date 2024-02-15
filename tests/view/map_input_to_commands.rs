@@ -143,11 +143,68 @@ fn should_execute_with_valid_urls() {
     }
 }
 
-// Alias Localhost
+// ---------------------------------
+// Validators    -------------------
+// ---------------------------------
 #[test]
 fn should_validate_alias_for_localhost_requests() {
     let input = ["treq", "GET", ":8080", "search==Rust", "country==br"];
     let output = process(input);
     debug_assert!(output.is_ok(), "{:?}", output);
     assert_snapshot!(output.unwrap());
+}
+
+#[test]
+fn should_validate_if_error_on_raw_value_as_not_map_and_body_insert() {
+    // Ok
+    let input = [
+        "treq",
+        "GET",
+        "url.com",
+        "--raw",
+        "{\"Hello\":\"World\"}",
+        "name=John",
+    ];
+    let output = process(input);
+    debug_assert!(output.is_ok(), "{:?}", output);
+
+    // Ok
+    let input = ["treq", "GET", "url.com", "--raw", "{}", "name=John"];
+    let output = process(input);
+    debug_assert!(output.is_ok(), "{:?}", output);
+
+    // Err
+    let input = ["treq", "GET", "url.com", "--raw", "some-value", "name=John"];
+    let output = process(input);
+    debug_assert!(output.is_err(), "{:?}", output);
+    debug_assert!(
+        output
+            .as_ref()
+            .unwrap_err()
+            .to_string()
+            .contains("raw body"),
+        "{:?}",
+        output
+    );
+
+    // Err
+    let input = [
+        "treq",
+        "GET",
+        "url.com",
+        "--raw",
+        "[ \"Hello\",\"World\" ]",
+        "name=John",
+    ];
+    let output = process(input);
+    debug_assert!(output.is_err(), "{:?}", output);
+    debug_assert!(
+        output
+            .as_ref()
+            .unwrap_err()
+            .to_string()
+            .contains("raw body"),
+        "{:?}",
+        output
+    );
 }
