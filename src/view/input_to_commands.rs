@@ -5,11 +5,18 @@ use regex::Regex;
 use serde_json::{Map, Value};
 
 use super::input::cli_input::CliInput;
+use super::input::validators_input;
 use crate::app::services::request::entities::methods::METHODS;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::app::services::request::entities::url::Url;
 use crate::view::commands::ViewCommandChoice;
 use crate::view::input::cli_input::{CliCommandChoice, RequestBuildingOptions};
+
+pub fn validate_input_to_commands(input: CliInput) -> Result<CliInput> {
+    [validators_input::validate_alias_url_to_localhost]
+        .into_iter()
+        .fold(Ok(input), |input, validator| input.and_then(validator))
+}
 
 pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> {
     // -------------------------------------
@@ -29,16 +36,16 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
         let mut req = PartialRequestData::default();
         req.body = raw_body.map(String::from);
         req.method = method_manual;
-        req.url = url_manual.map(|value| Url::from_str(value));
+        req.url = url_manual.map(|value| Url::from_str(&value));
         req
     };
 
     // The main params of input command to set in request.
     let base_request = match input.choice {
-        CliCommandChoice::BasicRequest { method, url } => {
+        CliCommandChoice::BasicRequest { method, ref url } => {
             base_request.with_method(method).with_url(url)
         }
-        CliCommandChoice::DefaultBasicRequest { url } => {
+        CliCommandChoice::DefaultBasicRequest { ref url } => {
             let method = if base_request.body.is_some() {
                 METHODS::POST
             } else {
@@ -50,7 +57,7 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
     };
 
     let base_request =
-        parser_request_items_to_data(base_request, &input.request_input.request_items);
+        parser_request_items_to_data(base_request, input.request_input.request_items);
     // -----------------------------------------------------
     // Commands to run before the main commands wished
     //   Theses commands are defined by optional flag
@@ -59,8 +66,12 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
     let save_commands: Vec<ViewCommandChoice> = {
         if let Some(request_name) = input.save_options.save_as {
             let base_request_name = match input.choice {
-                CliCommandChoice::Run { request_name, .. }
-                | CliCommandChoice::Edit { request_name, .. } => Some(request_name.to_string()),
+                CliCommandChoice::Run {
+                    ref request_name, ..
+                }
+                | CliCommandChoice::Edit {
+                    ref request_name, ..
+                } => Some(request_name.to_string()),
                 _ => None,
             };
 
@@ -130,9 +141,9 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
         .collect())
 }
 
-fn parser_request_items_to_data<'a>(
+fn parser_request_items_to_data(
     base_request: PartialRequestData,
-    request_items: &'a [&'a str],
+    request_items: impl IntoIterator<Item = String>,
 ) -> PartialRequestData {
     request_items
         .into_iter()
@@ -143,7 +154,7 @@ fn parser_request_items_to_data<'a>(
                 parsers_request_items::header_value,
             ]
             .into_iter()
-            .find_map(|parser| parser(item, &req_data))
+            .find_map(|parser| parser(&item, &req_data))
             .unwrap_or(req_data)
         })
 }

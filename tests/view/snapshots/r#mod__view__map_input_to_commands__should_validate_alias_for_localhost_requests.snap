@@ -7,8 +7,8 @@ expression: output.unwrap()
       url:
         ValidatedUrl:
           protocol: ~
-          host: url.com
-          port: ~
+          host: localhost
+          port: 8080
           paths: []
           query_params:
             - - search

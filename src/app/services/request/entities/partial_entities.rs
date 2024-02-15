@@ -65,7 +65,6 @@ impl PartialRequestData {
             .with_headers(self.headers.unwrap_or(other.headers))
             .with_body(self.body.unwrap_or(other.body));
 
-
         match (self.url, other.url) {
             (Some(Url::ValidatedUrl(url)), Url::ValidatedUrl(other)) => {
                 final_request.url = Url::ValidatedUrl(other.merge_with(url));

@@ -4,18 +4,19 @@ use insta::assert_yaml_snapshot as assert_snapshot;
 use treq::view::commands::ViewCommandChoice;
 use treq::view::input::cli_definition::root_command;
 use treq::view::input::cli_input::CliInput;
-use treq::view::input_to_commands::map_input_to_commands;
+use treq::view::input_to_commands::{map_input_to_commands, validate_input_to_commands};
 
-fn process(input: &str) -> anyhow::Result<Vec<ViewCommandChoice>> {
-    let matches = root_command().get_matches_from(input.split_whitespace());
+fn process<'a>(input: impl IntoIterator<Item = &'a str>) -> anyhow::Result<Vec<ViewCommandChoice>> {
+    let matches = root_command().get_matches_from(input);
     let inputs = CliInput::from_clap_matches(&matches)?;
+    let inputs = validate_input_to_commands(inputs)?;
     let commands_choices = map_input_to_commands(inputs)?;
     Ok(commands_choices)
 }
 
 #[test]
 fn should_parse_to_normal_GET_submit_without_passing_method_as_subcommand_and_no_body() {
-    let input = "treq url.com";
+    let input = ["treq", "url.com"];
     let output = process(input).unwrap();
     assert!(output.len() == 1);
     assert_snapshot!(output);
@@ -24,7 +25,7 @@ fn should_parse_to_normal_GET_submit_without_passing_method_as_subcommand_and_no
 #[test]
 fn should_parse_to_normal_POST_submit_without_passing_method_as_subcommand_but_passing_some_body_data(
 ) {
-    let input = "treq url.com Hello=World";
+    let input = ["treq", "url.com", "Hello=World"];
     let output = process(input).unwrap();
     assert!(output.len() == 1);
     assert_snapshot!(output);
@@ -32,7 +33,7 @@ fn should_parse_to_normal_POST_submit_without_passing_method_as_subcommand_but_p
 
 #[test]
 fn should_ignore_body_inputs_in_GET_request() {
-    let input = "treq GET url.com Hello=World";
+    let input = ["treq", "GET", "url.com", "Hello=World"];
     let output = process(input).unwrap();
     assert!(output.len() == 1);
     assert_snapshot!(output);
@@ -43,11 +44,11 @@ fn should_parse_all_methods_subcommands_to_normal_submits() {
     let all_methods = ["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"];
 
     let inputs = all_methods
-        .iter()
-        .map(|method| format!("treq {} url.com", method))
+        .into_iter()
+        .map(|method| ["treq", method, "url.com"])
         .collect::<Vec<_>>();
 
-    inputs.iter().for_each(|input| {
+    inputs.into_iter().for_each(|input| {
         let output = process(input).unwrap();
         debug_assert!(output.len() == 1, "{:?}", output);
         assert_snapshot!(output);
@@ -56,51 +57,59 @@ fn should_parse_all_methods_subcommands_to_normal_submits() {
 
 #[test]
 fn should_parse_same_way_with_or_without_protocol_in_url() {
-    let input1 = "treq url.com";
-    let input2 = "treq http://url.com";
+    let input1 = ["treq", "url.com"];
+    let input2 = ["treq", "http://url.com"];
     process(input1).unwrap();
     process(input2).unwrap();
 }
 
 #[test]
 fn should_error_if_no_input() {
-    let input = "treq";
+    let input = ["treq"];
     let output = process(input);
     assert!(output.is_err());
 }
 
 #[test]
 fn should_raw_flag_work_equal_param_body_definition() {
-    let input1 = "treq POST url.com Hello=World";
-    let input2 = r#"treq POST url.com --raw {"Hello":"World"}"#;
+    let input1 = ["treq", "POST", "url.com", "Hello=World"];
+    let input2 = ["treq", "POST", "url.com", "--raw", r#"{"Hello":"World"}"#];
     let output1 = process(input1);
     let output2 = process(input2);
 
-    assert!(output1.is_ok());
-    assert!(output2.is_ok());
+    debug_assert!(output1.is_ok(), "{:?}", output1);
+    debug_assert!(output2.is_ok(), "{:?}", output2);
     assert_eq!(output1.unwrap(), output2.unwrap());
 }
 
 #[test]
 fn should_merge_inputs_of_raw_flag_and_param_body() {
-    let input = r#"treq POST url.com --raw {"name":"Thales"} age=40 job=Dev "#;
+    let input = [
+        "treq",
+        "POST",
+        "url.com",
+        "--raw",
+        r#"{"name":"Thales"}"#,
+        "age=40",
+        "job=Dev",
+    ];
     let output = process(input);
-    assert!(output.is_ok());
+    debug_assert!(output.is_ok(), "{:?}", output);
     assert_snapshot!(output.unwrap());
 }
 
 #[test]
 fn should_set_query_params_by_request_items() {
     // Url final => url.com/?search=Rust&country=br
-    let input = r#"treq GET url.com searth==Rust country==br"#;
+    let input = ["treq", "GET", "url.com", "search==Rust", "country==br"];
     let output = process(input);
-    assert!(output.is_ok());
+    debug_assert!(output.is_ok(), "{:?}", output);
     assert_snapshot!(output.unwrap());
 }
 
 #[test]
 fn should_execute_with_valid_urls() {
-    const VALID_URLS: &[&str] = &[
+    let VALID_URLS = [
         "google.com",
         "google.com/",
         "google.com?",
@@ -128,8 +137,17 @@ fn should_execute_with_valid_urls() {
     ];
 
     for url in VALID_URLS {
-        let input = format!("treq GET {}", url);
-        let output = process(&input);
+        let input = ["treq", "GET", url];
+        let output = process(input);
         debug_assert!(output.is_ok(), "{:?}", output);
     }
+}
+
+// Alias Localhost
+#[test]
+fn should_validate_alias_for_localhost_requests() {
+    let input = ["treq", "GET", ":8080", "search==Rust", "country==br"];
+    let output = process(input);
+    debug_assert!(output.is_ok(), "{:?}", output);
+    assert_snapshot!(output.unwrap());
 }

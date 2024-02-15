@@ -5,44 +5,44 @@ use clap::ArgMatches;
 
 use crate::app::services::request::entities::methods::METHODS;
 
-pub struct CliInput<'a> {
-    pub choice: CliCommandChoice<'a>,
-    pub request_input: RequestBuildingOptions<'a>,
-    pub save_options: SavingOptions<'a>,
+pub struct CliInput {
+    pub choice: CliCommandChoice,
+    pub request_input: RequestBuildingOptions,
+    pub save_options: SavingOptions,
 }
 
-pub enum CliCommandChoice<'a> {
+pub enum CliCommandChoice {
     DefaultBasicRequest {
-        url: &'a str,
+        url: String,
     },
     BasicRequest {
         method: METHODS,
-        url: &'a str,
+        url: String,
     },
     Run {
-        request_name: &'a str,
+        request_name: String,
         save: bool,
     },
     Edit {
-        request_name: &'a str,
+        request_name: String,
     },
     Remove {
-        request_name: &'a str,
+        request_name: String,
     },
     Rename {
-        request_name: &'a str,
-        new_name: &'a str,
+        request_name: String,
+        new_name: String,
     },
     Inspect {
-        request_name: &'a str,
+        request_name: String,
     },
     Ls,
 }
 
-impl<'a> CliInput<'a> {
-    pub fn from_clap_matches(matches: &'a ArgMatches) -> Result<CliInput> {
+impl CliInput {
+    pub fn from_clap_matches(matches: &ArgMatches) -> Result<CliInput> {
         if matches.subcommand().is_none() {
-            let url = clap_args_utils::get_input(matches)?;
+            let url = clap_args_utils::get_input(matches)?.to_string();
             let request_input = RequestBuildingOptions::from_clap_matches(matches)?;
             let save_options = SavingOptions::from_clap_matches(matches)?;
 
@@ -60,7 +60,7 @@ impl<'a> CliInput<'a> {
 
         match subcommand {
             "edit" => {
-                let request_name = clap_args_utils::get_input(matches)?;
+                let request_name = clap_args_utils::get_input(matches)?.to_string();
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Edit { request_name },
@@ -70,8 +70,8 @@ impl<'a> CliInput<'a> {
             }
             "rename" => {
                 let inputs = clap_args_utils::get_many_inputs(matches)?;
-                let request_name = inputs[0];
-                let new_name = inputs[1];
+                let request_name = inputs[0].to_string();
+                let new_name = inputs[1].to_string();
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Rename {
@@ -83,7 +83,7 @@ impl<'a> CliInput<'a> {
                 })
             }
             "remove" => {
-                let request_name = clap_args_utils::get_input(matches)?;
+                let request_name = clap_args_utils::get_input(matches)?.to_string();
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Remove { request_name },
@@ -97,7 +97,7 @@ impl<'a> CliInput<'a> {
                 save_options,
             }),
             "inspect" => {
-                let request_name = clap_args_utils::get_input(matches)?;
+                let request_name = clap_args_utils::get_input(matches)?.to_string();
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Inspect { request_name },
@@ -106,7 +106,7 @@ impl<'a> CliInput<'a> {
                 })
             }
             "run" => {
-                let request_name = clap_args_utils::get_input(matches)?;
+                let request_name = clap_args_utils::get_input(matches)?.to_string();
                 let should_save_current_request = matches.get_one::<bool>("save").unwrap_or(&false);
 
                 Ok(CliInput {
@@ -119,7 +119,7 @@ impl<'a> CliInput<'a> {
                 })
             }
             "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH" => {
-                let url = clap_args_utils::get_input(matches)?;
+                let url = clap_args_utils::get_input(matches)?.to_string();
                 let method = METHODS::from_str(subcommand)?;
 
                 Ok(CliInput {
@@ -134,30 +134,30 @@ impl<'a> CliInput<'a> {
 }
 
 #[derive(Default)]
-pub struct RequestBuildingOptions<'a> {
-    pub request_items: Vec<&'a str>,
-    pub raw_body: Option<&'a str>,
-    pub url_manual: Option<&'a str>,
+pub struct RequestBuildingOptions {
+    pub request_items: Vec<String>,
+    pub raw_body: Option<String>,
+    pub url_manual: Option<String>,
     pub method_manual: Option<METHODS>,
 }
-impl<'a> RequestBuildingOptions<'a> {
-    pub fn from_clap_matches(matches: &'a ArgMatches) -> Result<RequestBuildingOptions> {
+impl<'a> RequestBuildingOptions {
+    pub fn from_clap_matches(matches: &ArgMatches) -> Result<RequestBuildingOptions> {
         Ok(RequestBuildingOptions {
             request_items: clap_args_utils::get_many(matches, "request-items").unwrap_or_default(),
             raw_body: clap_args_utils::get_one(matches, "raw"),
             url_manual: clap_args_utils::get_one(matches, "url-manual"),
             method_manual: clap_args_utils::get_one(matches, "method-manual")
-                .and_then(|m| METHODS::from_str(m).ok()),
+                .and_then(|m| METHODS::from_str(&m).ok()),
         })
     }
 }
 
 #[derive(Default)]
-pub struct SavingOptions<'a> {
-    pub save_as: Option<&'a str>,
+pub struct SavingOptions {
+    pub save_as: Option<String>,
 }
-impl<'a> SavingOptions<'a> {
-    pub fn from_clap_matches(matches: &'a ArgMatches) -> Result<SavingOptions> {
+impl SavingOptions {
+    pub fn from_clap_matches(matches: &ArgMatches) -> Result<SavingOptions> {
         Ok(SavingOptions {
             save_as: clap_args_utils::get_one(matches, "save-as"),
         })
@@ -167,26 +167,23 @@ impl<'a> SavingOptions<'a> {
 mod clap_args_utils {
     use super::*;
 
-    pub fn get_input<'a>(args: &'a ArgMatches) -> Result<&'a str> {
+    pub fn get_input<'a>(args: &'a ArgMatches) -> Result<String> {
         clap_args_utils::get_one(args, "inputs").ok_or(Error::msg("No input given"))
     }
 
-    pub fn get_many_inputs<'a>(args: &'a ArgMatches) -> Result<Vec<&'a str>> {
+    pub fn get_many_inputs<'a>(args: &'a ArgMatches) -> Result<Vec<String>> {
         clap_args_utils::get_many(args, "inputs").ok_or(Error::msg("No inputs given"))
     }
 
-    pub fn get_one<'a>(args: &'a ArgMatches, name: &str) -> Option<&'a str> {
-        args.try_get_one::<String>(name)
-            .ok()
-            .flatten()
-            .map(|s| s.as_str())
+    pub fn get_one<'a>(args: &'a ArgMatches, name: &str) -> Option<String> {
+        args.try_get_one::<String>(name).ok().flatten().cloned()
     }
 
-    pub fn get_many<'a>(args: &'a ArgMatches, name: &str) -> Option<Vec<&'a str>> {
+    pub fn get_many<'a>(args: &'a ArgMatches, name: &str) -> Option<Vec<String>> {
         Some(
             args.try_get_many::<String>(name)
                 .ok()??
-                .map(|s| s.as_str())
+                .cloned()
                 .collect::<Vec<_>>(),
         )
     }
