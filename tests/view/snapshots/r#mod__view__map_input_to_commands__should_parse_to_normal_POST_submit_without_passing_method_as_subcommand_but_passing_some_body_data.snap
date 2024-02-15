@@ -12,7 +12,7 @@ expression: output
           paths: []
           query_params: []
           anchor: ~
-      method: GET
+      method: POST
       headers: {}
       body: "{\"Hello\":\"World\"}"
 

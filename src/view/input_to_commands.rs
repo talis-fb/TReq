@@ -5,6 +5,7 @@ use regex::Regex;
 use serde_json::{Map, Value};
 
 use super::input::cli_input::CliInput;
+use super::input::validators::basic_request_without_explicit_method::basic_request_without_explicit_method;
 use crate::app::services::request::entities::methods::METHODS;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::app::services::request::entities::url::Url;
@@ -14,12 +15,10 @@ use crate::view::input::validators::body_values_with_raw::validate_body_values_w
 use crate::view::input::validators::url_alias::validate_alias_url_to_localhost;
 
 pub fn validate_input_to_commands(input: CliInput) -> Result<CliInput> {
-    [
-        validate_body_values_with_raw,
-        validate_alias_url_to_localhost,
-    ]
-    .into_iter()
-    .fold(Ok(input), |input, validator| input.and_then(validator))
+    Ok(input)
+        .and_then(basic_request_without_explicit_method)
+        .and_then(validate_body_values_with_raw)
+        .and_then(validate_alias_url_to_localhost)
 }
 
 pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> {
@@ -50,12 +49,7 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
             base_request.with_method(method).with_url(url)
         }
         CliCommandChoice::DefaultBasicRequest { ref url } => {
-            let method = if base_request.body.is_some() {
-                METHODS::POST
-            } else {
-                METHODS::GET
-            };
-            base_request.with_method(method).with_url(url)
+            base_request.with_url(url).with_method(METHODS::GET)
         }
         _ => base_request,
     };
@@ -105,14 +99,11 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
             request_name: request_name.to_string(),
             new_name: new_name.to_string(),
         }],
-        CliCommandChoice::DefaultBasicRequest { .. } => {
-            vec![ViewCommandChoice::SubmitRequest {
-                request: base_request.to_request_data(),
-            }]
-        }
-        CliCommandChoice::BasicRequest { .. } => {
-            vec![ViewCommandChoice::SubmitRequest {
-                request: base_request.to_request_data(),
+        CliCommandChoice::Edit { request_name } => {
+            vec![ViewCommandChoice::SaveRequestWithBaseRequest {
+                base_request_name: Some(request_name.to_string()),
+                request_name: request_name.to_string(),
+                request_data: base_request,
             }]
         }
         CliCommandChoice::Run { request_name, save } => {
@@ -130,11 +121,14 @@ pub fn map_input_to_commands(input: CliInput) -> Result<Vec<ViewCommandChoice>> 
                 vec![main_command]
             }
         }
-        CliCommandChoice::Edit { request_name } => {
-            vec![ViewCommandChoice::SaveRequestWithBaseRequest {
-                base_request_name: Some(request_name.to_string()),
-                request_name: request_name.to_string(),
-                request_data: base_request,
+        CliCommandChoice::DefaultBasicRequest { .. } => {
+            vec![ViewCommandChoice::SubmitRequest {
+                request: base_request.to_request_data(),
+            }]
+        }
+        CliCommandChoice::BasicRequest { .. } => {
+            vec![ViewCommandChoice::SubmitRequest {
+                request: base_request.to_request_data(),
             }]
         }
     };
