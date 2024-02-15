@@ -155,6 +155,21 @@ fn should_validate_alias_for_localhost_requests() {
 }
 
 #[test]
+fn should_validate_alias_for_localhost_requests_with_manual_url() {
+    let input = [
+        "treq",
+        "run",
+        "some-request",
+        "search==Rust",
+        "--url",
+        ":8080",
+    ];
+    let output = process(input);
+    debug_assert!(output.is_ok(), "{:?}", output);
+    assert_snapshot!(output.unwrap());
+}
+
+#[test]
 fn should_validate_if_error_on_raw_value_as_not_map_and_body_insert() {
     // Ok
     let input = [

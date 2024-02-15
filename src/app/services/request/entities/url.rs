@@ -162,11 +162,11 @@ impl FromStr for UrlInfo {
 }
 
 impl UrlInfo {
-    pub fn merge_with(self, other: UrlInfo) -> UrlInfo {
+    pub fn be_overwrite_by(self, other: UrlInfo) -> UrlInfo {
         UrlInfo {
-            protocol: self.protocol.or(other.protocol),
-            host: self.host.or(other.host),
-            port: self.port.or(other.port),
+            protocol: other.protocol.or(self.protocol),
+            host: other.host.or(self.host),
+            port: other.port.or(self.port),
             paths: {
                 if other.paths.is_empty() {
                     self.paths
@@ -179,7 +179,7 @@ impl UrlInfo {
                 .into_iter()
                 .chain(other.query_params)
                 .collect(),
-            anchor: self.anchor.or(other.anchor),
+            anchor: other.anchor.or(self.anchor),
         }
     }
 

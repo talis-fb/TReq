@@ -1,0 +1,21 @@
+---
+source: tests/view/map_input_to_commands.rs
+expression: output.unwrap()
+---
+- SubmitSavedRequest:
+    request_name: some-request
+    request_data:
+      url:
+        ValidatedUrl:
+          protocol: ~
+          host: localhost
+          port: 8080
+          paths: []
+          query_params:
+            - - search
+              - Rust
+          anchor: ~
+      method: ~
+      headers: ~
+      body: ~
+

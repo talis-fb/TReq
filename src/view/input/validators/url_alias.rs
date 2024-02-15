@@ -1,12 +1,26 @@
 use anyhow::Result;
 use regex::Regex;
 
-use crate::view::input::cli_input::{CliCommandChoice, CliInput};
+use crate::view::input::cli_input::{CliCommandChoice, CliInput, RequestBuildingOptions};
 
 pub fn validate_alias_url_to_localhost(mut input: CliInput) -> Result<CliInput> {
-    let url_to_validate = match &mut input.choice {
-        CliCommandChoice::BasicRequest { url, .. } => url,
-        CliCommandChoice::DefaultBasicRequest { url, .. } => url,
+    let url_to_validate = match &mut input {
+        CliInput {
+            choice: CliCommandChoice::BasicRequest { url, .. },
+            ..
+        }
+        | CliInput {
+            choice: CliCommandChoice::DefaultBasicRequest { url, .. },
+            ..
+        }
+        | CliInput {
+            request_input:
+                RequestBuildingOptions {
+                    url_manual: Some(url),
+                    ..
+                },
+            ..
+        } => url,
         _ => return Ok(input),
     };
 

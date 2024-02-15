@@ -67,7 +67,7 @@ impl PartialRequestData {
 
         match (self.url, other.url) {
             (Some(Url::ValidatedUrl(url)), Url::ValidatedUrl(other)) => {
-                final_request.url = Url::ValidatedUrl(other.merge_with(url));
+                final_request.url = Url::ValidatedUrl(other.be_overwrite_by(url));
             }
             (Some(Url::Raw(raw_url)), _) => {
                 final_request.url = Url::Raw(raw_url);

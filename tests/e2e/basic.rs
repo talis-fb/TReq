@@ -182,6 +182,47 @@ fn should_save_request_as_another_file_if_used_only_run_with_save_as_command_to_
     cmd.assert().stdout(predicate::str::contains("/get"));
 }
 
+#[test]
+fn should_overwrite_of_saved_url_work() {
+    // Setup
+    let input = format!(
+        "treq GET {}/get --save-as req-with-some-query-params key1==value1",
+        host()
+    );
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run req-with-some-query-params key2==value2 --save";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("key1")
+            .and(predicate::str::contains("value1"))
+            .and(predicate::str::contains("key2"))
+            .and(predicate::str::contains("value2")),
+    );
+
+    // Just to verify
+    let input =
+        "treq edit req-with-some-query-params --url :7777/patch --method PATCH key3==value3";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq inspect req-with-some-query-params";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("patch")
+            .and(predicate::str::contains("7777"))
+            .and(predicate::str::contains("key1"))
+            .and(predicate::str::contains("value1"))
+            .and(predicate::str::contains("key2"))
+            .and(predicate::str::contains("value2"))
+            .and(predicate::str::contains("key3"))
+            .and(predicate::str::contains("value3")),
+    );
+}
+
 // ------------------
 // UTILS
 // ------------------
