@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use anyhow::Result;
 use regex::Regex;
 
@@ -31,9 +33,11 @@ pub fn validate_alias_url_to_localhost(mut input: CliInput) -> Result<CliInput> 
     Ok(input)
 }
 
+static ALIS_URL_REGEX: OnceLock<Regex> = OnceLock::new();
 fn alias_url_to_localhost(url: &str) -> Option<String> {
-    let re = Regex::new(r"^:(?<port>[0-9]{1,6})?(\/(?<tail>[ -~]*))?$").unwrap();
-    let matcher = re.captures(&url)?;
+    let re = ALIS_URL_REGEX
+        .get_or_init(|| Regex::new(r"^:(?<port>[0-9]{1,6})?(\/(?<tail>[ -~]*))?$").unwrap());
+    let matcher = re.captures(url)?;
 
     let port = matcher
         .name("port")

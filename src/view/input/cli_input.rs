@@ -167,19 +167,19 @@ impl SavingOptions {
 mod clap_args_utils {
     use super::*;
 
-    pub fn get_input<'a>(args: &'a ArgMatches) -> Result<String> {
+    pub fn get_input(args: &ArgMatches) -> Result<String> {
         clap_args_utils::get_one(args, "inputs").ok_or(Error::msg("No input given"))
     }
 
-    pub fn get_many_inputs<'a>(args: &'a ArgMatches) -> Result<Vec<String>> {
+    pub fn get_many_inputs(args: &ArgMatches) -> Result<Vec<String>> {
         clap_args_utils::get_many(args, "inputs").ok_or(Error::msg("No inputs given"))
     }
 
-    pub fn get_one<'a>(args: &'a ArgMatches, name: &str) -> Option<String> {
+    pub fn get_one(args: &ArgMatches, name: &str) -> Option<String> {
         args.try_get_one::<String>(name).ok().flatten().cloned()
     }
 
-    pub fn get_many<'a>(args: &'a ArgMatches, name: &str) -> Option<Vec<String>> {
+    pub fn get_many(args: &ArgMatches, name: &str) -> Option<Vec<String>> {
         Some(
             args.try_get_many::<String>(name)
                 .ok()??

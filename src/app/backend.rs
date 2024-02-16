@@ -207,12 +207,12 @@ impl Backend for AppBackend {
     }
 
     async fn remove_request_saved(&mut self, name: String) -> Result<()> {
-        let resp = run_command_waiting_response(
+        
+        run_command_waiting_response(
             &self.file_service,
             FileServiceCommandsFactory::remove_file_saved_request(name),
         )
-        .await?;
-        resp
+        .await?
     }
 }
 

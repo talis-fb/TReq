@@ -103,20 +103,23 @@ fn should_inspect_command_show_info_about_a_saved_request() {
 #[test]
 fn should_submit_save_edit_and_submit_corretly_in_sequence() {
     // Setup
-    let input = format!("treq GET {}/get --save-as my-request", host());
+    let input = format!("treq GET {}/get --save-as my-little-request", host());
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
 
-    let input = format!("treq edit my-request --url {}/post --method POST", host());
+    let input = format!(
+        "treq edit my-little-request --url {}/post --method POST",
+        host()
+    );
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
 
-    let input = "treq run my-request";
+    let input = "treq run my-little-request";
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(predicate::str::contains("/post"));
 
-    let input = "treq run my-request Hello=World --save";
+    let input = "treq run my-little-request Hello=World --save";
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(
@@ -125,7 +128,7 @@ fn should_submit_save_edit_and_submit_corretly_in_sequence() {
             .and(predicate::str::contains("World")),
     );
 
-    let input = "treq inspect my-request";
+    let input = "treq inspect my-little-request";
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(

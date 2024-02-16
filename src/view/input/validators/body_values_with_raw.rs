@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
-use predicates::Predicate;
 use serde_json::{Map, Value};
 
+use crate::utils::regexes;
 use crate::view::input::cli_input::CliInput;
 
 pub fn validate_body_values_with_raw(input: CliInput) -> Result<CliInput> {
@@ -14,7 +14,7 @@ pub fn validate_body_values_with_raw(input: CliInput) -> Result<CliInput> {
                 .request_input
                 .request_items
                 .iter()
-                .any(|v| predicates::str::contains('=').count(1).eval(v));
+                .any(|v| regexes::request_items::body_value().is_match(v));
 
             if has_some_body_insert_in_request_items {
                 return Err(Error::msg("raw body must be a valid JSON object"));

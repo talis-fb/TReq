@@ -4,7 +4,7 @@ use anyhow::Error;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::utils::regexes::regex_url;
+use crate::utils::regexes;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Url {
@@ -97,11 +97,8 @@ impl FromStr for UrlInfo {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re_overall_url = regex_url();
-
+        let re_overall_url = regexes::complete_url();
         let re_routes = Regex::new(r"[^\/]+").unwrap();
-
-        // Fix...
         let re_query_params = Regex::new(r"[^\&]+=[^&]+").unwrap();
 
         let url = re_overall_url
@@ -137,7 +134,7 @@ impl FromStr for UrlInfo {
                     .map(|query_params| {
                         re_query_params
                             .find_iter(query_params)
-                            .map(|m| m.as_str().split_once("=").unwrap())
+                            .map(|m| m.as_str().split_once('=').unwrap())
                             .map(|(key, value)| (key.to_string(), value.to_string()))
                             .collect()
                     })
