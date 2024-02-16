@@ -63,17 +63,20 @@ cargo install treq
 ```
 
 ### Linux generic
-Go to [last release page](https://github.com/talis-fb/TReq/releases/latest) and download the `treq.bin` file. 
+TReq's binary is statically linked and has no dependencies, making it compatible with most major Linux distributions. To install, download the binary from the latest release page and place it in your PATH directory.
 
-For most Linux distributions, treq.bin has minimal dependencies and can be placed in `/usr/local/bin/`.  You can download it from [here](https://github.com/talis-fb/TReq/releases/latest/download/treq.bin)
+Using Curl
 ```sh
-cp treq.bin /usr/local/bin/treq
+curl -fLo /usr/local/bin/treq --create-dirs https://github.com/talis-fb/TReq/releases/latest/download/treq.bin
+chmod +x /usr/local/bin/treq
 ```
 
-Ensure the file has execution permissions before copying:
+Using wget
 ```sh
-chmod +x treq.bin
+wget -O /usr/local/bin/treq https://github.com/talis-fb/TReq/releases/latest/download/treq.bin
+chmod +x /usr/local/bin/treq
 ```
+
 
 ### Windows
 Download the latest `.exe` file at [last release page](https://github.com/talis-fb/TReq/releases/latest). Place the downloaded .exe file in a directory included in your system's PATH, or add the directory containing the .exe to your PATH.
@@ -84,35 +87,98 @@ For more detailed information on commands and options, refer to the built-in hel
 treq --help
 ```
 
-Basic GET request
+### Basic requests
 ```sh
+# GET requests
 treq example.com
-treq https://google.com
-treq GET url.org/example
+treq GET example.com/users/id
+treq GET example.com/users/id?name=John
+
+
+# Another methods...
+treq POST example.com
+treq PATCH example.com
+# ...
 ```
 
-Requests with additional data
+### Body, header e params manipulation
 ```sh
-# POST request with custom Content-Type header
+# POST with JSON payload => { "language": "Rust", "food": "pizza" }
+treq POST example.com language=Rust food=pizza
+
+
+# POST with custom Header => { Content-Type: application/json }
 treq POST example.com Content-Type:application/json
 
-# POST request passing a JSON object { "language": "Rust", "food": "pizza" }
-treq POST example.com language=Rust food=pizza
+
+# Define query params at url 
+#  (these two below are equivalent)
+treq example.com?name=John&job=dev
+treq example.com name==John job==dev
 ```
 
-Saving and storing requests
+More complex requests
 ```sh
-# After requesting you can save it to do the same request later
-treq POST example.com name="John Doe" --save-as main-endpoint
-treq run main-endpoint
+# POST with JSON payload 
+#  => { 
+#    "friends": ["John", "Jane"], 
+#    "job": "dev",
+#    food": "pizza" 
+#  }
+treq POST example.com --raw '{ "friends": ["John", "Jane"] }' job=dev food=pizza
 
-# You can also edit the fields and insert new datas in each submit
-treq run main-endpoint name="Jane" another-field="value"
+
+# Same above request with also 
+#  a custom Header
+#  and a query param at url (example.com?sort=true)
+treq POST example.com --raw '{ "friends": ["John", "Jane"] }' Content-Type:application/json sort==true job=dev food=pizza 
+
+```
+
+### Managing saved requests
+Saving requests
+```sh
+# After requesting you can save it
+treq POST example.com name="John Doe" --save-as main-endpoint
+
+
+# Now you can execute the 
+treq run main-endpoint
+```
+
+Overwriting requests datas at running
+```sh
+# Before submit the same request you can edit specific fields and insert new datas
+
+# Inserting a query param
+treq run main-endpoint name=="Jane" 
+
+# Inserting a header
 treq run main-endpoint Authorization:None
 
-# Or save it as a new request
+# Then, save it as a new request
 treq run main-endpoint job="dev" --save-as endpoint-with-job
 ```
+
+### Localhost alias
+When defining urls with localhost, you can use the alias `:{PORT}/{ROUTES}` instead of complete url. 
+
+For example, each pair of the commands below are equivalents...
+```sh
+treq GET localhost:8000
+treq GET :8000
+
+
+treq GET localhost:80/users 
+treq GET :80/users
+
+
+treq run my-request --url localhost:9000
+treq run my-request --url :9000
+```
+
+
+
 
 ## Contributing
 Contributions and feature requests are welcome! Feel free to submit issues or pull requests on our [GitHub repository](https://github.com/talis-fb/TReq).

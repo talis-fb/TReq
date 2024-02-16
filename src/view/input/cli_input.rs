@@ -140,7 +140,7 @@ pub struct RequestBuildingOptions {
     pub url_manual: Option<String>,
     pub method_manual: Option<METHODS>,
 }
-impl<'a> RequestBuildingOptions {
+impl RequestBuildingOptions {
     pub fn from_clap_matches(matches: &ArgMatches) -> Result<RequestBuildingOptions> {
         Ok(RequestBuildingOptions {
             request_items: clap_args_utils::get_many(matches, "request-items").unwrap_or_default(),
