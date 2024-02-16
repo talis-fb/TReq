@@ -10,6 +10,7 @@ use crate::app::services::request::entities::requests::RequestData;
 use crate::view::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
+pub mod remove_request;
 pub mod save_new_request;
 pub mod save_request_with_base_request;
 pub mod show_list_all_request;
@@ -60,6 +61,7 @@ pub enum ViewCommandChoice {
 impl ViewCommandChoice {
     pub fn get_executor(self) -> Box<dyn ViewCommand> {
         use self::inspect_request::InspectRequestExecutor;
+        use self::remove_request::RemoveRequestExecutir;
         use self::save_new_request::SaveNewRequestExecutor;
         use self::save_request_with_base_request::SaveRequestWithBaseRequestExecutor;
         use self::show_list_all_request::ShowListAllRequestExecutor;
@@ -120,11 +122,16 @@ impl ViewCommandChoice {
             }
             .into(),
 
+            ViewCommandChoice::RemoveSavedRequest { request_name } => RemoveRequestExecutir {
+                request_name,
+                writer: writer_stdout,
+            }
+            .into(),
+
             ViewCommandChoice::RenameSavedRequest {
                 request_name,
                 new_name,
             } => todo!(),
-            ViewCommandChoice::RemoveSavedRequest { request_name } => todo!(),
         }
     }
 }

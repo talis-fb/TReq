@@ -121,6 +121,10 @@ impl Backend for MockAppBackend {
     async fn find_all_request_name(&mut self) -> Result<Vec<String>> {
         self.app_backend.find_all_request_name().await
     }
+
+    async fn remove_request_saved(&mut self, name: String) -> Result<()> {
+        self.app_backend.remove_request_saved(name).await
+    }
 }
 
 pub struct CliWriterUseLess;

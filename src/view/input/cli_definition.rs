@@ -247,6 +247,8 @@ fn add_manual_method_flag(command: Command) -> Command {
         Arg::new("method-manual")
             .long("method")
             .value_name("METHOD_MANUAL")
+            .value_parser(["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"])
+            .ignore_case(true)
             .help("Set the HTTP Method when is not possible by subcommand"),
     )
 }

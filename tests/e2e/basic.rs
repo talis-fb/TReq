@@ -223,6 +223,30 @@ fn should_overwrite_of_saved_url_work() {
     );
 }
 
+#[test]
+fn should_remove_requests() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as my-request", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq remove my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
+
+    let input = "treq inspect my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
+}
+
 // ------------------
 // UTILS
 // ------------------

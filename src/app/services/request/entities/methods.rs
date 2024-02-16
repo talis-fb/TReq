@@ -17,7 +17,7 @@ impl FromStr for METHODS {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
+        Ok(match s.to_uppercase().as_str() {
             "GET" => METHODS::GET,
             "POST" => METHODS::POST,
             "PUT" => METHODS::PUT,
