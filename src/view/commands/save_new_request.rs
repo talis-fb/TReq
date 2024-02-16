@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use super::CliCommand;
+use super::ViewCommand;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::RequestData;
-use crate::view::cli::output::utils::BREAK_LINE;
-use crate::view::cli::output::writer::CliWriterRepository;
+use crate::app::services::request::entities::requests::RequestData;
+use crate::view::output::utils::BREAK_LINE;
+use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
 pub struct SaveNewRequestExecutor<W1, W2>
@@ -19,7 +19,7 @@ where
 }
 
 #[async_trait]
-impl<W1, W2> CliCommand for SaveNewRequestExecutor<W1, W2>
+impl<W1, W2> ViewCommand for SaveNewRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,

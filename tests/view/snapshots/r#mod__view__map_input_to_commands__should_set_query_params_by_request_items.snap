@@ -1,0 +1,22 @@
+---
+source: tests/view/map_input_to_commands.rs
+expression: output.unwrap()
+---
+- SubmitRequest:
+    request:
+      url:
+        ValidatedUrl:
+          protocol: ~
+          host: url.com
+          port: ~
+          paths: []
+          query_params:
+            - - search
+              - Rust
+            - - country
+              - br
+          anchor: ~
+      method: GET
+      headers: {}
+      body: ""
+

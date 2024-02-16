@@ -9,9 +9,10 @@ pub fn root_command() -> Command {
             Some(
                 Command::new(method)
                     .about(format!("Does a {method} request"))
-                    .override_usage(format!("treq {method} <URL> [OPTIONS + REQUEST_ITENS... ]")),
+                    .override_usage(format!("treq {method} <URL> [OPTIONS + REQUEST_ITENS... ]"))
+                    .arg(Arg::new("inputs").value_name("URL").required(true)),
             )
-            .map(add_main_input_values_request)
+            .map(add_request_items_args)
             .map(add_raw_flag)
             .map(add_save_as_flag)
             .unwrap(),
@@ -25,9 +26,10 @@ pub fn root_command() -> Command {
                     .override_usage(format!(
                         "treq run <REQUEST_NAME> [OPTIONS + REQUEST_ITENS... ]"
                     ))
-                    .about("Submit saved request"),
+                    .about("Submit saved request")
+                    .arg(Arg::new("inputs").value_name("REQUEST_NAME").required(true)),
             )
-            .map(add_main_input_values_request)
+            .map(add_request_items_args)
             .map(add_raw_flag)
             .map(add_save_as_flag)
             .map(add_save_changes_to_current_request_flag)
@@ -41,9 +43,10 @@ pub fn root_command() -> Command {
                     .override_usage(format!(
                         "treq run <REQUEST_NAME> [OPTIONS + REQUEST_ITENS... ]"
                     ))
-                    .about("Edit saved request data, it does not submit"),
+                    .about("Edit saved request data, it does not submit")
+                    .arg(Arg::new("inputs").value_name("REQUEST_NAME").required(true)),
             )
-            .map(add_main_input_values_request)
+            .map(add_request_items_args)
             .map(add_raw_flag)
             .map(add_save_as_flag)
             .map(add_manual_url_flag)
@@ -59,7 +62,7 @@ pub fn root_command() -> Command {
                         .value_name("inputs")
                         .required(true)
                         .num_args(1)
-                        .help("All entrys"),
+                        .help("Saved request to remove"),
                 ),
         )
         .subcommand(
@@ -91,8 +94,8 @@ pub fn root_command() -> Command {
     };
 
     // Running without a subcommand
-    app = Some(app)
-        .map(add_main_input_values_request)
+    app = Some(app.arg(Arg::new("inputs").value_name("URL")))
+        .map(add_request_items_args)
         .map(add_raw_flag)
         .map(add_save_as_flag)
         .unwrap();
@@ -172,13 +175,10 @@ Examples
     app
 }
 
-fn add_main_input_values_request(command: Command) -> Command {
-    let is_required = !command.has_subcommands();
-
+fn add_request_items_args(command: Command) -> Command {
     command.arg(
-        Arg::new("inputs")
+        Arg::new("request-items")
             .value_name("REQUEST_ITENS")
-            .required(is_required)
             .num_args(1..)
             .help(
                 r#"
@@ -244,15 +244,17 @@ fn add_global_utils_flag(command: Command) -> Command {
 
 fn add_manual_method_flag(command: Command) -> Command {
     command.arg(
-        Arg::new("method_manual")
+        Arg::new("method-manual")
             .long("method")
             .value_name("METHOD_MANUAL")
+            .value_parser(["GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"])
+            .ignore_case(true)
             .help("Set the HTTP Method when is not possible by subcommand"),
     )
 }
 fn add_manual_url_flag(command: Command) -> Command {
     command.arg(
-        Arg::new("url_manual")
+        Arg::new("url-manual")
             .short('u')
             .long("url")
             .value_name("URL")
@@ -270,17 +272,44 @@ mod tests {
             .try_get_matches_from(vec!["treq", "GET", "https://httpbin.org/get"])
             .unwrap();
 
-        assert_eq!(root_matches.get_one::<String>("inputs"), None);
+        assert_eq!(None, root_matches.get_one::<String>("inputs"));
+        assert_eq!(None, root_matches.get_one::<String>("request-items"));
 
         let (name_subcommand, matches_subcommand) = root_matches.subcommand().unwrap();
-        assert_eq!(name_subcommand, "GET");
+        assert_eq!("GET", name_subcommand);
         assert!(matches_subcommand.args_present());
 
-        let inputs: Vec<&String> = matches_subcommand
-            .get_many::<String>("inputs")
-            .unwrap()
-            .collect();
-        assert_eq!(inputs, vec!["https://httpbin.org/get"]);
+        assert_eq!(
+            vec!["https://httpbin.org/get"],
+            matches_subcommand
+                .get_many::<String>("inputs")
+                .unwrap()
+                .collect::<Vec<_>>(),
+        );
+    }
+
+    #[test]
+    fn test_basic_get_request_with_request_items() {
+        let root_matches = root_command()
+            .try_get_matches_from(vec![
+                "treq",
+                "GET",
+                "https://httpbin.org/get",
+                "Hello=World",
+                "Content:json",
+                "job=dev",
+            ])
+            .unwrap();
+
+        let (_, subcommand) = root_matches.subcommand().unwrap();
+
+        assert_eq!(
+            vec!["Hello=World", "Content:json", "job=dev"],
+            subcommand
+                .get_many::<String>("request-items")
+                .unwrap()
+                .collect::<Vec<_>>(),
+        );
     }
 
     #[test]
@@ -295,10 +324,55 @@ mod tests {
             ])
             .unwrap();
 
-        assert_eq!(root_matches.get_one::<String>("inputs"), None);
+        assert_eq!(None, root_matches.get_one::<String>("inputs"));
 
         let (name_subcommand, matches_subcommand) = root_matches.subcommand().unwrap();
-        assert_eq!(name_subcommand, "POST");
+        assert_eq!("POST", name_subcommand);
         assert!(matches_subcommand.args_present());
+    }
+
+    #[test]
+    fn test_basic_defatult_request() {
+        let root_matches = root_command()
+            .try_get_matches_from(vec![
+                "treq",
+                "https://httpbin.org/get",
+                "--save-as",
+                "test.json",
+            ])
+            .unwrap();
+
+        assert_eq!(
+            Some(&"https://httpbin.org/get".to_string()),
+            root_matches.get_one::<String>("inputs"),
+        );
+        assert_eq!(None, root_matches.get_one::<String>("request-items"));
+        assert_eq!(None, root_matches.subcommand());
+    }
+
+    #[test]
+    fn test_basic_default_request_with_request_items() {
+        let root_matches = root_command()
+            .try_get_matches_from(vec![
+                "treq",
+                "https://httpbin.org/post",
+                "Hello=World",
+                "Content:json",
+                "job=dev",
+            ])
+            .unwrap();
+
+        assert_eq!(
+            Some(&"https://httpbin.org/post".to_string()),
+            root_matches.get_one::<String>("inputs"),
+        );
+        assert_eq!(
+            vec!["Hello=World", "Content:json", "job=dev"],
+            root_matches
+                .get_many::<String>("request-items")
+                .unwrap()
+                .collect::<Vec<_>>(),
+        );
+        assert_eq!(root_matches.subcommand(), None);
     }
 }

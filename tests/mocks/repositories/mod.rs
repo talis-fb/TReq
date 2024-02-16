@@ -8,13 +8,13 @@ use tempfile::{tempdir, TempDir};
 use tokio::sync::oneshot;
 use treq::app::backend::{AppBackend, Backend};
 use treq::app::services::files::service::FileService;
-use treq::app::services::request::entities::RequestData;
+use treq::app::services::request::entities::requests::RequestData;
 use treq::app::services::request::service::RequestService;
 use treq::app::services::web_client::entities::Response;
 use treq::app::services::web_client::repository_client::reqwest::ReqwestClientRepository;
 use treq::app::services::web_client::service::WebClient;
 use treq::utils::uuid::UUID;
-use treq::view::cli::output::writer::CliWriterRepository;
+use treq::view::output::writer::CliWriterRepository;
 use treq::view::style::StyledStr;
 
 pub fn create_mock_back_end() -> MockAppBackend {
@@ -70,7 +70,7 @@ impl Backend for MockAppBackend {
     async fn submit_request_async(
         &mut self,
         id: UUID,
-    ) -> Result<oneshot::Receiver<Result<Response, String>>> {
+    ) -> Result<oneshot::Receiver<Result<Response>>> {
         let request = self.app_backend.get_request(id).await?.unwrap();
         let expected_request = self.expected_requests.remove(0);
         assert_eq!(Arc::new(expected_request), request);
@@ -120,6 +120,10 @@ impl Backend for MockAppBackend {
 
     async fn find_all_request_name(&mut self) -> Result<Vec<String>> {
         self.app_backend.find_all_request_name().await
+    }
+
+    async fn remove_request_saved(&mut self, name: String) -> Result<()> {
+        self.app_backend.remove_request_saved(name).await
     }
 }
 

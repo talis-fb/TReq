@@ -14,7 +14,7 @@ use crate::app::service_commands::Command;
 use crate::app::service_runner::ServiceRunner;
 use crate::app::services::files::commands::CommandsFactory as FileServiceCommandsFactory;
 use crate::app::services::request::commands::CommandsFactory as RequestServCommandsFactory;
-use crate::app::services::request::entities::RequestData;
+use crate::app::services::request::entities::requests::RequestData;
 use crate::app::services::request::facade::RequestServiceFacade;
 use crate::app::services::request::service::RequestServiceInstance;
 use crate::utils::files as file_utils;
@@ -32,7 +32,7 @@ pub trait Backend: Send {
     async fn submit_request_async(
         &mut self,
         id: UUID,
-    ) -> Result<oneshot::Receiver<Result<Response, String>>>;
+    ) -> Result<oneshot::Receiver<Result<Response>>>;
 
     async fn save_request_datas_as(
         &mut self,
@@ -41,10 +41,7 @@ pub trait Backend: Send {
     ) -> Result<()>;
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
     async fn find_all_request_name(&mut self) -> Result<Vec<String>>;
-
-    // Pending...
-    // async fn remove_request_saved(&mut self, name: String) -> Result<()>;
-    // async fn rename_request_saved(&mut self, name: String, new_name: String) -> Result<()>;
+    async fn remove_request_saved(&mut self, name: String) -> Result<()>;
 }
 
 pub struct AppBackend {
@@ -150,7 +147,7 @@ impl Backend for AppBackend {
     async fn submit_request_async(
         &mut self,
         id: UUID,
-    ) -> Result<oneshot::Receiver<Result<Response, String>>> {
+    ) -> Result<oneshot::Receiver<Result<Response>>> {
         let request_data = self.get_request(id).await?.unwrap();
         let Command {
             command_fn,
@@ -207,6 +204,15 @@ impl Backend for AppBackend {
             .map(|path| path.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
         Ok(file_names)
+    }
+
+    async fn remove_request_saved(&mut self, name: String) -> Result<()> {
+        
+        run_command_waiting_response(
+            &self.file_service,
+            FileServiceCommandsFactory::remove_file_saved_request(name),
+        )
+        .await?
     }
 }
 

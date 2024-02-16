@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use assert_cmd::Command;
 use predicates::prelude::*;
+use treq::app::services::request::entities::url::UrlInfo;
 
 const DEFAULT_HTTPBIN_HOST: &str = "localhost:8888";
 
@@ -76,10 +79,10 @@ fn should_assert_list_saved_requests() {
 #[test]
 fn should_inspect_command_show_info_about_a_saved_request() {
     // Setup
-    let input = format!(
-        "treq POST {}/post Hello=World --save-as some-cool-request",
-        host()
-    );
+    let url = format!("{}/post", host());
+    let url_data = UrlInfo::from_str(&url).unwrap();
+
+    let input = format!("treq POST {} Hello=World --save-as some-cool-request", &url,);
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
 
@@ -91,28 +94,32 @@ fn should_inspect_command_show_info_about_a_saved_request() {
         predicate::str::contains("some-cool-request")
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World"))
-            .and(predicate::str::contains(format!("{}/post", host())))
-            .and(predicate::str::contains("POST")),
+            .and(predicate::str::contains("POST"))
+            .and(predicate::str::contains(url_data.host.unwrap()))
+            .and(predicate::str::contains("post")),
     );
 }
 
 #[test]
 fn should_submit_save_edit_and_submit_corretly_in_sequence() {
     // Setup
-    let input = format!("treq GET {}/get --save-as my-request", host());
+    let input = format!("treq GET {}/get --save-as my-little-request", host());
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
 
-    let input = format!("treq edit my-request --url {}/post --method POST", host());
+    let input = format!(
+        "treq edit my-little-request --url {}/post --method POST",
+        host()
+    );
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
 
-    let input = "treq run my-request";
+    let input = "treq run my-little-request";
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(predicate::str::contains("/post"));
 
-    let input = "treq run my-request Hello=World --save";
+    let input = "treq run my-little-request Hello=World --save";
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(
@@ -121,13 +128,43 @@ fn should_submit_save_edit_and_submit_corretly_in_sequence() {
             .and(predicate::str::contains("World")),
     );
 
-    let input = "treq inspect my-request";
+    let input = "treq inspect my-little-request";
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(
-        predicate::str::contains(format!("{}/post", host()))
+        predicate::str::contains("post")
             .and(predicate::str::contains("Hello"))
             .and(predicate::str::contains("World")),
+    );
+}
+
+#[test]
+fn should_save_query_params_without_delete_already_saved_url() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as req-with-query-params", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run req-with-query-params search==Rust";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("/get")
+            .and(predicate::str::contains("search"))
+            .and(predicate::str::contains("Rust")),
+    );
+
+    let input = "treq run req-with-query-params --save search==Rust";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq inspect req-with-query-params";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("get")
+            .and(predicate::str::contains("search"))
+            .and(predicate::str::contains("Rust")),
     );
 }
 
@@ -146,6 +183,71 @@ fn should_save_request_as_another_file_if_used_only_run_with_save_as_command_to_
     let mut cmd = run_cmd(&input);
     cmd.assert().success();
     cmd.assert().stdout(predicate::str::contains("/get"));
+}
+
+#[test]
+fn should_overwrite_of_saved_url_work() {
+    // Setup
+    let input = format!(
+        "treq GET {}/get --save-as req-with-some-query-params key1==value1",
+        host()
+    );
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run req-with-some-query-params key2==value2 --save";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("key1")
+            .and(predicate::str::contains("value1"))
+            .and(predicate::str::contains("key2"))
+            .and(predicate::str::contains("value2")),
+    );
+
+    // Just to verify
+    let input =
+        "treq edit req-with-some-query-params --url :7777/patch --method PATCH key3==value3";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq inspect req-with-some-query-params";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("patch")
+            .and(predicate::str::contains("7777"))
+            .and(predicate::str::contains("key1"))
+            .and(predicate::str::contains("value1"))
+            .and(predicate::str::contains("key2"))
+            .and(predicate::str::contains("value2"))
+            .and(predicate::str::contains("key3"))
+            .and(predicate::str::contains("value3")),
+    );
+}
+
+#[test]
+fn should_remove_requests() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as my-request", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq remove my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
+
+    let input = "treq inspect my-request";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
 }
 
 // ------------------

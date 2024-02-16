@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use super::CliCommand;
+use super::ViewCommand;
 use crate::app::backend::Backend;
-use crate::view::cli::output::utils::BREAK_LINE;
-use crate::view::cli::output::writer::CliWriterRepository;
+use crate::view::output::utils::BREAK_LINE;
+use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
 pub struct InspectRequestExecutor<Writer: CliWriterRepository> {
@@ -12,7 +12,7 @@ pub struct InspectRequestExecutor<Writer: CliWriterRepository> {
 }
 
 #[async_trait]
-impl<Writer: CliWriterRepository> CliCommand for InspectRequestExecutor<Writer> {
+impl<Writer: CliWriterRepository> ViewCommand for InspectRequestExecutor<Writer> {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
         self.writer.print_lines([BREAK_LINE]);
         self.writer.print_lines_styled([[

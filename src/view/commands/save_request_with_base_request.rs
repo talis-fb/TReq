@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use super::CliCommand;
+use super::ViewCommand;
 use crate::app::backend::Backend;
-use crate::app::services::request::entities::OptionalRequestData;
-use crate::view::cli::output::utils::BREAK_LINE;
-use crate::view::cli::output::writer::CliWriterRepository;
+use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::view::output::utils::BREAK_LINE;
+use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
 pub struct SaveRequestWithBaseRequestExecutor<W1, W2>
@@ -14,13 +14,13 @@ where
 {
     pub request_name: String,
     pub base_request_name: Option<String>,
-    pub request_data: OptionalRequestData,
+    pub input_request_data: PartialRequestData,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
 
 #[async_trait]
-impl<W1, W2> CliCommand for SaveRequestWithBaseRequestExecutor<W1, W2>
+impl<W1, W2> ViewCommand for SaveRequestWithBaseRequestExecutor<W1, W2>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,
@@ -40,8 +40,8 @@ where
         };
 
         let request_data_to_save = match base_request_data {
-            Some(request_data) => self.request_data.merge_with(request_data),
-            None => self.request_data.to_request_data(),
+            Some(request_data) => self.input_request_data.merge_with(request_data),
+            None => self.input_request_data.to_request_data(),
         };
 
         provider

@@ -6,9 +6,42 @@ use reqwest::Client;
 
 use super::super::entities::{Response, ResponseStage};
 use super::{HttpClientRepository, TaskRunningRequest};
+use crate::app::services::request::entities::methods::METHODS;
+use crate::app::services::request::entities::requests::RequestData;
 
 #[derive(Default)]
 pub struct ReqwestClientRepository;
+
+impl HttpClientRepository for ReqwestClientRepository {
+    fn submit_request(&self, request: RequestData) -> TaskRunningRequest {
+        tokio::task::spawn(async move {
+            let url = request.url.to_string();
+            let headers = request.headers;
+            let method = request.method;
+
+            let client = Client::new();
+            let client = match method {
+                METHODS::GET => client.get(url),
+                METHODS::POST => client.post(url),
+                METHODS::DELETE => client.delete(url),
+                METHODS::PATCH => client.patch(url),
+                METHODS::PUT => client.put(url),
+                METHODS::HEAD => client.head(url),
+            };
+
+            let mut client = client.headers(ReqwestClientRepository::create_header_map(headers));
+
+            if method != METHODS::GET {
+                let body = request.body;
+                client = client.body(body);
+            }
+
+            let response = client.send().await?;
+
+            ReqwestClientRepository::convert_to_app_response(response).await
+        })
+    }
+}
 
 impl ReqwestClientRepository {
     fn create_header_map(headers: HashMap<String, String>) -> HeaderMap {
@@ -24,7 +57,7 @@ impl ReqwestClientRepository {
         headers_reqwest
     }
 
-    async fn convert_to_app_response(response: reqwest::Response) -> Result<Response, String> {
+    async fn convert_to_app_response(response: reqwest::Response) -> anyhow::Result<Response> {
         let status: i32 = response.status().as_u16().into();
         let mut headers: Vec<(String, String)> = response
             .headers()
@@ -39,7 +72,7 @@ impl ReqwestClientRepository {
 
         headers.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
 
-        let body = response.text().await.map_err(|e| e.to_string())?;
+        let body = response.text().await?;
 
         Ok(Response {
             status,
@@ -47,116 +80,6 @@ impl ReqwestClientRepository {
             response_time: 1,
             headers,
             stage: ResponseStage::Finished,
-        })
-    }
-}
-
-impl HttpClientRepository for ReqwestClientRepository {
-    fn call_get(&self, url: String, headers: HashMap<String, String>) -> TaskRunningRequest {
-        tokio::task::spawn(async move {
-            let client = Client::new();
-            let response = client
-                .get(url)
-                .headers(ReqwestClientRepository::create_header_map(headers))
-                .send()
-                .await
-                .map_err(|e| e.to_string())?;
-            ReqwestClientRepository::convert_to_app_response(response).await
-        })
-    }
-
-    fn call_post(
-        &self,
-        url: String,
-        headers: HashMap<String, String>,
-        body: String,
-    ) -> TaskRunningRequest {
-        tokio::task::spawn(async move {
-            let client = Client::new();
-            let response = client
-                .post(url)
-                .body(body)
-                .headers(ReqwestClientRepository::create_header_map(headers))
-                .send()
-                .await
-                .map_err(|e| e.to_string())?;
-            ReqwestClientRepository::convert_to_app_response(response).await
-        })
-    }
-
-    fn call_delete(
-        &self,
-        url: String,
-        headers: HashMap<String, String>,
-        body: String,
-    ) -> TaskRunningRequest {
-        tokio::task::spawn(async move {
-            let client = Client::new();
-            let response = client
-                .delete(url)
-                .body(body)
-                .headers(ReqwestClientRepository::create_header_map(headers))
-                .send()
-                .await
-                .map_err(|e| e.to_string())?;
-            ReqwestClientRepository::convert_to_app_response(response).await
-        })
-    }
-
-    fn call_patch(
-        &self,
-        url: String,
-        headers: HashMap<String, String>,
-        body: String,
-    ) -> TaskRunningRequest {
-        tokio::task::spawn(async move {
-            let client = Client::new();
-            let response = client
-                .patch(url)
-                .body(body)
-                .headers(ReqwestClientRepository::create_header_map(headers))
-                .send()
-                .await
-                .map_err(|e| e.to_string())?;
-            ReqwestClientRepository::convert_to_app_response(response).await
-        })
-    }
-
-    fn call_put(
-        &self,
-        url: String,
-        headers: HashMap<String, String>,
-        body: String,
-    ) -> TaskRunningRequest {
-        tokio::task::spawn(async move {
-            let client = Client::new();
-            let response = client
-                .put(url)
-                .body(body)
-                .headers(ReqwestClientRepository::create_header_map(headers))
-                .send()
-                .await
-                .map_err(|e| e.to_string())?;
-            ReqwestClientRepository::convert_to_app_response(response).await
-        })
-    }
-
-    fn call_head(
-        &self,
-        url: String,
-        headers: HashMap<String, String>,
-        body: String,
-    ) -> TaskRunningRequest {
-        tokio::task::spawn(async move {
-            let client = Client::new();
-            let response = client
-                .head(url)
-                .body(body)
-                .headers(ReqwestClientRepository::create_header_map(headers))
-                .send()
-                .await
-                .map_err(|e| e.to_string())?;
-            ReqwestClientRepository::convert_to_app_response(response).await
         })
     }
 }

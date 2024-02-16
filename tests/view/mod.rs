@@ -1,1 +1,1 @@
-pub mod input_parser;
+pub mod map_input_to_commands;

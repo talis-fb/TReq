@@ -1,0 +1,18 @@
+---
+source: tests/view/map_input_to_commands.rs
+expression: output.unwrap()
+---
+- SubmitRequest:
+    request:
+      url:
+        ValidatedUrl:
+          protocol: ~
+          host: url.com
+          port: ~
+          paths: []
+          query_params: []
+          anchor: ~
+      method: POST
+      headers: {}
+      body: "{\"age\":\"40\",\"job\":\"Dev\",\"name\":\"Thales\"}"
+
