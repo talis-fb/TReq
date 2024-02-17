@@ -11,6 +11,7 @@ use crate::view::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
 pub mod remove_request;
+pub mod rename_request;
 pub mod save_new_request;
 pub mod save_request_with_base_request;
 pub mod show_list_all_request;
@@ -50,6 +51,7 @@ pub enum ViewCommandChoice {
     RenameSavedRequest {
         request_name: String,
         new_name: String,
+        no_confirm: bool,
     },
 
     ShowRequests,
@@ -67,6 +69,7 @@ impl ViewCommandChoice {
         use self::show_list_all_request::ShowListAllRequestExecutor;
         use self::submit_request::BasicRequestExecutor;
         use self::submit_saved_request::SubmitSavedRequestExecutor;
+        use self::rename_request::RenameRequestExecutor;
 
         let writer_stdout = CrosstermCliWriter::from(stdout());
         let writer_stderr = CrosstermCliWriter::from(stderr());
@@ -131,7 +134,14 @@ impl ViewCommandChoice {
             ViewCommandChoice::RenameSavedRequest {
                 request_name,
                 new_name,
-            } => todo!(),
+                no_confirm,
+            } => RenameRequestExecutor {
+                request_name,
+                new_name,
+                no_confirm,
+                writer: writer_stdout,
+            }
+            .into(),
         }
     }
 }

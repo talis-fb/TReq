@@ -19,9 +19,11 @@ pub fn parse_inputs_to_main_command_choices(
         CliCommandChoice::Rename {
             request_name,
             new_name,
+            no_confirm,
         } => vec![ViewCommandChoice::RenameSavedRequest {
             request_name: request_name.to_string(),
             new_name: new_name.to_string(),
+            no_confirm: *no_confirm,
         }],
         CliCommandChoice::Edit { request_name } => {
             vec![ViewCommandChoice::SaveRequestWithBaseRequest {
