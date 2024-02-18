@@ -26,11 +26,11 @@ where
     W2: CliWriterRepository,
 {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
-        let mut request = provider
+        let request = provider
             .get_request_saved(self.request_name.clone())
             .await?;
 
-        request.merge(self.input_request_data);
+        let request = request.merge(self.input_request_data);
 
         self.writer_stderr.print_lines([BREAK_LINE]);
         self.writer_stderr.print_lines_styled([[
