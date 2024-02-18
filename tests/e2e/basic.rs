@@ -250,6 +250,38 @@ fn should_remove_requests() {
     cmd.assert().failure();
 }
 
+#[test]
+fn should_rename_requests() {
+    // Setup
+    let input = format!("treq GET {}/get --save-as request-to-be-renamed", host());
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    // Before rename
+    let input = "treq run request-to-be-renamed";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    let input = "treq run request-renamed";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
+
+    let input = "treq rename request-to-be-renamed request-renamed --no-confirm";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq rename request-to-be-renamed request-renamed --no-confirm";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
+
+    // After rename
+    let input = "treq run request-to-be-renamed";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().failure();
+    let input = "treq run request-renamed";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+}
+
 // ------------------
 // UTILS
 // ------------------
