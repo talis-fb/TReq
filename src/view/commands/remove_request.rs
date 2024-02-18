@@ -6,13 +6,13 @@ use crate::view::output::utils::BREAK_LINE;
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
-pub struct RemoveRequestExecutir<Writer: CliWriterRepository> {
+pub struct RemoveRequestExecutor<Writer: CliWriterRepository> {
     pub request_name: String,
     pub writer: Writer,
 }
 
 #[async_trait]
-impl<Writer: CliWriterRepository> ViewCommand for RemoveRequestExecutir<Writer> {
+impl<Writer: CliWriterRepository> ViewCommand for RemoveRequestExecutor<Writer> {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
         self.writer.print_lines([BREAK_LINE]);
         self.writer.print_lines_styled([[

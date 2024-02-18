@@ -63,7 +63,7 @@ pub enum ViewCommandChoice {
 impl ViewCommandChoice {
     pub fn get_executor(self) -> Box<dyn ViewCommand> {
         use self::inspect_request::InspectRequestExecutor;
-        use self::remove_request::RemoveRequestExecutir;
+        use self::remove_request::RemoveRequestExecutor;
         use self::rename_request::RenameRequestExecutor;
         use self::save_new_request::SaveNewRequestExecutor;
         use self::save_request_with_base_request::SaveRequestWithBaseRequestExecutor;
@@ -125,7 +125,7 @@ impl ViewCommandChoice {
             }
             .into(),
 
-            ViewCommandChoice::RemoveSavedRequest { request_name } => RemoveRequestExecutir {
+            ViewCommandChoice::RemoveSavedRequest { request_name } => RemoveRequestExecutor {
                 request_name,
                 writer: writer_stdout,
             }
