@@ -125,6 +125,12 @@ impl Backend for MockAppBackend {
     async fn remove_request_saved(&mut self, name: String) -> Result<()> {
         self.app_backend.remove_request_saved(name).await
     }
+
+    async fn rename_request_saved(&mut self, request_name: String, new_name: String) -> Result<()> {
+        self.app_backend
+            .rename_request_saved(request_name, new_name)
+            .await
+    }
 }
 
 pub struct CliWriterUseLess;

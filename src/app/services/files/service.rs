@@ -72,6 +72,22 @@ impl FileServiceFacade for FileService {
         let file_path = self.temp_root_path.join(path);
         self.remove_file(file_path)
     }
+
+    fn rename_file(&self, from: PathBuf, to: PathBuf) -> Result<()> {
+        Ok(std::fs::rename(from, to)?)
+    }
+
+    fn rename_data_file(&self, from: String, to: String) -> Result<()> {
+        let from_file_path = self.data_app_root_path.join(from);
+        let to_file_path = self.data_app_root_path.join(to);
+        self.rename_file(from_file_path, to_file_path)
+    }
+
+    fn rename_temp_file(&self, from: String, to: String) -> Result<()> {
+        let from_file_path = self.temp_root_path.join(from);
+        let to_file_path = self.temp_root_path.join(to);
+        self.rename_file(from_file_path, to_file_path)
+    }
 }
 
 impl FileService {

@@ -67,9 +67,7 @@ mod parsers_request_items {
         let key = matcher.name("key")?.as_str();
         let value = matcher.name("value")?.as_str();
 
-        let original_body = base_request
-            .body.as_deref()
-            .unwrap_or("{}");
+        let original_body = base_request.body.as_deref().unwrap_or("{}");
 
         let mut request = base_request.clone();
 

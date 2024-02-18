@@ -68,7 +68,7 @@ pub fn root_command() -> Command {
         .subcommand(
             Command::new("rename")
                 .override_usage(format!(
-                    "treq run <OLD_REQUEST_NAME> <NEW_REQUEST_NAME> [OPTIONS]"
+                    "treq rename <OLD_REQUEST_NAME> <NEW_REQUEST_NAME> [OPTIONS]"
                 ))
                 .about("Rename request")
                 .arg(
@@ -77,6 +77,14 @@ pub fn root_command() -> Command {
                         .required(true)
                         .num_args(2)
                         .help("All entrys"),
+                )
+                .arg(
+                    // With this flag, the user will not be prompted for confirmation to rename the file
+                    Arg::new("no-confirm")
+                        .long("no-confirm")
+                        .action(ArgAction::SetTrue)
+                        .value_name("NO_CONFIRM")
+                        .help("Do not prompt for confirmation"),
                 ),
         )
         .subcommand(Command::new("ls").about("List all saved requests"))

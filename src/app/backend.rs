@@ -42,6 +42,7 @@ pub trait Backend: Send {
     async fn get_request_saved(&mut self, name: String) -> Result<RequestData>;
     async fn find_all_request_name(&mut self) -> Result<Vec<String>>;
     async fn remove_request_saved(&mut self, name: String) -> Result<()>;
+    async fn rename_request_saved(&mut self, request_name: String, new_name: String) -> Result<()>;
 }
 
 pub struct AppBackend {
@@ -207,10 +208,17 @@ impl Backend for AppBackend {
     }
 
     async fn remove_request_saved(&mut self, name: String) -> Result<()> {
-        
         run_command_waiting_response(
             &self.file_service,
             FileServiceCommandsFactory::remove_file_saved_request(name),
+        )
+        .await?
+    }
+
+    async fn rename_request_saved(&mut self, request_name: String, new_name: String) -> Result<()> {
+        run_command_waiting_response(
+            &self.file_service,
+            FileServiceCommandsFactory::rename_file_saved_request(request_name, new_name),
         )
         .await?
     }

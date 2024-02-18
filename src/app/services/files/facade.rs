@@ -11,4 +11,7 @@ pub trait FileServiceFacade: Send {
     fn remove_file(&self, path: PathBuf) -> Result<()>;
     fn remove_data_file(&self, path: String) -> Result<()>;
     fn remove_temp_file(&self, path: String) -> Result<()>;
+    fn rename_file(&self, from: PathBuf, to: PathBuf) -> Result<()>;
+    fn rename_data_file(&self, from: String, to: String) -> Result<()>;
+    fn rename_temp_file(&self, from: String, to: String) -> Result<()>;
 }
