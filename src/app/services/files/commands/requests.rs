@@ -45,7 +45,10 @@ impl CommandsFactory {
         .with_response(rx)
     }
 
-    pub fn rename_file_saved_request(request_name: String, new_name: String) -> CommandFileService<Result<()>> {
+    pub fn rename_file_saved_request(
+        request_name: String,
+        new_name: String,
+    ) -> CommandFileService<Result<()>> {
         let (tx, rx) = oneshot::channel();
 
         Command::from(move |service: FileServiceInstance| {

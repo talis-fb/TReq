@@ -64,12 +64,12 @@ impl ViewCommandChoice {
     pub fn get_executor(self) -> Box<dyn ViewCommand> {
         use self::inspect_request::InspectRequestExecutor;
         use self::remove_request::RemoveRequestExecutir;
+        use self::rename_request::RenameRequestExecutor;
         use self::save_new_request::SaveNewRequestExecutor;
         use self::save_request_with_base_request::SaveRequestWithBaseRequestExecutor;
         use self::show_list_all_request::ShowListAllRequestExecutor;
         use self::submit_request::BasicRequestExecutor;
         use self::submit_saved_request::SubmitSavedRequestExecutor;
-        use self::rename_request::RenameRequestExecutor;
 
         let writer_stdout = CrosstermCliWriter::from(stdout());
         let writer_stderr = CrosstermCliWriter::from(stderr());

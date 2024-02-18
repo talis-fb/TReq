@@ -127,7 +127,9 @@ impl Backend for MockAppBackend {
     }
 
     async fn rename_request_saved(&mut self, request_name: String, new_name: String) -> Result<()> {
-        self.app_backend.rename_request_saved(request_name, new_name).await
+        self.app_backend
+            .rename_request_saved(request_name, new_name)
+            .await
     }
 }
 
