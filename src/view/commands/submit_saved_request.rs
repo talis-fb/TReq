@@ -30,7 +30,7 @@ where
             .get_request_saved(self.request_name.clone())
             .await?;
 
-        let request_data = self.input_request_data.merge_with(request);
+        let request = request.merge(self.input_request_data);
 
         self.writer_stderr.print_lines([BREAK_LINE]);
         self.writer_stderr.print_lines_styled([[
@@ -42,7 +42,7 @@ where
         ]]);
 
         Box::new(BasicRequestExecutor {
-            request: request_data,
+            request,
             writer_stdout: self.writer_stdout,
             writer_stderr: self.writer_stderr,
         })

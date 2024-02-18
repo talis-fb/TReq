@@ -14,5 +14,7 @@ expression: output
           anchor: ~
       method: GET
       headers: {}
-      body: "{\"Hello\":\"World\"}"
+      body:
+        Json:
+          Hello: World
 
