@@ -74,7 +74,7 @@ where
         {
             let pb = ProgressBar::new(100);
             pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
-            pb.set_message("Loading...");
+            pb.set_message("Loading...\t\t 0 MS");
 
             let mut intv = tokio::time::interval(std::time::Duration::from_millis(14));
             loop {
@@ -83,6 +83,10 @@ where
                 }
                 intv.tick().await;
                 pb.inc(1);
+
+                let elapsed = format!(" {} MS ", now.elapsed().as_millis());
+                pb.set_message("Loading...\t\t".to_owned() + elapsed.as_str());
+
             }
             pb.finish_and_clear();
         }
