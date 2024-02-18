@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use indicatif::{ProgressBar, ProgressStyle};
+use tokio::time::Instant;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
@@ -58,14 +59,16 @@ where
                 .collect()
         };
 
-        self.writer_stderr.print_lines([BREAK_LINE]);
-        self.writer_stderr.print_lines_styled([title]);
-        self.writer_stderr.print_lines_styled(headers);
-        self.writer_stderr.print_lines([BREAK_LINE]);
+        self.writer_stdout.print_lines([BREAK_LINE]);
+        self.writer_stdout.print_lines_styled([title]);
+        self.writer_stdout.print_lines_styled(headers);
+        self.writer_stdout.print_lines([BREAK_LINE]);
 
         let request_id = provider.add_request(self.request).await?;
         let response_submit = provider.submit_request_async(request_id).await?;
         let (response_submit, mut listener_submit) = chain_listener_to_receiver(response_submit);
+
+        let now = Instant::now();
 
         // Loading spinner
         {
@@ -83,6 +86,8 @@ where
             }
             pb.finish_and_clear();
         }
+
+        let elapsed = format!(" {} MS ", now.elapsed().as_millis());
 
         let response_to_show = response_submit.await?;
 
@@ -109,6 +114,11 @@ where
             StyledStr::from("STATUS: ").with_text_style(TextStyle::Bold),
             StyledStr::from(&response_status),
             StyledStr::from(&response_status_message_styled),
+            StyledStr::from("    "),
+            StyledStr::from(&elapsed)
+                .with_text_style(TextStyle::Bold)
+                .with_color_bg(Color::White)
+                .with_color_text(Color::Magenta),
         ];
         let headers: Vec<[StyledStr; 5]> = {
             response
@@ -126,10 +136,10 @@ where
                 .collect()
         };
 
-        self.writer_stderr.print_lines_styled([title_status]);
-        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
-        self.writer_stderr.print_lines_styled(headers);
-        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        self.writer_stdout.print_lines_styled([title_status]);
+        self.writer_stdout.print_lines([BREAK_LINE_WITH_GAP]);
+        self.writer_stdout.print_lines_styled(headers);
+        self.writer_stdout.print_lines([BREAK_LINE_WITH_GAP]);
         self.writer_stdout.print_lines([response.body]);
 
         Ok(())
