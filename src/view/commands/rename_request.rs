@@ -1,7 +1,7 @@
-use std::io::{stdin, BufRead};
-
 use anyhow::Ok;
 use async_trait::async_trait;
+use dialoguer::theme::ColorfulTheme;
+use dialoguer::Confirm;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
@@ -28,31 +28,22 @@ impl<Writer: CliWriterRepository> ViewCommand for RenameRequestExecutor<Writer> 
         ]]);
         self.writer.print_lines([BREAK_LINE]);
 
-        if !self.has_to_confirm {
-            self.writer.print_lines_styled([[
-                StyledStr::from(" Are you sure? [y/N] ").with_color_text(Color::Red),
-            ]]);
-
-            let mut input = String::new();
-
-            stdin().lock().read_line(&mut input)?;
-
-            while input.trim().to_lowercase() != "y" {
-                if input.trim().to_lowercase() == "n" {
-                    self.writer.print_lines_styled([[
-                        StyledStr::from(" Aborted ").with_color_text(Color::Red),
-                    ]]);
-                    self.writer.print_lines([BREAK_LINE]);
-
-                    return Ok(());
-                }
-                
-                input = String::new();
-                stdin().read_line(&mut input)?;
+        if self.has_to_confirm {
+            if Confirm::with_theme(&ColorfulTheme::default())
+                .with_prompt("Do you want to continue?")
+                .wait_for_newline(true)
+                .interact()
+                .unwrap()
+            {
+                self.writer.print_lines([BREAK_LINE]);
+            } else {
+                return Ok(());
             }
         }
 
-        provider.rename_request_saved(self.request_name, self.new_name).await?;
+        provider
+            .rename_request_saved(self.request_name, self.new_name)
+            .await?;
 
         self.writer.print_lines([" Ok "]);
 
