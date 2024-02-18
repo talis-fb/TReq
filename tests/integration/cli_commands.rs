@@ -1,6 +1,6 @@
 use treq::app::services::request::entities::methods::METHODS;
 use treq::app::services::request::entities::partial_entities::PartialRequestData;
-use treq::app::services::request::entities::requests::{RequestData, BodyPayload};
+use treq::app::services::request::entities::requests::{BodyPayload, RequestData};
 use treq::app::services::request::entities::url::Url;
 use treq::view::commands::{self, ViewCommand};
 
@@ -43,7 +43,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
     let input_second_request = PartialRequestData {
         url: Some(Url::from_str("https://google.com")),
         method: Some(METHODS::POST),
-        body: Some(BodyPayload::from_str(r#"{ "Hello": "World" }"#)),
+        body: Some(BodyPayload::Json(serde_json::json!({ "Hello": "World" }))),
         headers: None,
     };
 
@@ -51,7 +51,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
     let expected_second_request = RequestData::default()
         .with_url("https://google.com")
         .with_method(METHODS::POST)
-        .with_body(r#"{ "Hello": "World" }"#)
+        .with_body_payload(BodyPayload::Json(serde_json::json!({ "Hello": "World" })))
         .with_headers([("User-Agent".into(), "treq-test".into())]);
 
     let mut backend = create_mock_back_end()

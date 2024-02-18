@@ -22,10 +22,7 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
         let mut req = PartialRequestData::default();
         req.method = *method_manual;
         req.url = url_manual.as_ref().map(|value| Url::from_str(value));
-        req.body = raw_body
-            .clone()
-            .map(|value| BodyPayload::Raw(value.to_string()));
-
+        req.body = raw_body.as_ref().map(|v| BodyPayload::from_str(v));
         req
     };
 
@@ -74,13 +71,14 @@ mod parsers_request_items {
 
         let mut request = base_request.clone();
 
-        request.body = request.body.map(|current_body| match current_body {
-            BodyPayload::Json(serde_json::Value::Object(mut json)) => {
+        request.body = match request.body {
+            Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
                 json.insert(key.to_string(), Value::String(value.to_string()));
                 BodyPayload::Json(serde_json::Value::Object(json))
             }
             _ => BodyPayload::Json(serde_json::json!({key: value})),
-        });
+        }
+        .into();
 
         Some(request)
     }
@@ -129,5 +127,71 @@ mod parsers_request_items {
         }
 
         Some(request)
+    }
+}
+
+#[cfg(test)]
+pub mod tests_parsers_request_items {
+    use super::*;
+
+    #[test]
+    fn test_body_value_append() {
+        let input = "password=123";
+        let base_request = PartialRequestData::default()
+            .with_body(r#"{ "email": "johndoe@gmail.com" }"#.to_string());
+
+        let expected_request = PartialRequestData::default()
+            .with_body(r#"{ "email": "johndoe@gmail.com", "password": "123" }"#.to_string());
+
+        assert_eq!(
+            Some(expected_request),
+            parsers_request_items::body_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_body_value_append_overwrite() {
+        let input = "password=123456";
+        let base_request = PartialRequestData::default()
+            .with_body(r#"{ "email": "johndoe@gmail.com", "password": "123" }"#.to_string());
+
+        let expected_request = PartialRequestData::default()
+            .with_body(r#"{ "email": "johndoe@gmail.com", "password": "123456" }"#.to_string());
+
+        assert_eq!(
+            Some(expected_request),
+            parsers_request_items::body_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_body_value_with_base_body_as_raw() {
+        let input = "password=123";
+
+        let base_requests_body = ["anything", r#"["element1", "element2"]"#, "10", ""];
+        let base_requests = base_requests_body
+            .map(|body| PartialRequestData::default().with_body(body.to_string()));
+
+        for request in base_requests {
+            let expected_request =
+                PartialRequestData::default().with_body(r#"{ "password": "123" }"#.to_string());
+            assert_eq!(
+                Some(expected_request),
+                parsers_request_items::body_value(input, &request)
+            )
+        }
+    }
+    #[test]
+
+    fn test_body_value_with_base_body_none() {
+        let input = "password=123";
+        let base_request = PartialRequestData::default();
+
+        let expected_request =
+            PartialRequestData::default().with_body(r#"{ "password": "123" }"#.to_string());
+        assert_eq!(
+            Some(expected_request),
+            parsers_request_items::body_value(input, &base_request)
+        )
     }
 }

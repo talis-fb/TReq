@@ -40,7 +40,11 @@ where
         };
 
         let request_data_to_save = match base_request_data {
-            Some(request_data) => self.input_request_data.merge_with(request_data),
+            // Some(request_data) => self.input_request_data.merge_with(request_data),
+            Some(mut request_data) => {
+                request_data.merge(self.input_request_data);
+                request_data
+            }
             None => self.input_request_data.to_request_data(),
         };
 

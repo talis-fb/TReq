@@ -30,6 +30,16 @@ impl PartialRequestData {
         self.method = Some(value);
         self
     }
+
+    pub fn with_body(mut self, value: impl Into<BodyPayload>) -> Self {
+        self.body = Some(value.into());
+        self
+    }
+
+    pub fn with_headers(mut self, values: impl Into<HashMap<String, String>>) -> Self {
+        self.headers = Some(values.into());
+        self
+    }
 }
 
 impl From<RequestData> for PartialRequestData {
@@ -59,24 +69,24 @@ impl PartialRequestData {
             .with_body_payload(self.body.unwrap_or_default())
     }
 
-    pub fn merge_with(self, other: RequestData) -> RequestData {
-        let mut final_request =
-            RequestData::default().with_method(self.method.unwrap_or(other.method));
-        // .with_headers(self.headers.unwrap_or(other.headers))
-        // .with_body(self.body.unwrap_or(other.body));
-
-        match (self.url, other.url) {
-            (Some(Url::ValidatedUrl(url)), Url::ValidatedUrl(other)) => {
-                final_request.url = Url::ValidatedUrl(other.be_overwrite_by(url));
-            }
-            (Some(Url::Raw(raw_url)), _) => {
-                final_request.url = Url::Raw(raw_url);
-            }
-            (_, other) => {
-                final_request.url = other;
-            }
-        };
-
-        final_request
-    }
+    // pub fn merge_with(self, other: RequestData) -> RequestData {
+    //     let mut final_request =
+    //         RequestData::default().with_method(self.method.unwrap_or(other.method));
+    //     // .with_headers(self.headers.unwrap_or(other.headers))
+    //     // .with_body(self.body.unwrap_or(other.body));
+    //
+    //     match (self.url, other.url) {
+    //         (Some(Url::ValidatedUrl(url)), Url::ValidatedUrl(other)) => {
+    //             final_request.url = Url::ValidatedUrl(other.be_overwrite_by(url));
+    //         }
+    //         (Some(Url::Raw(raw_url)), _) => {
+    //             final_request.url = Url::Raw(raw_url);
+    //         }
+    //         (_, other) => {
+    //             final_request.url = other;
+    //         }
+    //     };
+    //
+    //     final_request
+    // }
 }

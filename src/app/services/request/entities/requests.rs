@@ -26,9 +26,12 @@ impl RequestData {
         };
         self
     }
-    pub fn with_body(mut self, value: impl AsRef<str>) -> Self {
-        self.body = serde_json::from_str(value.as_ref())
-            .unwrap_or(BodyPayload::Raw(value.as_ref().to_string()));
+    pub fn with_body(mut self, value: impl Into<BodyPayload>) -> Self {
+        self.body = value.into();
+        self
+    }
+    pub fn with_body_raw(mut self, value: impl AsRef<str>) -> Self {
+        self.body = BodyPayload::Raw(value.as_ref().to_string());
         self
     }
     pub fn with_body_payload(mut self, value: BodyPayload) -> Self {
@@ -111,6 +114,12 @@ impl ToString for BodyPayload {
             BodyPayload::Raw(value) => value.to_string(),
             BodyPayload::Json(value) => value.to_string(),
         }
+    }
+}
+
+impl From<String> for BodyPayload {
+    fn from(value: String) -> Self {
+        BodyPayload::from_str(&value)
     }
 }
 
