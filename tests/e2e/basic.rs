@@ -139,6 +139,40 @@ fn should_submit_save_edit_and_submit_corretly_in_sequence() {
 }
 
 #[test]
+fn should_submit_save_edit_replacing_just_a_field_in_body() {
+    let input = format!(
+        "treq POST {}/post --save-as my-post-request email=john@gmail.com password=123",
+        host()
+    );
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run my-post-request name=John";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("/post")
+            .and(predicate::str::contains("name"))
+            .and(predicate::str::contains("John"))
+            .and(predicate::str::contains("email"))
+            .and(predicate::str::contains("john@gmail.com"))
+            .and(predicate::str::contains("password"))
+            .and(predicate::str::contains("123")),
+    );
+
+    let input = "treq run my-post-request password=456";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("/post")
+            .and(predicate::str::contains("email"))
+            .and(predicate::str::contains("john@gmail.com"))
+            .and(predicate::str::contains("password"))
+            .and(predicate::str::contains("456")),
+    );
+}
+
+#[test]
 fn should_save_query_params_without_delete_already_saved_url() {
     // Setup
     let input = format!("treq GET {}/get --save-as req-with-query-params", host());

@@ -3,7 +3,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
+use super::partial_entities::PartialRequestData;
 use super::url::{Url, UrlInfo};
 use crate::app::services::request::entities::methods::METHODS;
 
@@ -12,7 +14,7 @@ pub struct RequestData {
     pub url: Url,
     pub method: METHODS,
     pub headers: HashMap<String, String>,
-    pub body: String,
+    pub body: BodyPayload,
 }
 
 impl RequestData {
@@ -24,8 +26,13 @@ impl RequestData {
         };
         self
     }
-    pub fn with_body(mut self, value: impl Into<String>) -> Self {
-        self.body = value.into();
+    pub fn with_body(mut self, value: impl AsRef<str>) -> Self {
+        self.body = serde_json::from_str(value.as_ref())
+            .unwrap_or(BodyPayload::Raw(value.as_ref().to_string()));
+        self
+    }
+    pub fn with_body_payload(mut self, value: BodyPayload) -> Self {
+        self.body = value;
         self
     }
     pub fn with_method(mut self, value: METHODS) -> Self {
@@ -35,6 +42,75 @@ impl RequestData {
     pub fn with_headers(mut self, values: impl Into<HashMap<String, String>>) -> Self {
         self.headers = values.into();
         self
+    }
+
+    pub fn merge(&mut self, other: PartialRequestData) {
+        self.method = other.method.unwrap_or(self.method);
+
+        match &mut self.url {
+            Url::ValidatedUrl(current_url_info) => match other.url {
+                Some(Url::ValidatedUrl(other_url_info)) => {
+                    self.url = Url::ValidatedUrl(
+                        current_url_info
+                            .clone()
+                            .be_overwrite_by(other_url_info.clone()),
+                    );
+                }
+                Some(Url::Raw(raw_url)) => {
+                    self.url = Url::Raw(raw_url);
+                }
+                None => {}
+            },
+            Url::Raw(current_url_str) => {
+                self.url = other.url.unwrap_or(Url::Raw(current_url_str.to_string()));
+            }
+        }
+
+        self.headers.extend(other.headers.unwrap_or_default());
+
+        match (&mut self.body, other.body) {
+            (
+                BodyPayload::Json(serde_json::Value::Object(ref mut current_map_json)),
+                Some(BodyPayload::Json(serde_json::Value::Object(other_map_json))),
+            ) => {
+                current_map_json.extend(other_map_json);
+                self.body = BodyPayload::Json(serde_json::Value::Object(current_map_json.clone()));
+            }
+            (_current_body, Some(other_body)) => {
+                self.body = other_body;
+            }
+            (_current_body, None) => {}
+        };
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BodyPayload {
+    Raw(String),
+    Json(serde_json::Value),
+}
+
+impl Default for BodyPayload {
+    fn default() -> Self {
+        BodyPayload::Raw(String::default())
+    }
+}
+
+impl BodyPayload {
+    pub fn from_str(value: &str) -> Self {
+        match serde_json::from_str::<Value>(value) {
+            Ok(value) => BodyPayload::Json(value),
+            Err(_) => BodyPayload::Raw(value.to_string()),
+        }
+    }
+}
+
+impl ToString for BodyPayload {
+    fn to_string(&self) -> String {
+        match self {
+            BodyPayload::Raw(value) => value.to_string(),
+            BodyPayload::Json(value) => value.to_string(),
+        }
     }
 }
 

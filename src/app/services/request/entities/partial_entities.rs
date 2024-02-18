@@ -4,7 +4,7 @@ use std::str::FromStr;
 use serde::Serialize;
 
 use super::methods::METHODS;
-use super::requests::RequestData;
+use super::requests::{BodyPayload, RequestData};
 use super::url::{Url, UrlInfo};
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize)]
@@ -12,7 +12,7 @@ pub struct PartialRequestData {
     pub url: Option<Url>,
     pub method: Option<METHODS>,
     pub headers: Option<HashMap<String, String>>,
-    pub body: Option<String>,
+    pub body: Option<BodyPayload>,
 }
 
 impl PartialRequestData {
@@ -56,14 +56,14 @@ impl PartialRequestData {
                     .expect("METHOD is required to define a Request Data"),
             )
             .with_headers(self.headers.unwrap_or_default())
-            .with_body(self.body.unwrap_or_default())
+            .with_body_payload(self.body.unwrap_or_default())
     }
 
     pub fn merge_with(self, other: RequestData) -> RequestData {
-        let mut final_request = RequestData::default()
-            .with_method(self.method.unwrap_or(other.method))
-            .with_headers(self.headers.unwrap_or(other.headers))
-            .with_body(self.body.unwrap_or(other.body));
+        let mut final_request =
+            RequestData::default().with_method(self.method.unwrap_or(other.method));
+        // .with_headers(self.headers.unwrap_or(other.headers))
+        // .with_body(self.body.unwrap_or(other.body));
 
         match (self.url, other.url) {
             (Some(Url::ValidatedUrl(url)), Url::ValidatedUrl(other)) => {

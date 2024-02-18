@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use crate::app::services::request::entities::methods::METHODS;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::app::services::request::entities::requests::BodyPayload;
 use crate::app::services::request::entities::url::{Url, UrlInfo};
 use crate::view::input::cli_input::{CliCommandChoice, CliInput, RequestBuildingOptions};
 
@@ -19,9 +20,12 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
         } = &input.request_input;
 
         let mut req = PartialRequestData::default();
-        req.body = raw_body.clone();
         req.method = *method_manual;
         req.url = url_manual.as_ref().map(|value| Url::from_str(value));
+        req.body = raw_body
+            .clone()
+            .map(|value| BodyPayload::Raw(value.to_string()));
+
         req
     };
 
@@ -58,6 +62,7 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
 
 mod parsers_request_items {
     use super::*;
+    use crate::app::services::request::entities::requests::BodyPayload;
     use crate::utils::regexes;
 
     pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
@@ -67,16 +72,15 @@ mod parsers_request_items {
         let key = matcher.name("key")?.as_str();
         let value = matcher.name("value")?.as_str();
 
-        let original_body = base_request.body.as_deref().unwrap_or("{}");
-
         let mut request = base_request.clone();
 
-        request.body = {
-            let mut json =
-                serde_json::from_str::<Map<String, Value>>(original_body).unwrap_or_default();
-            json.insert(key.to_string(), Value::String(value.to_string()));
-            serde_json::to_string(&json).unwrap_or_default().into()
-        };
+        request.body = request.body.map(|current_body| match current_body {
+            BodyPayload::Json(serde_json::Value::Object(mut json)) => {
+                json.insert(key.to_string(), Value::String(value.to_string()));
+                BodyPayload::Json(serde_json::Value::Object(json))
+            }
+            _ => BodyPayload::Json(serde_json::json!({key: value})),
+        });
 
         Some(request)
     }
