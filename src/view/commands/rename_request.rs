@@ -12,7 +12,7 @@ use crate::view::style::{Color, StyledStr};
 pub struct RenameRequestExecutor<Writer: CliWriterRepository> {
     pub request_name: String,
     pub new_name: String,
-    pub no_confirm: bool,
+    pub has_to_confirm: bool,
     pub writer: Writer,
 }
 
@@ -28,7 +28,7 @@ impl<Writer: CliWriterRepository> ViewCommand for RenameRequestExecutor<Writer> 
         ]]);
         self.writer.print_lines([BREAK_LINE]);
 
-        if self.no_confirm {
+        if !self.has_to_confirm {
             self.writer.print_lines_styled([[
                 StyledStr::from(" Are you sure? [y/N] ").with_color_text(Color::Red),
             ]]);

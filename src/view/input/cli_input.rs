@@ -32,7 +32,7 @@ pub enum CliCommandChoice {
     Rename {
         request_name: String,
         new_name: String,
-        no_confirm: bool,
+        has_to_confirm: bool,
     },
     Inspect {
         request_name: String,
@@ -73,13 +73,13 @@ impl CliInput {
                 let inputs = clap_args_utils::get_many_inputs(matches)?;
                 let request_name = inputs[0].to_string();
                 let new_name = inputs[1].to_string();
-                let no_confirm = *matches.get_one::<bool>("no-confirm").unwrap_or(&false);
+                let has_to_confirm = !*matches.get_one::<bool>("no-confirm").unwrap_or(&false);
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Rename {
                         request_name,
                         new_name,
-                        no_confirm,
+                        has_to_confirm,
                     },
                     request_input,
                     save_options,

@@ -51,7 +51,7 @@ pub enum ViewCommandChoice {
     RenameSavedRequest {
         request_name: String,
         new_name: String,
-        no_confirm: bool,
+        has_to_confirm: bool,
     },
 
     ShowRequests,
@@ -134,11 +134,11 @@ impl ViewCommandChoice {
             ViewCommandChoice::RenameSavedRequest {
                 request_name,
                 new_name,
-                no_confirm,
+                has_to_confirm,
             } => RenameRequestExecutor {
                 request_name,
                 new_name,
-                no_confirm,
+                has_to_confirm,
                 writer: writer_stdout,
             }
             .into(),

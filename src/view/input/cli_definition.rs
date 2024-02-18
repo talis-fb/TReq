@@ -79,6 +79,7 @@ pub fn root_command() -> Command {
                         .help("All entrys"),
                 )
                 .arg(
+                    // With this flag, the user will not be prompted for confirmation to rename the file
                     Arg::new("no-confirm")
                         .long("no-confirm")
                         .action(ArgAction::SetTrue)
