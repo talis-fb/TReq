@@ -69,9 +69,11 @@ where
 
         // Loading spinner
         {
+            let now = tokio::time::Instant::now();
+            
             let pb = ProgressBar::new(100);
             pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
-            pb.set_message("Loading...");
+            pb.set_message("Loading...\t\t 0 MS");
 
             let mut intv = tokio::time::interval(std::time::Duration::from_millis(14));
             loop {
@@ -80,6 +82,9 @@ where
                 }
                 intv.tick().await;
                 pb.inc(1);
+
+                let elapsed = format!(" {} MS ", now.elapsed().as_millis());
+                pb.set_message("Loading...\t\t".to_owned() + elapsed.as_str());
             }
             pb.finish_and_clear();
         }
@@ -101,6 +106,8 @@ where
         let response = response_to_show.unwrap();
         let response_status = response.status.to_string();
 
+        let response_time = format!(" {} MS ", response.response_time_ms);
+
         let response_status_message = get_status_code_message(response.status);
         let response_status_message_styled = format!(" ({response_status_message})");
 
@@ -109,6 +116,8 @@ where
             StyledStr::from("STATUS: ").with_text_style(TextStyle::Bold),
             StyledStr::from(&response_status),
             StyledStr::from(&response_status_message_styled),
+            StyledStr::from("    "),
+            StyledStr::from(&response_time),
         ];
         let headers: Vec<[StyledStr; 5]> = {
             response

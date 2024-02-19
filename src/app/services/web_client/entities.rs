@@ -13,7 +13,7 @@ pub enum ResponseStage {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Response {
     pub status: i32,
-    pub response_time: u64,
+    pub response_time_ms: u64,
     pub headers: Vec<(String, String)>,
     pub body: String,
     pub stage: ResponseStage,
