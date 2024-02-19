@@ -139,7 +139,7 @@ where
         self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
         self.writer_stderr.print_lines_styled(headers);
         self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
-        self.writer_stderr.print_lines([response.body]);
+        self.writer_stdout.print_lines([response.body]);
 
         Ok(())
     }
