@@ -14,5 +14,6 @@ expression: output
           anchor: ~
       method: PATCH
       headers: {}
-      body: ""
+      body:
+        Raw: ""
 

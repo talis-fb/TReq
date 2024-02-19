@@ -33,7 +33,7 @@ impl HttpClientRepository for ReqwestClientRepository {
 
             if method != METHODS::GET {
                 let body = request.body;
-                client = client.body(body);
+                client = client.body(body.to_string());
             }
 
             let now = tokio::time::Instant::now();

@@ -14,5 +14,9 @@ expression: output.unwrap()
           anchor: ~
       method: POST
       headers: {}
-      body: "{\"age\":\"40\",\"job\":\"Dev\",\"name\":\"Thales\"}"
+      body:
+        Json:
+          age: "40"
+          job: Dev
+          name: Thales
 

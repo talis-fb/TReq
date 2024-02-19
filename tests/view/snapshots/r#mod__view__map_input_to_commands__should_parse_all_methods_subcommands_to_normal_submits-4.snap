@@ -14,5 +14,6 @@ expression: output
           anchor: ~
       method: DELETE
       headers: {}
-      body: ""
+      body:
+        Raw: ""
 
