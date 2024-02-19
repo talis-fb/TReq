@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use indicatif::{ProgressBar, ProgressStyle};
-use tokio::time::Instant;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
@@ -68,10 +67,10 @@ where
         let response_submit = provider.submit_request_async(request_id).await?;
         let (response_submit, mut listener_submit) = chain_listener_to_receiver(response_submit);
 
-        let now = Instant::now();
-
         // Loading spinner
         {
+            let now = tokio::time::Instant::now();
+            
             let pb = ProgressBar::new(100);
             pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
             pb.set_message("Loading...\t\t 0 MS");
@@ -86,12 +85,9 @@ where
 
                 let elapsed = format!(" {} MS ", now.elapsed().as_millis());
                 pb.set_message("Loading...\t\t".to_owned() + elapsed.as_str());
-
             }
             pb.finish_and_clear();
         }
-
-        let elapsed = format!(" {} MS ", now.elapsed().as_millis());
 
         let response_to_show = response_submit.await?;
 
@@ -110,6 +106,8 @@ where
         let response = response_to_show.unwrap();
         let response_status = response.status.to_string();
 
+        let response_time = format!(" {} MS ", response.response_time_ms);
+
         let response_status_message = get_status_code_message(response.status);
         let response_status_message_styled = format!(" ({response_status_message})");
 
@@ -119,7 +117,7 @@ where
             StyledStr::from(&response_status),
             StyledStr::from(&response_status_message_styled),
             StyledStr::from("    "),
-            StyledStr::from(&elapsed)
+            StyledStr::from(&response_time)
                 .with_text_style(TextStyle::Bold)
                 .with_color_bg(Color::White)
                 .with_color_text(Color::Magenta),
