@@ -23,8 +23,6 @@ pub enum Color {
     Yellow,
     Blue,
     Red,
-    White,
-    Magenta,
     // Rgb(i32, i32, i32),
 }
 
@@ -34,8 +32,6 @@ impl From<Color> for ColorCrossterm {
             Color::Blue => ColorCrossterm::Blue,
             Color::Red => ColorCrossterm::Red,
             Color::Yellow => ColorCrossterm::DarkYellow,
-            Color::White => ColorCrossterm::White,
-            Color::Magenta => ColorCrossterm::Magenta,
         }
     }
 }

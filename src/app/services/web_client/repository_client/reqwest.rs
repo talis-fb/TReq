@@ -40,9 +40,9 @@ impl HttpClientRepository for ReqwestClientRepository {
 
             let response = client.send().await?;
 
-            let elapsed = now.elapsed().as_millis() as u64;
+            let response_time_ms = now.elapsed().as_millis() as u64;
 
-            ReqwestClientRepository::convert_to_app_response(response, elapsed).await
+            ReqwestClientRepository::convert_to_app_response(response, response_time_ms).await
         })
     }
 }
@@ -61,7 +61,7 @@ impl ReqwestClientRepository {
         headers_reqwest
     }
 
-    async fn convert_to_app_response(response: reqwest::Response, response_time: u64) -> anyhow::Result<Response> {
+    async fn convert_to_app_response(response: reqwest::Response, response_time_ms: u64) -> anyhow::Result<Response> {
         let status: i32 = response.status().as_u16().into();
         let mut headers: Vec<(String, String)> = response
             .headers()
@@ -81,7 +81,7 @@ impl ReqwestClientRepository {
         Ok(Response {
             status,
             body,
-            response_time_ms: response_time,
+            response_time_ms,
             headers,
             stage: ResponseStage::Finished,
         })
