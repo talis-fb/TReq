@@ -58,10 +58,10 @@ where
                 .collect()
         };
 
-        self.writer_stdout.print_lines([BREAK_LINE]);
-        self.writer_stdout.print_lines_styled([title]);
-        self.writer_stdout.print_lines_styled(headers);
-        self.writer_stdout.print_lines([BREAK_LINE]);
+        self.writer_stderr.print_lines([BREAK_LINE]);
+        self.writer_stderr.print_lines_styled([title]);
+        self.writer_stderr.print_lines_styled(headers);
+        self.writer_stderr.print_lines([BREAK_LINE]);
 
         let request_id = provider.add_request(self.request).await?;
         let response_submit = provider.submit_request_async(request_id).await?;
@@ -117,10 +117,7 @@ where
             StyledStr::from(&response_status),
             StyledStr::from(&response_status_message_styled),
             StyledStr::from("    "),
-            StyledStr::from(&response_time)
-                .with_text_style(TextStyle::Bold)
-                .with_color_bg(Color::White)
-                .with_color_text(Color::Magenta),
+            StyledStr::from(&response_time),
         ];
         let headers: Vec<[StyledStr; 5]> = {
             response
@@ -138,11 +135,11 @@ where
                 .collect()
         };
 
-        self.writer_stdout.print_lines_styled([title_status]);
-        self.writer_stdout.print_lines([BREAK_LINE_WITH_GAP]);
-        self.writer_stdout.print_lines_styled(headers);
-        self.writer_stdout.print_lines([BREAK_LINE_WITH_GAP]);
-        self.writer_stdout.print_lines([response.body]);
+        self.writer_stderr.print_lines_styled([title_status]);
+        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        self.writer_stderr.print_lines_styled(headers);
+        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        self.writer_stderr.print_lines([response.body]);
 
         Ok(())
     }
