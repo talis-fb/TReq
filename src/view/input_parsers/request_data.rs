@@ -46,6 +46,7 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
             .fold(base_request, |req_data, item| {
                 [
                     parsers_request_items::query_param_value,
+                    parsers_request_items::non_string_json_value,
                     parsers_request_items::body_value,
                     parsers_request_items::header_value,
                 ]
@@ -61,6 +62,59 @@ mod parsers_request_items {
     use super::*;
     use crate::app::services::request::entities::requests::BodyPayload;
     use crate::utils::regexes;
+
+    // Github Issue #8
+    // Parse "<key>:=[-]<number>"
+    // Parse "<key>:=true|false"
+    // Parse "<key>:='[<string>, <number>, <boolean>, <array>, <object>]'"
+    // Parse "<key>:='{"<key>": <string|number|boolean|array|object>"}'"
+    pub fn non_string_json_value(
+        s: &str,
+        base_request: &PartialRequestData,
+    ) -> Option<PartialRequestData> {
+        // regex match the number field and the boolean field
+        let mut re = regexes::request_items::single_json_value();
+        let mut matcher = re.captures(s)?;
+
+        let key = matcher.name("key")?.as_str();
+        let mut value = match BodyPayload::from_str(matcher.name("value")?.as_str()) {
+            BodyPayload::Json(v) => {
+                if v.is_boolean() || v.is_number() {
+                    Some(v)
+                } else {
+                    None
+                }
+            }
+            // If the value is string, it returns None.
+            BodyPayload::Raw(_) => None,
+        };
+
+        if value.is_none() {
+            // regex match the complex array and the object
+            re = regexes::request_items::combine_json_value();
+            matcher = re.captures(s)?;
+
+            value = match BodyPayload::from_str(matcher.name("value")?.as_str()) {
+                BodyPayload::Json(v) => Some(v),
+                _ => return None,
+            }
+        }
+
+        let mut request = base_request.clone();
+
+        if let Some(v) = value {
+            request.body = match request.body {
+                Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
+                    json.insert(key.to_string(), v);
+                    BodyPayload::Json(serde_json::Value::Object(json))
+                }
+                _ => BodyPayload::Json(serde_json::json!({key: v})),
+            }
+            .into();
+        }
+
+        Some(request)
+    }
 
     pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
         let re = regexes::request_items::body_value();
@@ -133,6 +187,167 @@ mod parsers_request_items {
 #[cfg(test)]
 pub mod tests_parsers_request_items {
     use super::*;
+
+    #[test]
+    fn test_bool_big_capital_json_value() {
+        let input = "married:=FALSE";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        assert_eq!(
+            None,
+            parsers_request_items::non_string_json_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_number_json_value() {
+        let input = "age:=29";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result =
+            PartialRequestData::default().with_body(r#"{ "age": 29 }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        );
+    }
+
+    #[test]
+    fn test_pos_number_json_value() {
+        let input = "age:=+29";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        assert_eq!(
+            None,
+            parsers_request_items::non_string_json_value(input, &base_request)
+        );
+    }
+
+    #[test]
+    fn test_neg_number_json_value() {
+        let input = "age:=-29";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result =
+            PartialRequestData::default().with_body(r#"{ "age": -29 }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        );
+    }
+
+    #[test]
+    fn test_float_number_json_value() {
+        let input = "age:=29.0";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result =
+            PartialRequestData::default().with_body(r#"{ "age": 29.0 }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        );
+    }
+
+    #[test]
+    fn test_pos_float_number_json_value() {
+        let input = "age:=+29.5";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        assert_eq!(
+            None,
+            parsers_request_items::non_string_json_value(input, &base_request)
+        );
+    }
+
+    #[test]
+    fn test_neg_float_number_json_value() {
+        let input = "age:=-29.5";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result =
+            PartialRequestData::default().with_body(r#"{ "age": -29.5 }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        );
+    }
+
+    #[test]
+    fn test_bool_json_value() {
+        let input = "married:=false";
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result =
+            PartialRequestData::default().with_body(r#"{ "married": false }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_array_json_value() {
+        let input = r#"hobbies:='["http", "pies"]'"#;
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result = PartialRequestData::default()
+            .with_body(r#"{ "hobbies": ["http", "pies"] }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_object_json_value() {
+        let input = r#"favorite:='{"tool": "HTTPie"}'"#;
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result = PartialRequestData::default()
+            .with_body(r#"{ "favorite": { "tool": "HTTPie"} }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_object_bool_json_value() {
+        let input = r#"favorite:='{"tool": true}'"#;
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result = PartialRequestData::default()
+            .with_body(r#"{ "favorite": {"tool": true} }"#.to_string());
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_combine_json_value() {
+        let input = r#"favorite:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#;
+        let base_request = PartialRequestData::default().with_body("".to_string());
+
+        let expected_result = PartialRequestData::default().with_body(
+            r#"{ "favorite": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#
+                .to_string(),
+        );
+
+        assert_eq!(
+            Some(expected_result),
+            parsers_request_items::non_string_json_value(input, &base_request)
+        )
+    }
 
     #[test]
     fn test_body_value_append() {

@@ -43,4 +43,16 @@ pub mod request_items {
         QUERY_PARAM_VALUE_REGEX
             .get_or_init(|| Regex::new(r"^(?<key>[ -~]+)==(?<value>[ -~]+)$").unwrap())
     }
+
+    static SINGLE_JSON_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
+    pub fn single_json_value() -> &'static Regex {
+        SINGLE_JSON_VALUE_REGEX
+            .get_or_init(|| Regex::new(r"^(?<key>[ -~]+):=(?<value>[ -~]+)$").unwrap())
+    }
+
+    static COMBINE_JSON_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
+    pub fn combine_json_value() -> &'static Regex {
+        COMBINE_JSON_VALUE_REGEX
+            .get_or_init(|| Regex::new(r"^(?<key>[ -~]+):='(?<value>[ -~]*)'$").unwrap())
+    }
 }

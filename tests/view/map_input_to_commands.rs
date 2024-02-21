@@ -222,3 +222,45 @@ fn should_validate_if_error_on_raw_value_as_not_map_and_body_insert() {
         output
     );
 }
+
+#[test]
+fn should_parse_boolean_json() {
+    let input = ["treq", "GET", "url.com", "Hello=World", "married:=false"];
+    let output = process(input).unwrap();
+    //assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn should_parse_number_json() {
+    let input = [
+        "treq",
+        "GET",
+        "url.com",
+        "Hello=World",
+        "age:=29",
+        "amount:=-30.8",
+    ];
+    let output = process(input).unwrap();
+    //assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn should_parse_combine_json() {
+    let input = [
+        "treq",
+        "POST",
+        "url.com",
+        "Hello=World",
+        "married:=false",
+        "age:=29",
+        "amount:=-30.8",
+        r#"hobbies:='["http", "pies"]'"#,
+        r#"utils:='{"tool": "HTTPie"}'"#,
+        r#"favorite:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#,
+    ];
+    let output = process(input).unwrap();
+    //assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
