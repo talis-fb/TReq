@@ -77,6 +77,8 @@ mod parsers_request_items {
         let mut matcher = re.captures(s)?;
 
         let key = matcher.name("key")?.as_str();
+
+        // Parse the number or boolean
         let mut value = match BodyPayload::from_str(matcher.name("value")?.as_str()) {
             BodyPayload::Json(v) => {
                 if v.is_boolean() || v.is_number() {
@@ -85,7 +87,6 @@ mod parsers_request_items {
                     None
                 }
             }
-            // If the value is string, it returns None.
             BodyPayload::Raw(_) => None,
         };
 
@@ -94,6 +95,7 @@ mod parsers_request_items {
             re = regexes::request_items::combine_json_value();
             matcher = re.captures(s)?;
 
+            // Parse the complex array or object
             value = match BodyPayload::from_str(matcher.name("value")?.as_str()) {
                 BodyPayload::Json(v) => Some(v),
                 _ => return None,
