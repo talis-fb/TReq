@@ -46,6 +46,7 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
             .fold(base_request, |req_data, item| {
                 [
                     parsers_request_items::query_param_value,
+                    parsers_request_items::nested_body_value,
                     parsers_request_items::body_value,
                     parsers_request_items::header_value,
                 ]
@@ -58,6 +59,8 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
 }
 
 mod parsers_request_items {
+    use serde_json::Map;
+
     use super::*;
     use crate::app::services::request::entities::requests::BodyPayload;
     use crate::utils::regexes;
@@ -79,6 +82,60 @@ mod parsers_request_items {
             _ => BodyPayload::Json(serde_json::json!({key: value})),
         }
         .into();
+
+        Some(request)
+    }
+
+    pub fn nested_body_value(
+        s: &str,
+        base_request: &PartialRequestData,
+    ) -> Option<PartialRequestData> {
+        let re = regexes::request_items::body_value();
+        let matcher = re.captures(s)?;
+
+        let key = matcher.name("key")?.as_str();
+        let value = matcher.name("value")?.as_str();
+
+        let re = regexes::request_items::nested_body_value();
+        let matcher = re.captures(key)?;
+
+        let root_key = matcher.name("root_key")?.as_str();
+        let sub_keys = {
+            matcher
+                .name("sub_keys")?
+                .as_str()
+                .split(['[', ']'])
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+        };
+
+        let mut request = base_request.clone();
+
+        let mut root_map: Map<String, Value> = match request.body {
+            Some(BodyPayload::Json(serde_json::Value::Object(v))) => v,
+            _ => Map::new(),
+        };
+
+        let root_value: &mut Value = root_map
+            .entry(root_key)
+            .or_insert(Value::Object(Map::new()));
+
+        let target_value: &mut Value =
+            sub_keys
+                .iter()
+                .fold(root_value, |map_value, key| match map_value {
+                    Value::Object(map) => map
+                        .entry(key.to_string())
+                        .or_insert(Value::Object(Map::new())),
+                    _ => {
+                        *map_value = Value::Object(Map::new());
+                        map_value
+                    }
+                });
+
+        *target_value = Value::String(value.to_string());
+
+        request.body = BodyPayload::Json(serde_json::Value::Object(root_map)).into();
 
         Some(request)
     }
@@ -181,8 +238,8 @@ pub mod tests_parsers_request_items {
             )
         }
     }
-    #[test]
 
+    #[test]
     fn test_body_value_with_base_body_none() {
         let input = "password=123";
         let base_request = PartialRequestData::default();
@@ -192,6 +249,19 @@ pub mod tests_parsers_request_items {
         assert_eq!(
             Some(expected_request),
             parsers_request_items::body_value(input, &base_request)
+        )
+    }
+
+    #[test]
+    fn test_nested_body_value_basic() {
+        let input = "user[name]=John";
+        let base_request = PartialRequestData::default();
+
+        let expected_request =
+            PartialRequestData::default().with_body(r#"{ "user": { "name": "John"} }"#.to_string());
+        assert_eq!(
+            Some(expected_request),
+            parsers_request_items::nested_body_value(input, &base_request)
         )
     }
 }

@@ -70,7 +70,7 @@ where
         // Loading spinner
         {
             let now = tokio::time::Instant::now();
-            
+
             let pb = ProgressBar::new(100);
             pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
             pb.set_message("Loading...\t\t 0 MS");
