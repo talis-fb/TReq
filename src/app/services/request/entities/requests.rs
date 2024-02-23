@@ -119,6 +119,12 @@ impl From<String> for BodyPayload {
     }
 }
 
+impl From<&str> for BodyPayload {
+    fn from(value: &str) -> Self {
+        BodyPayload::from_str(value)
+    }
+}
+
 #[derive(Default)]
 pub struct RequestEntity {
     current_request: Box<NodeHistoryRequest>,
