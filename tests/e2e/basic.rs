@@ -52,6 +52,31 @@ fn should_assert_process_return_with_no_saved_requests_call() {
 }
 
 #[test]
+fn should_merge_nested_body_values_with_saved() {
+    let input = format!(
+        "treq POST {}/post id=1 user[name]=John user[age]=30 user[address][city]=Tokio --save-as create-user",
+        host()
+    );
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+
+    let input = "treq run create-user Hello=World";
+    let mut cmd = run_cmd(&input);
+    cmd.assert().success();
+    cmd.assert().stdout(
+        predicate::str::contains("Hello")
+            .and(predicate::str::contains("World"))
+            // previues saved nested values
+            .and(predicate::str::contains("user"))
+            .and(predicate::str::contains("address"))
+            .and(predicate::str::contains("city"))
+            .and(predicate::str::contains("Tokio"))
+            .and(predicate::str::contains("age"))
+            .and(predicate::str::contains("30")),
+    );
+}
+
+#[test]
 fn should_assert_list_saved_requests() {
     let requests_to_save = ["simple-get", "some-put", "a-great-post"];
 
