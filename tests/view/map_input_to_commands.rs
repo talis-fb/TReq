@@ -82,6 +82,24 @@ fn should_raw_flag_work_equal_param_body_definition() {
 }
 
 #[test]
+fn should_parse_body_values_with_nested_json_too() {
+    let input = [
+        "treq",
+        "POST",
+        "url.com",
+        "id=1",
+        "user[name]=John",
+        "user[age]=30",
+        "user[address][city]=NY",
+        "type=user",
+    ];
+    let output = process(input);
+
+    debug_assert!(output.is_ok(), "{:?}", output);
+    assert_snapshot!(output.unwrap());
+}
+
+#[test]
 fn should_merge_inputs_of_raw_flag_and_param_body() {
     let input = [
         "treq",

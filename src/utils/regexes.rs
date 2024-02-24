@@ -33,6 +33,13 @@ pub mod request_items {
         BODY_VALUE_REGEX.get_or_init(|| Regex::new(r"^(?<key>[ -~]+)=(?<value>[ -~]+)$").unwrap())
     }
 
+    static NESTED_BODY_KEYS_REGEX: OnceLock<Regex> = OnceLock::new();
+    pub fn nested_body_keys() -> &'static Regex {
+        NESTED_BODY_KEYS_REGEX.get_or_init(|| {
+            Regex::new(r"^(?<root_key>[^\[\]]+)(?<sub_keys>(\[([^\[\]]+)\])+)$").unwrap()
+        })
+    }
+
     static HEADER_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
     pub fn header_value() -> &'static Regex {
         HEADER_VALUE_REGEX.get_or_init(|| Regex::new(r"^(?<key>[ -~]+):(?<value>[ -~]+)$").unwrap())
