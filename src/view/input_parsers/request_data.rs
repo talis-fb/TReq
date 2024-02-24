@@ -139,20 +139,27 @@ mod parsers_request_items {
         let re = regexes::request_items::body_value();
         let matcher = re.captures(s)?;
 
+        // Key=Value
         let key = matcher.name("key")?.as_str();
         let value = matcher.name("value")?.as_str();
 
-        let re = regexes::request_items::nested_body_value();
-        let matcher = re.captures(key)?;
+        // Extract the root key and sub keys from "key" input
+        // ----
+        // Key[SubKey1][SubKey2] => Key, [SubKey1, SubKey2]
+        // ----
+        let (root_key, sub_keys) = {
+            let re = regexes::request_items::nested_keys_values();
+            let matcher = re.captures(key)?;
 
-        let root_key = matcher.name("root_key")?.as_str();
-        let sub_keys = {
-            matcher
-                .name("sub_keys")?
-                .as_str()
-                .split(['[', ']'])
-                .filter(|s| !s.is_empty())
-                .collect::<Vec<_>>()
+            (
+                matcher.name("root_key")?.as_str(),
+                matcher
+                    .name("sub_keys")?
+                    .as_str()
+                    .split(['[', ']'])
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>(),
+            )
         };
 
         let mut request = base_request.clone();
