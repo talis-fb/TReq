@@ -46,7 +46,7 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
             .fold(base_request, |req_data, item| {
                 [
                     parsers_request_items::query_param_value,
-                    parsers_request_items::non_string_json_value,
+                    parsers_request_items::non_string_body_value,
                     parsers_request_items::body_value,
                     parsers_request_items::header_value,
                 ]
@@ -60,60 +60,64 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
 
 mod parsers_request_items {
     use super::*;
-    use crate::app::services::request::entities::requests::BodyPayload;
     use crate::utils::regexes;
 
     // Github Issue #8
+    // Parse "<key>:=<null>"
     // Parse "<key>:=[-]<number>"
     // Parse "<key>:=true|false"
-    // Parse "<key>:='[<string>, <number>, <boolean>, <array>, <object>]'"
-    // Parse "<key>:='{"<key>": <string|number|boolean|array|object>"}'"
-    pub fn non_string_json_value(
+    // Parse "<key>:=[<null>, <string>, <number>, <boolean>, <array>, <object>]"
+    // Parse "<key>:={"<key>": <null>|<string|number|boolean|array|object>"}"
+    pub fn non_string_body_value(
         s: &str,
         base_request: &PartialRequestData,
     ) -> Option<PartialRequestData> {
         // regex match the number field and the boolean field
-        let mut re = regexes::request_items::single_json_value();
+        let mut re = regexes::request_items::non_string_body_value();
         let mut matcher = re.captures(s)?;
 
         let key = matcher.name("key")?.as_str();
+        let value = matcher.name("value")?.as_str();
 
-        // Parse the number or boolean
-        let mut value = match BodyPayload::from_str(matcher.name("value")?.as_str()) {
-            BodyPayload::Json(v) => {
-                if v.is_boolean() || v.is_number() {
-                    Some(v)
-                } else {
-                    None
-                }
-            }
-            BodyPayload::Raw(_) => None,
-        };
+        let value = serde_json::from_str::<Value>(value)
+            .ok()
+            .and_then(|v| match v {
+                Value::String(_) => None,
+                _ => Some(v),
+            })
+            .or_else(|| {
+                re = regexes::request_items::enclosed_by_single_quote_value();
+                matcher = re.captures(value)?;
 
-        if value.is_none() {
-            // regex match the complex array and the object
-            re = regexes::request_items::combine_json_value();
-            matcher = re.captures(s)?;
+                serde_json::from_str(matcher.name("value")?.as_str())
+                    .ok()
+                    .and_then(|v| match v {
+                        Value::String(_) => None,
+                        _ => Some(v),
+                    })
+            })
+            .or_else(|| {
+                re = regexes::request_items::enclosed_by_double_quote_value();
+                matcher = re.captures(value)?;
 
-            // Parse the complex array or object
-            value = match BodyPayload::from_str(matcher.name("value")?.as_str()) {
-                BodyPayload::Json(v) => Some(v),
-                _ => return None,
-            }
-        }
+                serde_json::from_str(matcher.name("value")?.as_str())
+                    .ok()
+                    .and_then(|v| match v {
+                        Value::String(_) => None,
+                        _ => Some(v),
+                    })
+            })?;
 
         let mut request = base_request.clone();
 
-        if let Some(v) = value {
-            request.body = match request.body {
-                Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
-                    json.insert(key.to_string(), v);
-                    BodyPayload::Json(serde_json::Value::Object(json))
-                }
-                _ => BodyPayload::Json(serde_json::json!({key: v})),
+        request.body = match request.body {
+            Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
+                json.insert(key.to_string(), value);
+                BodyPayload::Json(serde_json::Value::Object(json))
             }
-            .into();
+            _ => BodyPayload::Json(serde_json::json!({key: value})),
         }
+        .into();
 
         Some(request)
     }
@@ -191,13 +195,13 @@ pub mod tests_parsers_request_items {
     use super::*;
 
     #[test]
-    fn test_bool_big_capital_json_value() {
-        let input = "married:=FALSE";
+    fn test_string_json_value() {
+        let input = "married:=\"abc\"";
         let base_request = PartialRequestData::default().with_body("".to_string());
 
         assert_eq!(
             None,
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         )
     }
 
@@ -211,7 +215,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         );
     }
 
@@ -222,7 +226,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             None,
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         );
     }
 
@@ -236,7 +240,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         );
     }
 
@@ -250,7 +254,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         );
     }
 
@@ -261,7 +265,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             None,
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         );
     }
 
@@ -275,7 +279,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         );
     }
 
@@ -289,7 +293,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         )
     }
 
@@ -303,7 +307,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         )
     }
 
@@ -317,7 +321,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         )
     }
 
@@ -331,7 +335,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         )
     }
 
@@ -347,7 +351,7 @@ pub mod tests_parsers_request_items {
 
         assert_eq!(
             Some(expected_result),
-            parsers_request_items::non_string_json_value(input, &base_request)
+            parsers_request_items::non_string_body_value(input, &base_request)
         )
     }
 
