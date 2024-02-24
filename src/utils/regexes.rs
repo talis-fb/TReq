@@ -59,16 +59,12 @@ pub mod request_items {
 
     static ENCLOSED_BY_SINGLE_QUOTE_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
     pub fn enclosed_by_single_quote_value() -> &'static Regex {
-        // COMBINE_JSON_VALUE_REGEX
-        //     .get_or_init(|| Regex::new(r"^(?<key>[ -~]+):='(?<value>[ -~]*)'$").unwrap())
         ENCLOSED_BY_SINGLE_QUOTE_VALUE_REGEX
             .get_or_init(|| Regex::new(r"^'(?<value>[ -~]*)'$").unwrap())
     }
 
     static ENCLOSED_BY_DOUBLE_QUOTE_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
     pub fn enclosed_by_double_quote_value() -> &'static Regex {
-        // COMBINE_JSON_VALUE_REGEX
-        //     .get_or_init(|| Regex::new(r"^(?<key>[ -~]+):='(?<value>[ -~]*)'$").unwrap())
         ENCLOSED_BY_DOUBLE_QUOTE_VALUE_REGEX
             .get_or_init(|| Regex::new(r#"^"(?<value>[ -~]*)"$"#).unwrap())
     }
