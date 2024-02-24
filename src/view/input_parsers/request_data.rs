@@ -148,7 +148,7 @@ mod parsers_request_items {
         // Key[SubKey1][SubKey2] => Key, [SubKey1, SubKey2]
         // ----
         let (root_key, sub_keys) = {
-            let re = regexes::request_items::nested_keys_values();
+            let re = regexes::request_items::nested_body_keys();
             let matcher = re.captures(key)?;
 
             (
