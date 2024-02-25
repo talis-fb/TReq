@@ -47,6 +47,7 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
                 [
                     parsers_request_items::query_param_value,
                     parsers_request_items::nested_body_value,
+                    parsers_request_items::non_string_body_value,
                     parsers_request_items::body_value,
                     parsers_request_items::header_value,
                 ]
@@ -62,8 +63,66 @@ mod parsers_request_items {
     use serde_json::Map;
 
     use super::*;
-    use crate::app::services::request::entities::requests::BodyPayload;
     use crate::utils::regexes;
+
+    // Github Issue #8
+    // Parse "<key>:=<null>"
+    // Parse "<key>:=[-]<number>"
+    // Parse "<key>:=true|false"
+    // Parse "<key>:=[<null>, <string>, <number>, <boolean>, <array>, <object>]"
+    // Parse "<key>:={"<key>": <null>|<string|number|boolean|array|object>"}"
+    pub fn non_string_body_value(
+        s: &str,
+        base_request: &PartialRequestData,
+    ) -> Option<PartialRequestData> {
+        let mut re = regexes::request_items::non_string_body_value();
+        let mut matcher = re.captures(s)?;
+
+        let key = matcher.name("key")?.as_str();
+        let value = matcher.name("value")?.as_str();
+
+        let value = serde_json::from_str::<Value>(value)
+            .ok()
+            .and_then(|v| match v {
+                Value::String(_) => None,
+                _ => Some(v),
+            })
+            .or_else(|| {
+                re = regexes::request_items::enclosed_by_single_quote_value();
+                matcher = re.captures(value)?;
+
+                serde_json::from_str(matcher.name("value")?.as_str())
+                    .ok()
+                    .and_then(|v| match v {
+                        Value::String(_) => None,
+                        _ => Some(v),
+                    })
+            })
+            .or_else(|| {
+                re = regexes::request_items::enclosed_by_double_quote_value();
+                matcher = re.captures(value)?;
+
+                serde_json::from_str(matcher.name("value")?.as_str())
+                    .ok()
+                    .and_then(|v| match v {
+                        Value::String(_) => None,
+                        _ => Some(v),
+                    })
+            })?;
+
+        let mut request = base_request.clone();
+
+        request.body = match request.body {
+            Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
+                json.insert(key.to_string(), value);
+                BodyPayload::Json(serde_json::Value::Object(json))
+            }
+            _ => BodyPayload::Json(serde_json::json!({key: value})),
+        }
+        .into();
+
+        Some(request)
+    }
 
     pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
         let re = regexes::request_items::body_value();
@@ -204,6 +263,85 @@ mod parsers_request_items {
 #[cfg(test)]
 pub mod tests_parsers_request_items {
     use super::*;
+
+    #[test]
+    fn test_non_string_body_value_with_string_only() {
+        let cases = [
+            r#"name:="John""#,
+            r#"name:='"John"'"#,
+            r#"name:=""John""#,
+            r#"name:=""true"""#,
+            r#"name:='"true"'"#,
+        ];
+
+        for case in cases {
+            let base_request = PartialRequestData::default();
+
+            let expected_result = None;
+
+            assert_eq!(
+                parsers_request_items::non_string_body_value(case, &base_request),
+                expected_result
+            );
+        }
+    }
+
+    #[test]
+    fn test_non_string_body_value_nested() {
+        let cases = [
+            (r#"hobbies:='["http", "pies"]'"#, r#"{ "hobbies": ["http", "pies"] }"#),
+            (r#"hobbies:="["http", "pies"]""#, r#"{ "hobbies": ["http", "pies"] }"#),
+            (r#"hobbies:=["http", "pies"]"#, r#"{ "hobbies": ["http", "pies"] }"#),
+            (r#"favorite:={"tool": "HTTPie"}"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
+            (r#"favorite:="{"tool": "HTTPie"}""#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
+            (r#"favorite:='{"tool": "HTTPie"}'"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
+            (r#"complex:=[null,{},["a", false], true]"#, r#"{ "complex": [null, {}, ["a", false], true] }"#),
+            (r#"complex:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#, r#"{ "complex": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#),
+        ];
+
+        for (input, output) in cases {
+            let base_request = PartialRequestData::default();
+
+            let expected_result = PartialRequestData::default().with_body(output.to_string());
+
+            assert_eq!(
+                parsers_request_items::non_string_body_value(input, &base_request),
+                Some(expected_result)
+            );
+        }
+    }
+
+    #[test]
+    fn test_non_string_body_value_basic() {
+        let cases = [
+            (r#"favorite:={}"#, r#"{ "favorite": {} }"#),
+            (r#"favorite:="{}""#, r#"{ "favorite": {} }"#),
+            (r#"favorite:='{}'"#, r#"{ "favorite": {} }"#),
+            (r#"hobbies:=[]"#, r#"{ "hobbies": [] }"#),
+            (r#"hobbies:="[]""#, r#"{ "hobbies": [] }"#),
+            (r#"hobbies:='[]'"#, r#"{ "hobbies": [] }"#),
+            (r#"temperature:=-28.0"#, r#"{ "temperature": -28.0 }"#),
+            (r#"temperature:="27.5""#, r#"{ "temperature": 27.5 }"#),
+            (r#"temperature:='-3.6'"#, r#"{ "temperature": -3.6 }"#),
+            (r#"married:=true"#, r#"{ "married": true }"#),
+            (r#"married:="false""#, r#"{ "married": false }"#),
+            (r#"married:='true'"#, r#"{ "married": true }"#),
+            (r#"worked:=null"#, r#"{ "worked": null }"#),
+            (r#"worked:="null""#, r#"{ "worked": null }"#),
+            (r#"worked:='null'"#, r#"{ "worked": null }"#),
+        ];
+
+        for (input, output) in cases {
+            let base_request = PartialRequestData::default();
+
+            let expected_result = PartialRequestData::default().with_body(output.to_string());
+
+            assert_eq!(
+                parsers_request_items::non_string_body_value(input, &base_request),
+                Some(expected_result)
+            );
+        }
+    }
 
     #[test]
     fn test_body_value_append() {

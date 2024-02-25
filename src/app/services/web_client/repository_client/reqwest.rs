@@ -61,7 +61,10 @@ impl ReqwestClientRepository {
         headers_reqwest
     }
 
-    async fn convert_to_app_response(response: reqwest::Response, response_time_ms: u64) -> anyhow::Result<Response> {
+    async fn convert_to_app_response(
+        response: reqwest::Response,
+        response_time_ms: u64,
+    ) -> anyhow::Result<Response> {
         let status: i32 = response.status().as_u16().into();
         let mut headers: Vec<(String, String)> = response
             .headers()

@@ -50,4 +50,22 @@ pub mod request_items {
         QUERY_PARAM_VALUE_REGEX
             .get_or_init(|| Regex::new(r"^(?<key>[ -~]+)==(?<value>[ -~]+)$").unwrap())
     }
+
+    static NON_STRING_BODY_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
+    pub fn non_string_body_value() -> &'static Regex {
+        NON_STRING_BODY_VALUE_REGEX
+            .get_or_init(|| Regex::new(r"^(?<key>[ -~]+):=(?<value>[ -~]+)$").unwrap())
+    }
+
+    static ENCLOSED_BY_SINGLE_QUOTE_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
+    pub fn enclosed_by_single_quote_value() -> &'static Regex {
+        ENCLOSED_BY_SINGLE_QUOTE_VALUE_REGEX
+            .get_or_init(|| Regex::new(r"^'(?<value>[ -~]*)'$").unwrap())
+    }
+
+    static ENCLOSED_BY_DOUBLE_QUOTE_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
+    pub fn enclosed_by_double_quote_value() -> &'static Regex {
+        ENCLOSED_BY_DOUBLE_QUOTE_VALUE_REGEX
+            .get_or_init(|| Regex::new(r#"^"(?<value>[ -~]*)"$"#).unwrap())
+    }
 }

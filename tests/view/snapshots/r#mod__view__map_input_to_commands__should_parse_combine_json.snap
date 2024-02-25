@@ -1,0 +1,35 @@
+---
+source: tests/view/map_input_to_commands.rs
+expression: output
+---
+- SubmitRequest:
+    request:
+      url:
+        ValidatedUrl:
+          protocol: ~
+          host: url.com
+          port: ~
+          paths: []
+          query_params: []
+          anchor: ~
+      method: POST
+      headers: {}
+      body:
+        Json:
+          Hello: World
+          age: 29
+          amount: -30.8
+          favorite:
+            tool:
+              all:
+                - true
+                - 29
+                - name:
+                    - Mary
+                    - John
+          hobbies:
+            - http
+            - pies
+          married: false
+          utils:
+            tool: HTTPie
