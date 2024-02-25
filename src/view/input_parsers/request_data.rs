@@ -265,17 +265,6 @@ pub mod tests_parsers_request_items {
     use super::*;
 
     #[test]
-    fn test_string_json_value() {
-        let input = "married:=\"abc\"";
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        assert_eq!(
-            None,
-            parsers_request_items::non_string_body_value(input, &base_request)
-        )
-    }
-
-    #[test]
     fn test_non_string_body_value_with_string_only() {
         let cases = [
             r#"name:="John""#,
