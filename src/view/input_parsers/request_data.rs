@@ -75,7 +75,6 @@ mod parsers_request_items {
         s: &str,
         base_request: &PartialRequestData,
     ) -> Option<PartialRequestData> {
-        // regex match the number field and the boolean field
         let mut re = regexes::request_items::non_string_body_value();
         let mut matcher = re.captures(s)?;
 
@@ -277,153 +276,82 @@ pub mod tests_parsers_request_items {
     }
 
     #[test]
-    fn test_number_json_value() {
-        let input = "age:=29";
-        let base_request = PartialRequestData::default().with_body("".to_string());
+    fn test_non_string_body_value_with_string_only() {
+        let cases = [
+            r#"name:="John""#,
+            r#"name:='"John"'"#,
+            r#"name:=""John""#,
+            r#"name:=""true"""#,
+            r#"name:='"true"'"#,
+        ];
 
-        let expected_result =
-            PartialRequestData::default().with_body(r#"{ "age": 29 }"#.to_string());
+        for case in cases {
+            let base_request = PartialRequestData::default();
 
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        );
+            let expected_result = None;
+
+            assert_eq!(
+                parsers_request_items::non_string_body_value(case, &base_request),
+                expected_result
+            );
+        }
     }
 
     #[test]
-    fn test_pos_number_json_value() {
-        let input = "age:=+29";
-        let base_request = PartialRequestData::default().with_body("".to_string());
+    fn test_non_string_body_value_nested() {
+        let cases = [
+            (r#"hobbies:='["http", "pies"]'"#, r#"{ "hobbies": ["http", "pies"] }"#),
+            (r#"hobbies:="["http", "pies"]""#, r#"{ "hobbies": ["http", "pies"] }"#),
+            (r#"hobbies:=["http", "pies"]"#, r#"{ "hobbies": ["http", "pies"] }"#),
+            (r#"favorite:={"tool": "HTTPie"}"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
+            (r#"favorite:="{"tool": "HTTPie"}""#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
+            (r#"favorite:='{"tool": "HTTPie"}'"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
+            (r#"complex:=[null,{},["a", false], true]"#, r#"{ "complex": [null, {}, ["a", false], true] }"#),
+            (r#"complex:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#, r#"{ "complex": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#),
+        ];
 
-        assert_eq!(
-            None,
-            parsers_request_items::non_string_body_value(input, &base_request)
-        );
+        for (input, output) in cases {
+            let base_request = PartialRequestData::default();
+
+            let expected_result = PartialRequestData::default().with_body(output.to_string());
+
+            assert_eq!(
+                parsers_request_items::non_string_body_value(input, &base_request),
+                Some(expected_result)
+            );
+        }
     }
 
     #[test]
-    fn test_neg_number_json_value() {
-        let input = "age:=-29";
-        let base_request = PartialRequestData::default().with_body("".to_string());
+    fn test_non_string_body_value_basic() {
+        let cases = [
+            (r#"favorite:={}"#, r#"{ "favorite": {} }"#),
+            (r#"favorite:="{}""#, r#"{ "favorite": {} }"#),
+            (r#"favorite:='{}'"#, r#"{ "favorite": {} }"#),
+            (r#"hobbies:=[]"#, r#"{ "hobbies": [] }"#),
+            (r#"hobbies:="[]""#, r#"{ "hobbies": [] }"#),
+            (r#"hobbies:='[]'"#, r#"{ "hobbies": [] }"#),
+            (r#"temperature:=-28.0"#, r#"{ "temperature": -28.0 }"#),
+            (r#"temperature:="27.5""#, r#"{ "temperature": 27.5 }"#),
+            (r#"temperature:='-3.6'"#, r#"{ "temperature": -3.6 }"#),
+            (r#"married:=true"#, r#"{ "married": true }"#),
+            (r#"married:="false""#, r#"{ "married": false }"#),
+            (r#"married:='true'"#, r#"{ "married": true }"#),
+            (r#"worked:=null"#, r#"{ "worked": null }"#),
+            (r#"worked:="null""#, r#"{ "worked": null }"#),
+            (r#"worked:='null'"#, r#"{ "worked": null }"#),
+        ];
 
-        let expected_result =
-            PartialRequestData::default().with_body(r#"{ "age": -29 }"#.to_string());
+        for (input, output) in cases {
+            let base_request = PartialRequestData::default();
 
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        );
-    }
+            let expected_result = PartialRequestData::default().with_body(output.to_string());
 
-    #[test]
-    fn test_float_number_json_value() {
-        let input = "age:=29.0";
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result =
-            PartialRequestData::default().with_body(r#"{ "age": 29.0 }"#.to_string());
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        );
-    }
-
-    #[test]
-    fn test_pos_float_number_json_value() {
-        let input = "age:=+29.5";
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        assert_eq!(
-            None,
-            parsers_request_items::non_string_body_value(input, &base_request)
-        );
-    }
-
-    #[test]
-    fn test_neg_float_number_json_value() {
-        let input = "age:=-29.5";
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result =
-            PartialRequestData::default().with_body(r#"{ "age": -29.5 }"#.to_string());
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        );
-    }
-
-    #[test]
-    fn test_bool_json_value() {
-        let input = "married:=false";
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result =
-            PartialRequestData::default().with_body(r#"{ "married": false }"#.to_string());
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        )
-    }
-
-    #[test]
-    fn test_array_json_value() {
-        let input = r#"hobbies:='["http", "pies"]'"#;
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result = PartialRequestData::default()
-            .with_body(r#"{ "hobbies": ["http", "pies"] }"#.to_string());
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        )
-    }
-
-    #[test]
-    fn test_object_json_value() {
-        let input = r#"favorite:='{"tool": "HTTPie"}'"#;
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result = PartialRequestData::default()
-            .with_body(r#"{ "favorite": { "tool": "HTTPie"} }"#.to_string());
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        )
-    }
-
-    #[test]
-    fn test_object_bool_json_value() {
-        let input = r#"favorite:='{"tool": true}'"#;
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result = PartialRequestData::default()
-            .with_body(r#"{ "favorite": {"tool": true} }"#.to_string());
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        )
-    }
-
-    #[test]
-    fn test_combine_json_value() {
-        let input = r#"favorite:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#;
-        let base_request = PartialRequestData::default().with_body("".to_string());
-
-        let expected_result = PartialRequestData::default().with_body(
-            r#"{ "favorite": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#
-                .to_string(),
-        );
-
-        assert_eq!(
-            Some(expected_result),
-            parsers_request_items::non_string_body_value(input, &base_request)
-        )
+            assert_eq!(
+                parsers_request_items::non_string_body_value(input, &base_request),
+                Some(expected_result)
+            );
+        }
     }
 
     #[test]
