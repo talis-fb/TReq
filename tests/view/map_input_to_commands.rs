@@ -265,6 +265,20 @@ fn should_parse_number_json() {
 }
 
 #[test]
+fn should_not_parse_invalid_json_with_non_string_key() {
+    let input = [
+        "treq",
+        "GET",
+        "url.com",
+        "Should=Parse",
+        "ShouldNot:=Parse",
+        "ShouldNotParseObject:='{a:12}'",
+    ];
+    let output = process(input).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
 fn should_parse_combine_json() {
     let input = [
         "treq",

@@ -1,0 +1,20 @@
+---
+source: tests/view/map_input_to_commands.rs
+expression: output
+---
+- SubmitRequest:
+    request:
+      url:
+        ValidatedUrl:
+          protocol: ~
+          host: url.com
+          port: ~
+          paths: []
+          query_params: []
+          anchor: ~
+      method: GET
+      headers: {}
+      body:
+        Json:
+          Should: Parse
+
