@@ -6,26 +6,59 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/talis-fb/TReq/ci.yaml)
 ![GitHub repo size](https://img.shields.io/github/repo-size/talis-fb/treq)
 
-![demo](https://res.cloudinary.com/dfjn94vg8/image/upload/v1706742279/TReq/demo-treq1.gif)
+
 
 A <b>T</b>erminal <b>Req</b>uest HTTP Client.
+TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be simple and a complete CLI tool to interact with APIs. With options to save and edit frequently used requests with simple commands to run them again later. Imagine a workflow like GUI tools for HTTP requests in terminal.
 
-TReq is a user-friendly Command Line Interface (CLI) HTTP client, designed to be simple and a complete CLI tool to interact with APIs
 
-> [!NOTE]
-> TReq, short for Terminal Request, is a user-friendly Command Line Interface (CLI) HTTP client that goes beyond the stateless nature of typical CLI HTTP clients. It's designed to offer a complete tool for interacting with APIs in the terminal. 
-> 
-> While traditional CLI HTTP clients excel at quick tasks and small tests, TReq aims to bridge the gap by introducing statefulness, allowing users to store, handle, edit, view, and inspect requests seamlessly, all within the terminal. 
-> 
-> Inspired by HTTPie, TReq seeks to implement and extend its main features, making the experience of making HTTP calls in the terminal as simple as possible, without the need for extensive graphical tools.
+![demo](https://res.cloudinary.com/dfjn94vg8/image/upload/v1708910958/TReq/demo-treq2_lite_iyqag6.gif)
 
 
 ## Features
 * <b>Made to APIs and REST</b>: TReq is tailored for working with APIs, REST, and JSON with minimal effort.
-* <b>HTTPie based</b>: The CLI interface is entirely based on HTTPie, ensuring familiarity for existing users.
-* <b>Easy payload generation </b>: Quickly declare fields for the payload with user-friendly syntax.
-* <b>Persistent Request Storage</b>: Save and edit frequently used requests with simple commands. View details of stored requests.
+* <b>[HTTPie](https://httpie.io/) based</b>: The CLI interface is entirely based on HTTPie, and seeks to implement and extend its main features (a superset of HTTPie's).
+* <b>Persistent Request Storage</b>: Save and edit frequently used requests with simple commands to run them again later. Imagine a workflow like GUI tools for HTTP requests in terminal.
 * <b>Pretty Outputs</b>: The UX is relevant in a CLI.
+
+## Examples
+
+Basic requests
+```sh
+treq GET example.com/users/id?name=John
+treq POST example.com
+```
+
+POST with custom header and json payload
+```sh
+treq POST example.com X-API-Token:123 name=John food=pizza
+```
+
+Submit and saving the request locally as "*main-endpoint*" with `--save-as` flag
+```sh
+treq POST example.com name="John Doe" --save-as main-endpoint
+```
+Executing saved request with `run` command
+```sh
+treq run main-endpoint
+```
+
+Executing it adding more data 
+```sh
+treq run main-endpoint email='john@gmail.com' job=dev
+```
+
+A pratical usage...
+```sh
+# Create a user and save the request for make it again later
+treq POST api.com/user name=John job=dev friends:='["Bob", "Jane"]' birth-year:=1990 --save-as create-user
+
+# Make the same request for create a user "Jane"
+treq run create-user name=Jane birth-year:=2001
+
+# Editing saved request
+treq edit birth-year:=2002 --method PATCH
+```
 
 ## Installation
 
@@ -87,19 +120,11 @@ For more detailed information on commands and options, refer to the built-in hel
 treq --help
 ```
 
-### Basic requests
-```sh
-# GET requests
-treq example.com
-treq GET example.com/users/id
-treq GET example.com/users/id?name=John
+TReq uses HTTPie's request-item syntax to set headers, request body, query string, etc.
+- `=/:=` for setting the request body's JSON or form fields (= for strings and := for other JSON types).
+- ``==`` for adding query strings.
+- `:` for adding or removing headers e.g connection:keep-alive or connection:.
 
-
-# Another methods...
-treq POST example.com
-treq PATCH example.com
-# ...
-```
 
 ### Body, header e params manipulation
 ```sh
@@ -125,39 +150,13 @@ More complex requests
 #    "job": "dev",
 #    food": "pizza" 
 #  }
-treq POST example.com --raw '{ "friends": ["John", "Jane"] }' job=dev food=pizza
 
+#  (these three below are equivalent)
+treq POST example.com?sort=true --raw '{ "friends": ["John", "Jane"] }' job=dev food=pizza
 
-# Same above request with also 
-#  a custom Header
-#  and a query param at url (example.com?sort=true)
-treq POST example.com --raw '{ "friends": ["John", "Jane"] }' Content-Type:application/json sort==true job=dev food=pizza 
+treq POST example.com?sort=true --raw friends:='["John", "Jane"]' job=dev food=pizza
 
-```
-
-### Managing saved requests
-Saving requests
-```sh
-# After requesting you can save it
-treq POST example.com name="John Doe" --save-as main-endpoint
-
-
-# Now you can execute the 
-treq run main-endpoint
-```
-
-Overwriting requests datas at running
-```sh
-# Before submit the same request you can edit specific fields and insert new datas
-
-# Inserting a query param
-treq run main-endpoint name=="Jane" 
-
-# Inserting a header
-treq run main-endpoint Authorization:None
-
-# Then, save it as a new request
-treq run main-endpoint job="dev" --save-as endpoint-with-job
+treq POST example.com sort==true --raw friends:='["John", "Jane"]' job=dev food=pizza
 ```
 
 ### Localhost alias
