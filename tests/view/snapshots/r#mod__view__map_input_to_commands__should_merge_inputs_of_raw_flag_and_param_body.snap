@@ -19,4 +19,4 @@ expression: output.unwrap()
           age: "40"
           job: Dev
           name: Thales
-
+    print_body_only: false

@@ -23,4 +23,4 @@ expression: output.unwrap()
               city: NY
             age: 30
             name: John
-
+    print_body_only: false

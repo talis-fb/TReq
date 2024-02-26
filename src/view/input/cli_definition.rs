@@ -15,6 +15,7 @@ pub fn root_command() -> Command {
             .map(add_request_items_args)
             .map(add_raw_flag)
             .map(add_save_as_flag)
+            .map(add_print_body_only_flag)
             .unwrap(),
         )
     }
@@ -35,6 +36,7 @@ pub fn root_command() -> Command {
             .map(add_save_changes_to_current_request_flag)
             .map(add_manual_url_flag)
             .map(add_manual_method_flag)
+            .map(add_print_body_only_flag)
             .unwrap(),
         )
         .subcommand(
@@ -106,6 +108,7 @@ pub fn root_command() -> Command {
         .map(add_request_items_args)
         .map(add_raw_flag)
         .map(add_save_as_flag)
+        .map(add_print_body_only_flag)
         .unwrap();
 
     app = app.override_usage(
@@ -211,6 +214,16 @@ Optional key-value pairs to be included in the request. The separator used deter
       description='The best CLI HTTP client'"#
                     .trim(),
             ),
+    )
+}
+
+fn add_print_body_only_flag(command: Command) -> Command {
+    command.arg(
+        Arg::new("print-body-only")
+            .long("body")
+            .short('b')
+            .action(ArgAction::SetTrue)
+            .help("Print the response body only"),
     )
 }
 

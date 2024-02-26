@@ -16,6 +16,7 @@ where
     W2: CliWriterRepository,
 {
     pub request: RequestData,
+    pub print_body_only: bool,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -58,10 +59,12 @@ where
                 .collect()
         };
 
-        self.writer_stderr.print_lines([BREAK_LINE]);
-        self.writer_stderr.print_lines_styled([title]);
-        self.writer_stderr.print_lines_styled(headers);
-        self.writer_stderr.print_lines([BREAK_LINE]);
+        if !self.print_body_only {
+            self.writer_stderr.print_lines([BREAK_LINE]);
+            self.writer_stderr.print_lines_styled([title]);
+            self.writer_stderr.print_lines_styled(headers);
+            self.writer_stderr.print_lines([BREAK_LINE]);
+        }
 
         let request_id = provider.add_request(self.request).await?;
         let response_submit = provider.submit_request_async(request_id).await?;
@@ -135,10 +138,12 @@ where
                 .collect()
         };
 
-        self.writer_stderr.print_lines_styled([title_status]);
-        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
-        self.writer_stderr.print_lines_styled(headers);
-        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        if !self.print_body_only {
+            self.writer_stderr.print_lines_styled([title_status]);
+            self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+            self.writer_stderr.print_lines_styled(headers);
+            self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        }
         self.writer_stdout.print_lines([response.body]);
 
         Ok(())

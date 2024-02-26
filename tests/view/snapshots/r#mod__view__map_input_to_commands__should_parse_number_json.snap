@@ -19,3 +19,4 @@ expression: output
           Hello: World
           age: 29
           amount: -30.8
+    print_body_only: true

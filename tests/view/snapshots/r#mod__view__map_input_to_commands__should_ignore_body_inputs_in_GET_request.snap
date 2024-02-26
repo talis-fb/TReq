@@ -17,4 +17,4 @@ expression: output
       body:
         Json:
           Hello: World
-
+    print_body_only: false

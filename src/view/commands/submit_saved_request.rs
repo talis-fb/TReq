@@ -15,6 +15,7 @@ where
 {
     pub request_name: String,
     pub input_request_data: PartialRequestData,
+    pub print_body_only: bool,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -43,6 +44,7 @@ where
 
         Box::new(BasicRequestExecutor {
             request,
+            print_body_only: self.print_body_only,
             writer_stdout: self.writer_stdout,
             writer_stderr: self.writer_stderr,
         })

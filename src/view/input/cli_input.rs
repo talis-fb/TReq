@@ -14,13 +14,16 @@ pub struct CliInput {
 pub enum CliCommandChoice {
     DefaultBasicRequest {
         url: String,
+        print_body_only: bool,
     },
     BasicRequest {
         method: METHODS,
         url: String,
+        print_body_only: bool,
     },
     Run {
         request_name: String,
+        print_body_only: bool,
         save: bool,
     },
     Edit {
@@ -45,10 +48,14 @@ impl CliInput {
         if matches.subcommand().is_none() {
             let url = clap_args_utils::get_input(matches)?.to_string();
             let request_input = RequestBuildingOptions::from_clap_matches(matches)?;
+            let print_body_only = *matches.get_one::<bool>("print-body-only").unwrap_or(&false);
             let save_options = SavingOptions::from_clap_matches(matches)?;
 
             return Ok(CliInput {
-                choice: CliCommandChoice::DefaultBasicRequest { url },
+                choice: CliCommandChoice::DefaultBasicRequest {
+                    url,
+                    print_body_only,
+                },
                 request_input,
                 save_options,
             });
@@ -111,10 +118,12 @@ impl CliInput {
             "run" => {
                 let request_name = clap_args_utils::get_input(matches)?.to_string();
                 let should_save_current_request = matches.get_one::<bool>("save").unwrap_or(&false);
+                let print_body_only = *matches.get_one::<bool>("print-body-only").unwrap_or(&false);
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Run {
                         request_name,
+                        print_body_only,
                         save: *should_save_current_request,
                     },
                     request_input,
@@ -124,9 +133,14 @@ impl CliInput {
             "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH" => {
                 let url = clap_args_utils::get_input(matches)?.to_string();
                 let method = METHODS::from_str(subcommand)?;
+                let print_body_only = *matches.get_one::<bool>("print-body-only").unwrap_or(&false);
 
                 Ok(CliInput {
-                    choice: CliCommandChoice::BasicRequest { method, url },
+                    choice: CliCommandChoice::BasicRequest {
+                        method,
+                        url,
+                        print_body_only,
+                    },
                     request_input,
                     save_options,
                 })

@@ -32,10 +32,15 @@ pub fn parse_inputs_to_main_command_choices(
                 request_data: base_request.clone(),
             }]
         }
-        CliCommandChoice::Run { request_name, save } => {
+        CliCommandChoice::Run {
+            request_name,
+            save,
+            print_body_only,
+        } => {
             let main_command = ViewCommandChoice::SubmitSavedRequest {
                 request_name: request_name.to_string(),
                 request_data: base_request.clone(),
+                print_body_only: *print_body_only,
             };
 
             if *save {
@@ -51,14 +56,20 @@ pub fn parse_inputs_to_main_command_choices(
                 vec![main_command]
             }
         }
-        CliCommandChoice::DefaultBasicRequest { .. } => {
+        CliCommandChoice::DefaultBasicRequest {
+            print_body_only, ..
+        } => {
             vec![ViewCommandChoice::SubmitRequest {
                 request: base_request.clone().to_request_data(),
+                print_body_only: *print_body_only,
             }]
         }
-        CliCommandChoice::BasicRequest { .. } => {
+        CliCommandChoice::BasicRequest {
+            print_body_only, ..
+        } => {
             vec![ViewCommandChoice::SubmitRequest {
                 request: base_request.clone().to_request_data(),
+                print_body_only: *print_body_only,
             }]
         }
     };

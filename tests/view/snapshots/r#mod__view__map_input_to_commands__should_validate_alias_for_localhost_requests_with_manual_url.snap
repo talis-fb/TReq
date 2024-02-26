@@ -18,4 +18,4 @@ expression: output.unwrap()
       method: ~
       headers: ~
       body: ~
-
+    print_body_only: false

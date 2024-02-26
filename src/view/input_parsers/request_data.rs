@@ -28,10 +28,10 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
 
     // Request data from 'CliCommandChoice'
     let base_request = match input.choice {
-        CliCommandChoice::BasicRequest { method, ref url } => {
-            base_request.with_method(method).with_url(url)
-        }
-        CliCommandChoice::DefaultBasicRequest { ref url } => {
+        CliCommandChoice::BasicRequest {
+            method, ref url, ..
+        } => base_request.with_method(method).with_url(url),
+        CliCommandChoice::DefaultBasicRequest { ref url, .. } => {
             base_request.with_method(METHODS::GET).with_url(url)
         }
         _ => base_request,
@@ -289,14 +289,38 @@ pub mod tests_parsers_request_items {
     #[test]
     fn test_non_string_body_value_nested() {
         let cases = [
-            (r#"hobbies:='["http", "pies"]'"#, r#"{ "hobbies": ["http", "pies"] }"#),
-            (r#"hobbies:="["http", "pies"]""#, r#"{ "hobbies": ["http", "pies"] }"#),
-            (r#"hobbies:=["http", "pies"]"#, r#"{ "hobbies": ["http", "pies"] }"#),
-            (r#"favorite:={"tool": "HTTPie"}"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
-            (r#"favorite:="{"tool": "HTTPie"}""#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
-            (r#"favorite:='{"tool": "HTTPie"}'"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
-            (r#"complex:=[null,{},["a", false], true]"#, r#"{ "complex": [null, {}, ["a", false], true] }"#),
-            (r#"complex:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#, r#"{ "complex": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#),
+            (
+                r#"hobbies:='["http", "pies"]'"#,
+                r#"{ "hobbies": ["http", "pies"] }"#,
+            ),
+            (
+                r#"hobbies:="["http", "pies"]""#,
+                r#"{ "hobbies": ["http", "pies"] }"#,
+            ),
+            (
+                r#"hobbies:=["http", "pies"]"#,
+                r#"{ "hobbies": ["http", "pies"] }"#,
+            ),
+            (
+                r#"favorite:={"tool": "HTTPie"}"#,
+                r#"{ "favorite": { "tool": "HTTPie"} }"#,
+            ),
+            (
+                r#"favorite:="{"tool": "HTTPie"}""#,
+                r#"{ "favorite": { "tool": "HTTPie"} }"#,
+            ),
+            (
+                r#"favorite:='{"tool": "HTTPie"}'"#,
+                r#"{ "favorite": { "tool": "HTTPie"} }"#,
+            ),
+            (
+                r#"complex:=[null,{},["a", false], true]"#,
+                r#"{ "complex": [null, {}, ["a", false], true] }"#,
+            ),
+            (
+                r#"complex:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#,
+                r#"{ "complex": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#,
+            ),
         ];
 
         for (input, output) in cases {

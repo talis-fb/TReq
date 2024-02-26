@@ -20,4 +20,4 @@ expression: output.unwrap()
       headers: {}
       body:
         Raw: ""
-
+    print_body_only: false

@@ -27,11 +27,13 @@ pub trait ViewCommand {
 pub enum ViewCommandChoice {
     SubmitRequest {
         request: RequestData,
+        print_body_only: bool,
     },
 
     SubmitSavedRequest {
         request_name: String,
         request_data: PartialRequestData,
+        print_body_only: bool,
     },
 
     SaveNewRequest {
@@ -75,8 +77,12 @@ impl ViewCommandChoice {
         let writer_stderr = CrosstermCliWriter::from(stderr());
 
         match self {
-            ViewCommandChoice::SubmitRequest { request } => BasicRequestExecutor {
+            ViewCommandChoice::SubmitRequest {
                 request,
+                print_body_only,
+            } => BasicRequestExecutor {
+                request,
+                print_body_only,
                 writer_stdout,
                 writer_stderr,
             }
@@ -84,9 +90,11 @@ impl ViewCommandChoice {
             ViewCommandChoice::SubmitSavedRequest {
                 request_name,
                 request_data,
+                print_body_only,
             } => SubmitSavedRequestExecutor {
                 request_name,
                 input_request_data: request_data,
+                print_body_only,
                 writer_stdout,
                 writer_stderr,
             }

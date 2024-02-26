@@ -1,5 +1,3 @@
-use std::ops::FnOnce;
-
 use tokio::sync::oneshot;
 
 pub type Functor<ServiceInstance> =

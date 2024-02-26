@@ -255,6 +255,7 @@ fn should_parse_number_json() {
         "treq",
         "GET",
         "url.com",
+        "-b",
         "Hello=World",
         "age:=29",
         "amount:=-30.8",
@@ -277,6 +278,7 @@ fn should_parse_combine_json() {
         r#"hobbies:='["http", "pies"]'"#,
         r#"utils:='{"tool": "HTTPie"}'"#,
         r#"favorite:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#,
+        "--body",
     ];
     let output = process(input).unwrap();
     //assert!(output.len() == 1);
