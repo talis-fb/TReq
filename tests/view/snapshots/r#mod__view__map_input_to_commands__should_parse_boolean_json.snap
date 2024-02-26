@@ -18,4 +18,5 @@ expression: output
         Json:
           Hello: World
           married: false
-    print_body_only: false
+    view_options:
+      print_body_only: false

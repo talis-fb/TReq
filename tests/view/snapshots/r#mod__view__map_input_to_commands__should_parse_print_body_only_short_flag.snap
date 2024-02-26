@@ -12,9 +12,9 @@ expression: output
           paths: []
           query_params: []
           anchor: ~
-      method: PUT
+      method: GET
       headers: {}
       body:
         Raw: ""
     view_options:
-      print_body_only: false
+      print_body_only: true

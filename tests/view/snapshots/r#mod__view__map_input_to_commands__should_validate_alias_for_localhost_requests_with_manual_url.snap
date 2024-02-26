@@ -18,4 +18,5 @@ expression: output.unwrap()
       method: ~
       headers: ~
       body: ~
-    print_body_only: false
+    view_options:
+      print_body_only: false

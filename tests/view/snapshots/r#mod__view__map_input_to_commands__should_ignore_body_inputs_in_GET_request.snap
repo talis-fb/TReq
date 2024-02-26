@@ -17,4 +17,5 @@ expression: output
       body:
         Json:
           Hello: World
-    print_body_only: false
+    view_options:
+      print_body_only: false

@@ -33,4 +33,5 @@ expression: output
           married: false
           utils:
             tool: HTTPie
-    print_body_only: true
+    view_options:
+      print_body_only: false

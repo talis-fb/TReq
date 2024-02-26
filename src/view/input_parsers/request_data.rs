@@ -28,10 +28,10 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
 
     // Request data from 'CliCommandChoice'
     let base_request = match input.choice {
-        CliCommandChoice::BasicRequest {
-            method, ref url, ..
-        } => base_request.with_method(method).with_url(url),
-        CliCommandChoice::DefaultBasicRequest { ref url, .. } => {
+        CliCommandChoice::BasicRequest { method, ref url } => {
+            base_request.with_method(method).with_url(url)
+        }
+        CliCommandChoice::DefaultBasicRequest { ref url } => {
             base_request.with_method(METHODS::GET).with_url(url)
         }
         _ => base_request,

@@ -255,7 +255,6 @@ fn should_parse_number_json() {
         "treq",
         "GET",
         "url.com",
-        "-b",
         "Hello=World",
         "age:=29",
         "amount:=-30.8",
@@ -278,9 +277,32 @@ fn should_parse_combine_json() {
         r#"hobbies:='["http", "pies"]'"#,
         r#"utils:='{"tool": "HTTPie"}'"#,
         r#"favorite:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#,
-        "--body",
     ];
     let output = process(input).unwrap();
     //assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn should_parse_print_body_only_short_flag() {
+    let input = ["treq", "GET", "url.com", "-b"];
+    let output = process(input).unwrap();
+    assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn should_parse_print_body_only_long_flag() {
+    let input = ["treq", "GET", "url.com", "--body"];
+    let output = process(input).unwrap();
+    assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn should_parse_print_body_only_long_flag_other_location() {
+    let input = ["treq", "GET", "--body", "url.com"];
+    let output = process(input).unwrap();
+    assert!(output.len() == 1);
     assert_snapshot!(output);
 }

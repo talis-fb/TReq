@@ -5,11 +5,7 @@ use crate::utils::regexes;
 use crate::view::input::cli_input::{CliCommandChoice, CliInput};
 
 pub fn validate_basic_request_without_explicit_method(mut input: CliInput) -> Result<CliInput> {
-    if let CliCommandChoice::DefaultBasicRequest {
-        ref url,
-        print_body_only,
-    } = input.choice
-    {
+    if let CliCommandChoice::DefaultBasicRequest { ref url } = input.choice {
         let url = url.clone();
         input
             .request_input
@@ -20,7 +16,6 @@ pub fn validate_basic_request_without_explicit_method(mut input: CliInput) -> Re
                 input.choice = CliCommandChoice::BasicRequest {
                     method: METHODS::POST,
                     url,
-                    print_body_only,
                 };
             });
     }

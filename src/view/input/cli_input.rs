@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{Error, Result};
 use clap::ArgMatches;
+use serde::Serialize;
 
 use crate::app::services::request::entities::methods::METHODS;
 
@@ -9,21 +10,19 @@ pub struct CliInput {
     pub choice: CliCommandChoice,
     pub request_input: RequestBuildingOptions,
     pub save_options: SavingOptions,
+    pub view_options: ViewOptions,
 }
 
 pub enum CliCommandChoice {
     DefaultBasicRequest {
         url: String,
-        print_body_only: bool,
     },
     BasicRequest {
         method: METHODS,
         url: String,
-        print_body_only: bool,
     },
     Run {
         request_name: String,
-        print_body_only: bool,
         save: bool,
     },
     Edit {
@@ -48,16 +47,14 @@ impl CliInput {
         if matches.subcommand().is_none() {
             let url = clap_args_utils::get_input(matches)?.to_string();
             let request_input = RequestBuildingOptions::from_clap_matches(matches)?;
-            let print_body_only = *matches.get_one::<bool>("print-body-only").unwrap_or(&false);
             let save_options = SavingOptions::from_clap_matches(matches)?;
+            let view_options = ViewOptions::from_clap_matches(matches)?;
 
             return Ok(CliInput {
-                choice: CliCommandChoice::DefaultBasicRequest {
-                    url,
-                    print_body_only,
-                },
+                choice: CliCommandChoice::DefaultBasicRequest { url },
                 request_input,
                 save_options,
+                view_options,
             });
         }
 
@@ -65,6 +62,7 @@ impl CliInput {
 
         let request_input = RequestBuildingOptions::from_clap_matches(matches)?;
         let save_options = SavingOptions::from_clap_matches(matches)?;
+        let view_options = ViewOptions::from_clap_matches(matches)?;
 
         match subcommand {
             "edit" => {
@@ -74,6 +72,7 @@ impl CliInput {
                     choice: CliCommandChoice::Edit { request_name },
                     request_input,
                     save_options,
+                    view_options,
                 })
             }
             "rename" => {
@@ -90,6 +89,7 @@ impl CliInput {
                     },
                     request_input,
                     save_options,
+                    view_options,
                 })
             }
             "remove" => {
@@ -99,12 +99,14 @@ impl CliInput {
                     choice: CliCommandChoice::Remove { request_name },
                     request_input,
                     save_options,
+                    view_options,
                 })
             }
             "ls" => Ok(CliInput {
                 choice: CliCommandChoice::Ls,
                 request_input,
                 save_options,
+                view_options,
             }),
             "inspect" => {
                 let request_name = clap_args_utils::get_input(matches)?.to_string();
@@ -113,36 +115,32 @@ impl CliInput {
                     choice: CliCommandChoice::Inspect { request_name },
                     request_input,
                     save_options,
+                    view_options,
                 })
             }
             "run" => {
                 let request_name = clap_args_utils::get_input(matches)?.to_string();
                 let should_save_current_request = matches.get_one::<bool>("save").unwrap_or(&false);
-                let print_body_only = *matches.get_one::<bool>("print-body-only").unwrap_or(&false);
 
                 Ok(CliInput {
                     choice: CliCommandChoice::Run {
                         request_name,
-                        print_body_only,
                         save: *should_save_current_request,
                     },
                     request_input,
                     save_options,
+                    view_options,
                 })
             }
             "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "PATCH" => {
                 let url = clap_args_utils::get_input(matches)?.to_string();
                 let method = METHODS::from_str(subcommand)?;
-                let print_body_only = *matches.get_one::<bool>("print-body-only").unwrap_or(&false);
 
                 Ok(CliInput {
-                    choice: CliCommandChoice::BasicRequest {
-                        method,
-                        url,
-                        print_body_only,
-                    },
+                    choice: CliCommandChoice::BasicRequest { method, url },
                     request_input,
                     save_options,
+                    view_options,
                 })
             }
             _ => Err(Error::msg("No valid subcommand")),
@@ -177,6 +175,21 @@ impl SavingOptions {
     pub fn from_clap_matches(matches: &ArgMatches) -> Result<SavingOptions> {
         Ok(SavingOptions {
             save_as: clap_args_utils::get_one(matches, "save-as"),
+        })
+    }
+}
+
+#[derive(Default, Debug, Eq, PartialEq, Serialize, Clone)]
+pub struct ViewOptions {
+    pub print_body_only: bool,
+}
+
+impl ViewOptions {
+    pub fn from_clap_matches(matches: &ArgMatches) -> Result<ViewOptions> {
+        Ok(ViewOptions {
+            print_body_only: matches
+                .get_one::<bool>("print-body-only")
+                .map_or(false, |v| *v),
         })
     }
 }

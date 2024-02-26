@@ -6,6 +6,7 @@ use crate::app::backend::Backend;
 use crate::app::services::request::entities::requests::RequestData;
 use crate::app::services::web_client::entities::get_status_code_message;
 use crate::utils::channels::chain_listener_to_receiver;
+use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::{BREAK_LINE, BREAK_LINE_WITH_GAP, SINGLE_SPACE, TAB_SPACE};
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr, TextStyle};
@@ -16,7 +17,7 @@ where
     W2: CliWriterRepository,
 {
     pub request: RequestData,
-    pub print_body_only: bool,
+    pub view_options: ViewOptions,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -59,7 +60,7 @@ where
                 .collect()
         };
 
-        if !self.print_body_only {
+        if !self.view_options.print_body_only {
             self.writer_stderr.print_lines([BREAK_LINE]);
             self.writer_stderr.print_lines_styled([title]);
             self.writer_stderr.print_lines_styled(headers);
@@ -138,7 +139,7 @@ where
                 .collect()
         };
 
-        if !self.print_body_only {
+        if !self.view_options.print_body_only {
             self.writer_stderr.print_lines_styled([title_status]);
             self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
             self.writer_stderr.print_lines_styled(headers);
