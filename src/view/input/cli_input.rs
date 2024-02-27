@@ -187,9 +187,7 @@ pub struct ViewOptions {
 impl ViewOptions {
     pub fn from_clap_matches(matches: &ArgMatches) -> Result<ViewOptions> {
         Ok(ViewOptions {
-            print_body_only: matches
-                .get_one::<bool>("print-body-only")
-                .map_or(false, |v| *v),
+            print_body_only: *matches.try_get_one::<bool>("print-body-only").ok().flatten().unwrap_or(&false),
         })
     }
 }
