@@ -161,7 +161,7 @@ impl RequestBuildingOptions {
             request_items: clap_args_utils::get_many(matches, "request-items").unwrap_or_default(),
             raw_body: clap_args_utils::get_one(matches, "raw"),
             url_manual: clap_args_utils::get_one(matches, "url-manual"),
-            method_manual: clap_args_utils::get_one(matches, "method-manual")
+            method_manual: clap_args_utils::get_one::<String>(matches, "method-manual")
                 .and_then(|m| METHODS::from_str(&m).ok()),
         })
     }
@@ -187,12 +187,15 @@ pub struct ViewOptions {
 impl ViewOptions {
     pub fn from_clap_matches(matches: &ArgMatches) -> Result<ViewOptions> {
         Ok(ViewOptions {
-            print_body_only: *matches.try_get_one::<bool>("print-body-only").ok().flatten().unwrap_or(&false),
+            print_body_only: clap_args_utils::get_one::<bool>(matches, "print-body-only")
+                .unwrap_or(false),
         })
     }
 }
 
 mod clap_args_utils {
+    use std::any::Any;
+
     use super::*;
 
     pub fn get_input(args: &ArgMatches) -> Result<String> {
@@ -203,8 +206,11 @@ mod clap_args_utils {
         clap_args_utils::get_many(args, "inputs").ok_or(Error::msg("No inputs given"))
     }
 
-    pub fn get_one(args: &ArgMatches, name: &str) -> Option<String> {
-        args.try_get_one::<String>(name).ok().flatten().cloned()
+    pub fn get_one<T>(args: &ArgMatches, name: &str) -> Option<T>
+    where
+        T: Any + Clone + Send + Sync + 'static,
+    {
+        args.try_get_one::<T>(name).ok().flatten().cloned()
     }
 
     pub fn get_many(args: &ArgMatches, name: &str) -> Option<Vec<String>> {
