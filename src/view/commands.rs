@@ -4,6 +4,7 @@ use std::io::{stderr, stdout};
 use async_trait::async_trait;
 use serde::Serialize;
 
+use super::input::cli_input::ViewOptions;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::app::services::request::entities::requests::RequestData;
@@ -27,11 +28,13 @@ pub trait ViewCommand {
 pub enum ViewCommandChoice {
     SubmitRequest {
         request: RequestData,
+        view_options: ViewOptions,
     },
 
     SubmitSavedRequest {
         request_name: String,
         request_data: PartialRequestData,
+        view_options: ViewOptions,
     },
 
     SaveNewRequest {
@@ -75,8 +78,12 @@ impl ViewCommandChoice {
         let writer_stderr = CrosstermCliWriter::from(stderr());
 
         match self {
-            ViewCommandChoice::SubmitRequest { request } => BasicRequestExecutor {
+            ViewCommandChoice::SubmitRequest {
                 request,
+                view_options,
+            } => BasicRequestExecutor {
+                request,
+                view_options,
                 writer_stdout,
                 writer_stderr,
             }
@@ -84,9 +91,11 @@ impl ViewCommandChoice {
             ViewCommandChoice::SubmitSavedRequest {
                 request_name,
                 request_data,
+                view_options,
             } => SubmitSavedRequestExecutor {
                 request_name,
                 input_request_data: request_data,
+                view_options,
                 writer_stdout,
                 writer_stderr,
             }

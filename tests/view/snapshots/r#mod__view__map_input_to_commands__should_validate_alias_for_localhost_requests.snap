@@ -20,4 +20,5 @@ expression: output.unwrap()
       headers: {}
       body:
         Raw: ""
-
+    view_options:
+      print_body_only: false

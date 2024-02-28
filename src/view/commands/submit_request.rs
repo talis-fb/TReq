@@ -6,6 +6,7 @@ use crate::app::backend::Backend;
 use crate::app::services::request::entities::requests::RequestData;
 use crate::app::services::web_client::entities::get_status_code_message;
 use crate::utils::channels::chain_listener_to_receiver;
+use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::{BREAK_LINE, BREAK_LINE_WITH_GAP, SINGLE_SPACE, TAB_SPACE};
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr, TextStyle};
@@ -16,6 +17,7 @@ where
     W2: CliWriterRepository,
 {
     pub request: RequestData,
+    pub view_options: ViewOptions,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -58,10 +60,12 @@ where
                 .collect()
         };
 
-        self.writer_stderr.print_lines([BREAK_LINE]);
-        self.writer_stderr.print_lines_styled([title]);
-        self.writer_stderr.print_lines_styled(headers);
-        self.writer_stderr.print_lines([BREAK_LINE]);
+        if !self.view_options.print_body_only {
+            self.writer_stderr.print_lines([BREAK_LINE]);
+            self.writer_stderr.print_lines_styled([title]);
+            self.writer_stderr.print_lines_styled(headers);
+            self.writer_stderr.print_lines([BREAK_LINE]);
+        }
 
         let request_id = provider.add_request(self.request).await?;
         let response_submit = provider.submit_request_async(request_id).await?;
@@ -135,10 +139,12 @@ where
                 .collect()
         };
 
-        self.writer_stderr.print_lines_styled([title_status]);
-        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
-        self.writer_stderr.print_lines_styled(headers);
-        self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        if !self.view_options.print_body_only {
+            self.writer_stderr.print_lines_styled([title_status]);
+            self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+            self.writer_stderr.print_lines_styled(headers);
+            self.writer_stderr.print_lines([BREAK_LINE_WITH_GAP]);
+        }
         self.writer_stdout.print_lines([response.body]);
 
         Ok(())

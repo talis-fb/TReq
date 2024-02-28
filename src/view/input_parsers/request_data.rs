@@ -289,14 +289,38 @@ pub mod tests_parsers_request_items {
     #[test]
     fn test_non_string_body_value_nested() {
         let cases = [
-            (r#"hobbies:='["http", "pies"]'"#, r#"{ "hobbies": ["http", "pies"] }"#),
-            (r#"hobbies:="["http", "pies"]""#, r#"{ "hobbies": ["http", "pies"] }"#),
-            (r#"hobbies:=["http", "pies"]"#, r#"{ "hobbies": ["http", "pies"] }"#),
-            (r#"favorite:={"tool": "HTTPie"}"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
-            (r#"favorite:="{"tool": "HTTPie"}""#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
-            (r#"favorite:='{"tool": "HTTPie"}'"#, r#"{ "favorite": { "tool": "HTTPie"} }"#),
-            (r#"complex:=[null,{},["a", false], true]"#, r#"{ "complex": [null, {}, ["a", false], true] }"#),
-            (r#"complex:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#, r#"{ "complex": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#),
+            (
+                r#"hobbies:='["http", "pies"]'"#,
+                r#"{ "hobbies": ["http", "pies"] }"#,
+            ),
+            (
+                r#"hobbies:="["http", "pies"]""#,
+                r#"{ "hobbies": ["http", "pies"] }"#,
+            ),
+            (
+                r#"hobbies:=["http", "pies"]"#,
+                r#"{ "hobbies": ["http", "pies"] }"#,
+            ),
+            (
+                r#"favorite:={"tool": "HTTPie"}"#,
+                r#"{ "favorite": { "tool": "HTTPie"} }"#,
+            ),
+            (
+                r#"favorite:="{"tool": "HTTPie"}""#,
+                r#"{ "favorite": { "tool": "HTTPie"} }"#,
+            ),
+            (
+                r#"favorite:='{"tool": "HTTPie"}'"#,
+                r#"{ "favorite": { "tool": "HTTPie"} }"#,
+            ),
+            (
+                r#"complex:=[null,{},["a", false], true]"#,
+                r#"{ "complex": [null, {}, ["a", false], true] }"#,
+            ),
+            (
+                r#"complex:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#,
+                r#"{ "complex": {"tool":  {"all":[true, 29, {"name": ["Mary", "John"]}]}} }"#,
+            ),
         ];
 
         for (input, output) in cases {

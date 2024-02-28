@@ -16,4 +16,5 @@ expression: output
       headers: {}
       body:
         Raw: ""
-
+    view_options:
+      print_body_only: false

@@ -4,6 +4,7 @@ use super::submit_request::BasicRequestExecutor;
 use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::BREAK_LINE;
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
@@ -15,6 +16,7 @@ where
 {
     pub request_name: String,
     pub input_request_data: PartialRequestData,
+    pub view_options: ViewOptions,
     pub writer_stdout: W1,
     pub writer_stderr: W2,
 }
@@ -43,6 +45,7 @@ where
 
         Box::new(BasicRequestExecutor {
             request,
+            view_options: self.view_options,
             writer_stdout: self.writer_stdout,
             writer_stderr: self.writer_stderr,
         })

@@ -36,6 +36,7 @@ pub fn parse_inputs_to_main_command_choices(
             let main_command = ViewCommandChoice::SubmitSavedRequest {
                 request_name: request_name.to_string(),
                 request_data: base_request.clone(),
+                view_options: input.view_options.clone(),
             };
 
             if *save {
@@ -54,11 +55,13 @@ pub fn parse_inputs_to_main_command_choices(
         CliCommandChoice::DefaultBasicRequest { .. } => {
             vec![ViewCommandChoice::SubmitRequest {
                 request: base_request.clone().to_request_data(),
+                view_options: input.view_options.clone(),
             }]
         }
         CliCommandChoice::BasicRequest { .. } => {
             vec![ViewCommandChoice::SubmitRequest {
                 request: base_request.clone().to_request_data(),
+                view_options: input.view_options.clone(),
             }]
         }
     };

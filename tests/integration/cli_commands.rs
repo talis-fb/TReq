@@ -17,6 +17,7 @@ async fn should_submit_a_basic_request() -> anyhow::Result<()> {
 
     let executor: Box<dyn ViewCommand> = BasicRequestExecutor {
         request: request_to_do.clone(),
+        view_options: Default::default(),
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }
@@ -59,6 +60,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
 
     let basic_request_executor: Box<dyn ViewCommand> = BasicRequestExecutor {
         request: first_request_to_do.clone(),
+        view_options: Default::default(),
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }
@@ -87,6 +89,7 @@ async fn should_submit_a_request_after_saved() -> anyhow::Result<()> {
     let submit_save_request_executor: Box<dyn ViewCommand> = SubmitSavedRequestExecutor {
         request_name: "some_request".into(),
         input_request_data: PartialRequestData::default(),
+        view_options: Default::default(),
         writer_stdout: CliWriterUseLess,
         writer_stderr: CliWriterUseLess,
     }
