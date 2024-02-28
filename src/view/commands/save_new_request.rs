@@ -7,28 +7,19 @@ use crate::view::output::utils::BREAK_LINE;
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
-pub struct SaveNewRequestExecutor<W1, W2>
-where
-    W1: CliWriterRepository,
-    W2: CliWriterRepository,
-{
+pub struct SaveNewRequestExecutor<Writer: CliWriterRepository> {
     pub request_name: String,
     pub request_data: RequestData,
-    pub writer_stdout: W1,
-    pub writer_stderr: W2,
+    pub writer: Writer,
 }
 
 #[async_trait]
-impl<W1, W2> ViewCommand for SaveNewRequestExecutor<W1, W2>
-where
-    W1: CliWriterRepository,
-    W2: CliWriterRepository,
-{
+impl<Writer: CliWriterRepository> ViewCommand for SaveNewRequestExecutor<Writer> {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
-        self.writer_stderr.print_lines([BREAK_LINE]);
-        self.writer_stderr
+        self.writer.print_lines([BREAK_LINE]);
+        self.writer
             .print_lines_styled([[StyledStr::from(" Saving").with_color_text(Color::Yellow)]]);
-        self.writer_stderr.print_lines_styled([[
+        self.writer.print_lines_styled([[
             StyledStr::from(" -> "),
             StyledStr::from(&self.request_name).with_color_text(Color::Blue),
         ]]);

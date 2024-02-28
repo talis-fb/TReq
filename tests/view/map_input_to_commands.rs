@@ -306,3 +306,19 @@ fn should_parse_print_body_only_long_flag_other_location() {
     assert!(output.len() == 1);
     assert_snapshot!(output);
 }
+
+#[test]
+fn should_parse_suppress_output_short_flag() {
+    let input = ["treq", "GET", "url.com", "-q"];
+    let output = process(input).unwrap();
+    assert!(output.len() == 1);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn should_parse_suppress_output_long_flag() {
+    let input = ["treq", "GET", "--quiet", "url.com"];
+    let output = process(input).unwrap();
+    assert!(output.len() == 1);
+    assert_snapshot!(output);
+}

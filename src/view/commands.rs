@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use std::io::{stderr, stdout};
+use std::io::{empty, stderr, stdout};
 
 use async_trait::async_trait;
 use serde::Serialize;
@@ -40,21 +40,25 @@ pub enum ViewCommandChoice {
     SaveNewRequest {
         request_name: String,
         request_data: RequestData,
+        view_options: ViewOptions,
     },
     SaveRequestWithBaseRequest {
         request_name: String,
         base_request_name: Option<String>,
         request_data: PartialRequestData,
+        view_options: ViewOptions,
     },
 
     RemoveSavedRequest {
         request_name: String,
+        view_options: ViewOptions,
     },
 
     RenameSavedRequest {
         request_name: String,
         new_name: String,
         has_to_confirm: bool,
+        view_options: ViewOptions,
     },
 
     ShowRequests,
@@ -74,69 +78,130 @@ impl ViewCommandChoice {
         use self::submit_request::BasicRequestExecutor;
         use self::submit_saved_request::SubmitSavedRequestExecutor;
 
-        let writer_stdout = CrosstermCliWriter::from(stdout());
-        let writer_stderr = CrosstermCliWriter::from(stderr());
-
         match self {
             ViewCommandChoice::SubmitRequest {
                 request,
                 view_options,
-            } => BasicRequestExecutor {
-                request,
-                view_options,
-                writer_stdout,
-                writer_stderr,
+            } => if view_options.print_body_only {
+                BasicRequestExecutor {
+                    request,
+                    writer_metadata: CrosstermCliWriter::from(empty()),
+                    writer_response: CrosstermCliWriter::from(stdout()),
+                    writer_stderr: CrosstermCliWriter::from(stderr()),
+                }
+            } else if view_options.suppress_output {
+                BasicRequestExecutor {
+                    request,
+                    writer_metadata: CrosstermCliWriter::from(empty()),
+                    writer_response: CrosstermCliWriter::from(empty()),
+                    writer_stderr: CrosstermCliWriter::from(stderr()),
+                }
+            } else {
+                BasicRequestExecutor {
+                    request,
+                    writer_metadata: CrosstermCliWriter::from(stderr()),
+                    writer_response: CrosstermCliWriter::from(stdout()),
+                    writer_stderr: CrosstermCliWriter::from(stderr()),
+                }
             }
             .into(),
+
             ViewCommandChoice::SubmitSavedRequest {
                 request_name,
                 request_data,
                 view_options,
-            } => SubmitSavedRequestExecutor {
-                request_name,
-                input_request_data: request_data,
-                view_options,
-                writer_stdout,
-                writer_stderr,
+            } => if view_options.print_body_only {
+                SubmitSavedRequestExecutor {
+                    request_name,
+                    input_request_data: request_data,
+                    writer_metadata: CrosstermCliWriter::from(empty()),
+                    writer_response: CrosstermCliWriter::from(stdout()),
+                    writer_stderr: CrosstermCliWriter::from(stderr()),
+                }
+            } else if view_options.suppress_output {
+                SubmitSavedRequestExecutor {
+                    request_name,
+                    input_request_data: request_data,
+                    writer_metadata: CrosstermCliWriter::from(empty()),
+                    writer_response: CrosstermCliWriter::from(empty()),
+                    writer_stderr: CrosstermCliWriter::from(stderr()),
+                }
+            } else {
+                SubmitSavedRequestExecutor {
+                    request_name,
+                    input_request_data: request_data,
+                    writer_metadata: CrosstermCliWriter::from(stderr()),
+                    writer_response: CrosstermCliWriter::from(stdout()),
+                    writer_stderr: CrosstermCliWriter::from(stderr()),
+                }
             }
             .into(),
 
             ViewCommandChoice::SaveNewRequest {
                 request_name,
                 request_data,
-            } => SaveNewRequestExecutor {
-                request_name,
-                request_data,
-                writer_stdout,
-                writer_stderr,
+                view_options,
+            } => if view_options.suppress_output {
+                SaveNewRequestExecutor {
+                    request_name,
+                    request_data,
+                    writer: CrosstermCliWriter::from(Box::new(empty())),
+                }
+            } else {
+                SaveNewRequestExecutor {
+                    request_name,
+                    request_data,
+                    writer: CrosstermCliWriter::from(Box::new(stderr())),
+                }
             }
             .into(),
+
             ViewCommandChoice::SaveRequestWithBaseRequest {
                 request_name,
                 base_request_name,
                 request_data,
-            } => SaveRequestWithBaseRequestExecutor {
-                request_name,
-                base_request_name,
-                input_request_data: request_data,
-                writer_stdout,
-                writer_stderr,
+                view_options,
+            } => if view_options.suppress_output {
+                SaveRequestWithBaseRequestExecutor {
+                    request_name,
+                    base_request_name,
+                    input_request_data: request_data,
+                    writer: CrosstermCliWriter::from(Box::new(empty())),
+                }
+            } else {
+                SaveRequestWithBaseRequestExecutor {
+                    request_name,
+                    base_request_name,
+                    input_request_data: request_data,
+                    writer: CrosstermCliWriter::from(Box::new(stderr())),
+                }
             }
             .into(),
 
             ViewCommandChoice::ShowRequests => ShowListAllRequestExecutor {
-                writer: writer_stdout,
-            }
-            .into(),
-            ViewCommandChoice::InspectRequest { request_name } => InspectRequestExecutor {
-                request_name,
-                writer: writer_stdout,
+                writer: CrosstermCliWriter::from(Box::new(stdout())),
             }
             .into(),
 
-            ViewCommandChoice::RemoveSavedRequest { request_name } => RemoveRequestExecutor {
+            ViewCommandChoice::InspectRequest { request_name } => InspectRequestExecutor {
                 request_name,
-                writer: writer_stdout,
+                writer: CrosstermCliWriter::from(Box::new(stdout())),
+            }
+            .into(),
+
+            ViewCommandChoice::RemoveSavedRequest {
+                request_name,
+                view_options,
+            } => if view_options.suppress_output {
+                RemoveRequestExecutor {
+                    request_name,
+                    writer: CrosstermCliWriter::from(Box::new(empty())),
+                }
+            } else {
+                RemoveRequestExecutor {
+                    request_name,
+                    writer: CrosstermCliWriter::from(Box::new(stdout())),
+                }
             }
             .into(),
 
@@ -144,11 +209,21 @@ impl ViewCommandChoice {
                 request_name,
                 new_name,
                 has_to_confirm,
-            } => RenameRequestExecutor {
-                request_name,
-                new_name,
-                has_to_confirm,
-                writer: writer_stdout,
+                view_options,
+            } => if view_options.suppress_output {
+                RenameRequestExecutor {
+                    request_name,
+                    new_name,
+                    has_to_confirm,
+                    writer: CrosstermCliWriter::from(Box::new(empty())),
+                }
+            } else {
+                RenameRequestExecutor {
+                    request_name,
+                    new_name,
+                    has_to_confirm,
+                    writer: CrosstermCliWriter::from(Box::new(stdout())),
+                }
             }
             .into(),
         }

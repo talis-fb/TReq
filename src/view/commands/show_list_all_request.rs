@@ -6,18 +6,12 @@ use crate::view::output::utils::{BREAK_LINE, TAB_SPACE};
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
-pub struct ShowListAllRequestExecutor<W1>
-where
-    W1: CliWriterRepository,
-{
-    pub writer: W1,
+pub struct ShowListAllRequestExecutor<Writer: CliWriterRepository> {
+    pub writer: Writer,
 }
 
 #[async_trait]
-impl<W1> ViewCommand for ShowListAllRequestExecutor<W1>
-where
-    W1: CliWriterRepository,
-{
+impl<Writer: CliWriterRepository> ViewCommand for ShowListAllRequestExecutor<Writer> {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
         let mut requests_names = provider.find_all_request_name().await?;
         requests_names.sort();

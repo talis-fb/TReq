@@ -4,28 +4,29 @@ use super::submit_request::BasicRequestExecutor;
 use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
-use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::BREAK_LINE;
 use crate::view::output::writer::CliWriterRepository;
 use crate::view::style::{Color, StyledStr};
 
-pub struct SubmitSavedRequestExecutor<W1, W2>
+pub struct SubmitSavedRequestExecutor<W1, W2, W3>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,
+    W3: CliWriterRepository,
 {
     pub request_name: String,
     pub input_request_data: PartialRequestData,
-    pub view_options: ViewOptions,
-    pub writer_stdout: W1,
-    pub writer_stderr: W2,
+    pub writer_metadata: W1,
+    pub writer_response: W2,
+    pub writer_stderr: W3,
 }
 
 #[async_trait]
-impl<W1, W2> ViewCommand for SubmitSavedRequestExecutor<W1, W2>
+impl<W1, W2, W3> ViewCommand for SubmitSavedRequestExecutor<W1, W2, W3>
 where
     W1: CliWriterRepository,
     W2: CliWriterRepository,
+    W3: CliWriterRepository,
 {
     async fn execute(mut self: Box<Self>, provider: &mut dyn Backend) -> anyhow::Result<()> {
         let request = provider
@@ -34,19 +35,19 @@ where
 
         let request = request.merge(self.input_request_data);
 
-        self.writer_stderr.print_lines([BREAK_LINE]);
-        self.writer_stderr.print_lines_styled([[
+        self.writer_metadata.print_lines([BREAK_LINE]);
+        self.writer_metadata.print_lines_styled([[
             StyledStr::from(" Submit saved request").with_color_text(Color::Blue)
         ]]);
-        self.writer_stderr.print_lines_styled([[
+        self.writer_metadata.print_lines_styled([[
             StyledStr::from(" | -> "),
             StyledStr::from(&self.request_name),
         ]]);
 
         Box::new(BasicRequestExecutor {
             request,
-            view_options: self.view_options,
-            writer_stdout: self.writer_stdout,
+            writer_metadata: self.writer_metadata,
+            writer_response: self.writer_response,
             writer_stderr: self.writer_stderr,
         })
         .execute(provider)

@@ -27,6 +27,7 @@ pub fn parse_inputs_to_saving_command_choices(
                 request_name,
                 base_request_name,
                 request_data: base_request.clone(),
+                view_options: input.view_options.clone(),
             }])
         })
         .unwrap_or_default();

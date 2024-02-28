@@ -19,3 +19,4 @@ expression: output
           Hello: World
     view_options:
       print_body_only: false
+      suppress_output: false

@@ -32,26 +32,19 @@ pub trait CliWriterRepository: Send {
         StyledValues: IntoIterator<Item = StyledStr<'a>>;
 }
 
-pub struct CrosstermCliWriter<Writer>
-where
-    Writer: Write + Send,
-{
-    pub stdout: Writer,
+pub struct CrosstermCliWriter {
+    pub stdout: Box<dyn Write + Send>,
 }
 
-impl<W> CrosstermCliWriter<W>
-where
-    W: Write + Send,
-{
-    pub fn from(writer: W) -> Self {
-        Self { stdout: writer }
+impl CrosstermCliWriter {
+    pub fn from<W: Write + Send + 'static>(writer: W) -> Self {
+        Self {
+            stdout: Box::new(writer),
+        }
     }
 }
 
-impl<W> CliWriterRepository for CrosstermCliWriter<W>
-where
-    W: Write + Send,
-{
+impl CliWriterRepository for CrosstermCliWriter {
     fn clear_current_line(&mut self) {
         self.stdout.queue(Clear(ClearType::CurrentLine)).unwrap();
         self.stdout.flush().unwrap();

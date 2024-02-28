@@ -18,3 +18,4 @@ expression: output
         Raw: ""
     view_options:
       print_body_only: true
+      suppress_output: false

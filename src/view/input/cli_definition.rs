@@ -16,6 +16,7 @@ pub fn root_command() -> Command {
             .map(add_raw_flag)
             .map(add_save_as_flag)
             .map(add_print_body_only_flag)
+            .map(add_quiet_flag)
             .unwrap(),
         )
     }
@@ -37,6 +38,7 @@ pub fn root_command() -> Command {
             .map(add_manual_url_flag)
             .map(add_manual_method_flag)
             .map(add_print_body_only_flag)
+            .map(add_quiet_flag)
             .unwrap(),
         )
         .subcommand(
@@ -53,41 +55,50 @@ pub fn root_command() -> Command {
             .map(add_save_as_flag)
             .map(add_manual_url_flag)
             .map(add_manual_method_flag)
+            .map(add_quiet_flag)
             .unwrap(),
         )
         .subcommand(
-            Command::new("remove")
-                .override_usage(format!("treq run <REQUEST_NAME> [OPTIONS]"))
-                .about("Remove request")
-                .arg(
-                    Arg::new("inputs")
-                        .value_name("inputs")
-                        .required(true)
-                        .num_args(1)
-                        .help("Saved request to remove"),
-                ),
+            Some(
+                Command::new("remove")
+                    .override_usage(format!("treq run <REQUEST_NAME> [OPTIONS]"))
+                    .about("Remove request")
+                    .arg(
+                        Arg::new("inputs")
+                            .value_name("inputs")
+                            .required(true)
+                            .num_args(1)
+                            .help("Saved request to remove"),
+                    ),
+            )
+            .map(add_quiet_flag)
+            .unwrap(),
         )
         .subcommand(
-            Command::new("rename")
-                .override_usage(format!(
-                    "treq rename <OLD_REQUEST_NAME> <NEW_REQUEST_NAME> [OPTIONS]"
-                ))
-                .about("Rename request")
-                .arg(
-                    Arg::new("inputs")
-                        .value_name("inputs")
-                        .required(true)
-                        .num_args(2)
-                        .help("All entrys"),
-                )
-                .arg(
-                    // With this flag, the user will not be prompted for confirmation to rename the file
-                    Arg::new("no-confirm")
-                        .long("no-confirm")
-                        .action(ArgAction::SetTrue)
-                        .value_name("NO_CONFIRM")
-                        .help("Do not prompt for confirmation"),
-                ),
+            Some(
+                Command::new("rename")
+                    .override_usage(format!(
+                        "treq rename <OLD_REQUEST_NAME> <NEW_REQUEST_NAME> [OPTIONS]"
+                    ))
+                    .about("Rename request")
+                    .arg(
+                        Arg::new("inputs")
+                            .value_name("inputs")
+                            .required(true)
+                            .num_args(2)
+                            .help("All entrys"),
+                    )
+                    .arg(
+                        // With this flag, the user will not be prompted for confirmation to rename the file
+                        Arg::new("no-confirm")
+                            .long("no-confirm")
+                            .action(ArgAction::SetTrue)
+                            .value_name("NO_CONFIRM")
+                            .help("Do not prompt for confirmation"),
+                    ),
+            )
+            .map(add_quiet_flag)
+            .unwrap(),
         )
         .subcommand(Command::new("ls").about("List all saved requests"))
         .subcommand(
@@ -109,6 +120,7 @@ pub fn root_command() -> Command {
         .map(add_raw_flag)
         .map(add_save_as_flag)
         .map(add_print_body_only_flag)
+        .map(add_quiet_flag)
         .unwrap();
 
     app = app.override_usage(
@@ -224,6 +236,16 @@ fn add_print_body_only_flag(command: Command) -> Command {
             .short('b')
             .action(ArgAction::SetTrue)
             .help("Print the response body only"),
+    )
+}
+
+fn add_quiet_flag(command: Command) -> Command {
+    command.arg(
+        Arg::new("suppress-output")
+            .long("quiet")
+            .short('q')
+            .action(ArgAction::SetTrue)
+            .help("Suppress output for successful command"),
     )
 }
 
