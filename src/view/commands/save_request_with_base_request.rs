@@ -1,10 +1,13 @@
+use std::io::{empty, stderr};
+
 use async_trait::async_trait;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::BREAK_LINE;
-use crate::view::output::writer::CliWriterRepository;
+use crate::view::output::writer::{CliWriterRepository, CrosstermCliWriter};
 use crate::view::style::{Color, StyledStr};
 
 pub struct SaveRequestWithBaseRequestExecutor<Writer: CliWriterRepository> {
@@ -12,6 +15,31 @@ pub struct SaveRequestWithBaseRequestExecutor<Writer: CliWriterRepository> {
     pub base_request_name: Option<String>,
     pub input_request_data: PartialRequestData,
     pub writer: Writer,
+}
+
+impl SaveRequestWithBaseRequestExecutor<CrosstermCliWriter> {
+    pub fn new(
+        request_name: String,
+        base_request_name: Option<String>,
+        request_data: PartialRequestData,
+        view_options: &ViewOptions,
+    ) -> Self {
+        if view_options.suppress_output {
+            SaveRequestWithBaseRequestExecutor {
+                request_name,
+                base_request_name,
+                input_request_data: request_data,
+                writer: CrosstermCliWriter::from(Box::new(empty())),
+            }
+        } else {
+            SaveRequestWithBaseRequestExecutor {
+                request_name,
+                base_request_name,
+                input_request_data: request_data,
+                writer: CrosstermCliWriter::from(Box::new(stderr())),
+            }
+        }
+    }
 }
 
 #[async_trait]

@@ -1,13 +1,23 @@
+use std::io::stdout;
+
 use async_trait::async_trait;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::view::output::utils::{BREAK_LINE, TAB_SPACE};
-use crate::view::output::writer::CliWriterRepository;
+use crate::view::output::writer::{CliWriterRepository, CrosstermCliWriter};
 use crate::view::style::{Color, StyledStr};
 
 pub struct ShowListAllRequestExecutor<Writer: CliWriterRepository> {
     pub writer: Writer,
+}
+
+impl ShowListAllRequestExecutor<CrosstermCliWriter> {
+    pub fn new() -> Self {
+        ShowListAllRequestExecutor {
+            writer: CrosstermCliWriter::from(Box::new(stdout())),
+        }
+    }
 }
 
 #[async_trait]

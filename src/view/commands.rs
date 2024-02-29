@@ -1,5 +1,4 @@
 #![allow(unused_variables)]
-use std::io::{empty, stderr, stdout};
 
 use async_trait::async_trait;
 use serde::Serialize;
@@ -8,7 +7,6 @@ use super::input::cli_input::ViewOptions;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::app::services::request::entities::requests::RequestData;
-use crate::view::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
 pub mod remove_request;
@@ -82,150 +80,51 @@ impl ViewCommandChoice {
             ViewCommandChoice::SubmitRequest {
                 request,
                 view_options,
-            } => if view_options.print_body_only {
-                BasicRequestExecutor {
-                    request,
-                    writer_metadata: CrosstermCliWriter::from(empty()),
-                    writer_response: CrosstermCliWriter::from(stdout()),
-                    writer_stderr: CrosstermCliWriter::from(stderr()),
-                }
-            } else if view_options.suppress_output {
-                BasicRequestExecutor {
-                    request,
-                    writer_metadata: CrosstermCliWriter::from(empty()),
-                    writer_response: CrosstermCliWriter::from(empty()),
-                    writer_stderr: CrosstermCliWriter::from(stderr()),
-                }
-            } else {
-                BasicRequestExecutor {
-                    request,
-                    writer_metadata: CrosstermCliWriter::from(stderr()),
-                    writer_response: CrosstermCliWriter::from(stdout()),
-                    writer_stderr: CrosstermCliWriter::from(stderr()),
-                }
-            }
-            .into(),
+            } => BasicRequestExecutor::new(request, &view_options).into(),
 
             ViewCommandChoice::SubmitSavedRequest {
                 request_name,
                 request_data,
                 view_options,
-            } => if view_options.print_body_only {
-                SubmitSavedRequestExecutor {
-                    request_name,
-                    input_request_data: request_data,
-                    writer_metadata: CrosstermCliWriter::from(empty()),
-                    writer_response: CrosstermCliWriter::from(stdout()),
-                    writer_stderr: CrosstermCliWriter::from(stderr()),
-                }
-            } else if view_options.suppress_output {
-                SubmitSavedRequestExecutor {
-                    request_name,
-                    input_request_data: request_data,
-                    writer_metadata: CrosstermCliWriter::from(empty()),
-                    writer_response: CrosstermCliWriter::from(empty()),
-                    writer_stderr: CrosstermCliWriter::from(stderr()),
-                }
-            } else {
-                SubmitSavedRequestExecutor {
-                    request_name,
-                    input_request_data: request_data,
-                    writer_metadata: CrosstermCliWriter::from(stderr()),
-                    writer_response: CrosstermCliWriter::from(stdout()),
-                    writer_stderr: CrosstermCliWriter::from(stderr()),
-                }
-            }
-            .into(),
+            } => SubmitSavedRequestExecutor::new(request_name, request_data, &view_options).into(),
 
             ViewCommandChoice::SaveNewRequest {
                 request_name,
                 request_data,
                 view_options,
-            } => if view_options.suppress_output {
-                SaveNewRequestExecutor {
-                    request_name,
-                    request_data,
-                    writer: CrosstermCliWriter::from(Box::new(empty())),
-                }
-            } else {
-                SaveNewRequestExecutor {
-                    request_name,
-                    request_data,
-                    writer: CrosstermCliWriter::from(Box::new(stderr())),
-                }
-            }
-            .into(),
+            } => SaveNewRequestExecutor::new(request_name, request_data, &view_options).into(),
 
             ViewCommandChoice::SaveRequestWithBaseRequest {
                 request_name,
                 base_request_name,
                 request_data,
                 view_options,
-            } => if view_options.suppress_output {
-                SaveRequestWithBaseRequestExecutor {
-                    request_name,
-                    base_request_name,
-                    input_request_data: request_data,
-                    writer: CrosstermCliWriter::from(Box::new(empty())),
-                }
-            } else {
-                SaveRequestWithBaseRequestExecutor {
-                    request_name,
-                    base_request_name,
-                    input_request_data: request_data,
-                    writer: CrosstermCliWriter::from(Box::new(stderr())),
-                }
-            }
-            .into(),
-
-            ViewCommandChoice::ShowRequests => ShowListAllRequestExecutor {
-                writer: CrosstermCliWriter::from(Box::new(stdout())),
-            }
-            .into(),
-
-            ViewCommandChoice::InspectRequest { request_name } => InspectRequestExecutor {
+            } => SaveRequestWithBaseRequestExecutor::new(
                 request_name,
-                writer: CrosstermCliWriter::from(Box::new(stdout())),
-            }
+                base_request_name,
+                request_data,
+                &view_options,
+            )
             .into(),
+
+            ViewCommandChoice::ShowRequests => ShowListAllRequestExecutor::new().into(),
+
+            ViewCommandChoice::InspectRequest { request_name } => {
+                InspectRequestExecutor::new(request_name).into()
+            }
 
             ViewCommandChoice::RemoveSavedRequest {
                 request_name,
                 view_options,
-            } => if view_options.suppress_output {
-                RemoveRequestExecutor {
-                    request_name,
-                    writer: CrosstermCliWriter::from(Box::new(empty())),
-                }
-            } else {
-                RemoveRequestExecutor {
-                    request_name,
-                    writer: CrosstermCliWriter::from(Box::new(stdout())),
-                }
-            }
-            .into(),
+            } => RemoveRequestExecutor::new(request_name, &view_options).into(),
 
             ViewCommandChoice::RenameSavedRequest {
                 request_name,
                 new_name,
                 has_to_confirm,
                 view_options,
-            } => if view_options.suppress_output {
-                RenameRequestExecutor {
-                    request_name,
-                    new_name,
-                    has_to_confirm,
-                    writer: CrosstermCliWriter::from(Box::new(empty())),
-                }
-            } else {
-                RenameRequestExecutor {
-                    request_name,
-                    new_name,
-                    has_to_confirm,
-                    writer: CrosstermCliWriter::from(Box::new(stdout())),
-                }
-            }
-            .into(),
+            } => RenameRequestExecutor::new(request_name, new_name, has_to_confirm, &view_options)
+                .into(),
         }
     }
 }

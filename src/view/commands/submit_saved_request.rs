@@ -1,11 +1,14 @@
+use std::io::{empty, stderr, stdout};
+
 use async_trait::async_trait;
 
 use super::submit_request::BasicRequestExecutor;
 use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
+use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::BREAK_LINE;
-use crate::view::output::writer::CliWriterRepository;
+use crate::view::output::writer::{CliWriterRepository, CrosstermCliWriter};
 use crate::view::style::{Color, StyledStr};
 
 pub struct SubmitSavedRequestExecutor<W1, W2, W3>
@@ -19,6 +22,40 @@ where
     pub writer_metadata: W1,
     pub writer_response: W2,
     pub writer_stderr: W3,
+}
+
+impl SubmitSavedRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, CrosstermCliWriter> {
+    pub fn new(
+        request_name: String,
+        input_request_data: PartialRequestData,
+        view_options: &ViewOptions,
+    ) -> Self {
+        if view_options.print_body_only {
+            SubmitSavedRequestExecutor {
+                request_name,
+                input_request_data,
+                writer_metadata: CrosstermCliWriter::from(empty()),
+                writer_response: CrosstermCliWriter::from(stdout()),
+                writer_stderr: CrosstermCliWriter::from(stderr()),
+            }
+        } else if view_options.suppress_output {
+            SubmitSavedRequestExecutor {
+                request_name,
+                input_request_data,
+                writer_metadata: CrosstermCliWriter::from(empty()),
+                writer_response: CrosstermCliWriter::from(empty()),
+                writer_stderr: CrosstermCliWriter::from(stderr()),
+            }
+        } else {
+            SubmitSavedRequestExecutor {
+                request_name,
+                input_request_data,
+                writer_metadata: CrosstermCliWriter::from(stderr()),
+                writer_response: CrosstermCliWriter::from(stdout()),
+                writer_stderr: CrosstermCliWriter::from(stderr()),
+            }
+        }
+    }
 }
 
 #[async_trait]
