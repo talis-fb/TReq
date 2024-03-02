@@ -15,6 +15,7 @@ pub fn parse_inputs_to_main_command_choices(
         }],
         CliCommandChoice::Remove { request_name } => vec![ViewCommandChoice::RemoveSavedRequest {
             request_name: request_name.to_string(),
+            view_options: input.view_options.clone(),
         }],
         CliCommandChoice::Rename {
             request_name,
@@ -24,12 +25,14 @@ pub fn parse_inputs_to_main_command_choices(
             request_name: request_name.to_string(),
             new_name: new_name.to_string(),
             has_to_confirm: *has_to_confirm,
+            view_options: input.view_options.clone(),
         }],
         CliCommandChoice::Edit { request_name } => {
             vec![ViewCommandChoice::SaveRequestWithBaseRequest {
                 base_request_name: Some(request_name.to_string()),
                 request_name: request_name.to_string(),
                 request_data: base_request.clone(),
+                view_options: input.view_options.clone(),
             }]
         }
         CliCommandChoice::Run { request_name, save } => {
@@ -45,6 +48,7 @@ pub fn parse_inputs_to_main_command_choices(
                         base_request_name: Some(request_name.clone()),
                         request_name: request_name.clone(),
                         request_data: base_request.clone(),
+                        view_options: input.view_options.clone(),
                     },
                     main_command,
                 ])

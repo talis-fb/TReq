@@ -1,5 +1,4 @@
 #![allow(unused_variables)]
-use std::io::{stderr, stdout};
 
 use async_trait::async_trait;
 use serde::Serialize;
@@ -8,7 +7,6 @@ use super::input::cli_input::ViewOptions;
 use crate::app::backend::Backend;
 use crate::app::services::request::entities::partial_entities::PartialRequestData;
 use crate::app::services::request::entities::requests::RequestData;
-use crate::view::output::writer::CrosstermCliWriter;
 
 pub mod inspect_request;
 pub mod remove_request;
@@ -40,21 +38,25 @@ pub enum ViewCommandChoice {
     SaveNewRequest {
         request_name: String,
         request_data: RequestData,
+        view_options: ViewOptions,
     },
     SaveRequestWithBaseRequest {
         request_name: String,
         base_request_name: Option<String>,
         request_data: PartialRequestData,
+        view_options: ViewOptions,
     },
 
     RemoveSavedRequest {
         request_name: String,
+        view_options: ViewOptions,
     },
 
     RenameSavedRequest {
         request_name: String,
         new_name: String,
         has_to_confirm: bool,
+        view_options: ViewOptions,
     },
 
     ShowRequests,
@@ -74,83 +76,55 @@ impl ViewCommandChoice {
         use self::submit_request::BasicRequestExecutor;
         use self::submit_saved_request::SubmitSavedRequestExecutor;
 
-        let writer_stdout = CrosstermCliWriter::from(stdout());
-        let writer_stderr = CrosstermCliWriter::from(stderr());
-
         match self {
             ViewCommandChoice::SubmitRequest {
                 request,
                 view_options,
-            } => BasicRequestExecutor {
-                request,
-                view_options,
-                writer_stdout,
-                writer_stderr,
-            }
-            .into(),
+            } => BasicRequestExecutor::new(request, &view_options).into(),
+
             ViewCommandChoice::SubmitSavedRequest {
                 request_name,
                 request_data,
                 view_options,
-            } => SubmitSavedRequestExecutor {
-                request_name,
-                input_request_data: request_data,
-                view_options,
-                writer_stdout,
-                writer_stderr,
-            }
-            .into(),
+            } => SubmitSavedRequestExecutor::new(request_name, request_data, &view_options).into(),
 
             ViewCommandChoice::SaveNewRequest {
                 request_name,
                 request_data,
-            } => SaveNewRequestExecutor {
-                request_name,
-                request_data,
-                writer_stdout,
-                writer_stderr,
-            }
-            .into(),
+                view_options,
+            } => SaveNewRequestExecutor::new(request_name, request_data, &view_options).into(),
+
             ViewCommandChoice::SaveRequestWithBaseRequest {
                 request_name,
                 base_request_name,
                 request_data,
-            } => SaveRequestWithBaseRequestExecutor {
+                view_options,
+            } => SaveRequestWithBaseRequestExecutor::new(
                 request_name,
                 base_request_name,
-                input_request_data: request_data,
-                writer_stdout,
-                writer_stderr,
-            }
+                request_data,
+                &view_options,
+            )
             .into(),
 
-            ViewCommandChoice::ShowRequests => ShowListAllRequestExecutor {
-                writer: writer_stdout,
-            }
-            .into(),
-            ViewCommandChoice::InspectRequest { request_name } => InspectRequestExecutor {
-                request_name,
-                writer: writer_stdout,
-            }
-            .into(),
+            ViewCommandChoice::ShowRequests => ShowListAllRequestExecutor::new().into(),
 
-            ViewCommandChoice::RemoveSavedRequest { request_name } => RemoveRequestExecutor {
-                request_name,
-                writer: writer_stdout,
+            ViewCommandChoice::InspectRequest { request_name } => {
+                InspectRequestExecutor::new(request_name).into()
             }
-            .into(),
+
+            ViewCommandChoice::RemoveSavedRequest {
+                request_name,
+                view_options,
+            } => RemoveRequestExecutor::new(request_name, &view_options).into(),
 
             ViewCommandChoice::RenameSavedRequest {
                 request_name,
                 new_name,
                 has_to_confirm,
-            } => RenameRequestExecutor {
-                request_name,
-                new_name,
-                has_to_confirm,
-                writer: writer_stdout,
-            }
-            .into(),
+                view_options,
+            } => RenameRequestExecutor::new(request_name, new_name, has_to_confirm, &view_options)
+                .into(),
         }
     }
 }

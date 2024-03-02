@@ -1,14 +1,25 @@
+use std::io::stdout;
+
 use async_trait::async_trait;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
 use crate::view::output::utils::BREAK_LINE;
-use crate::view::output::writer::CliWriterRepository;
+use crate::view::output::writer::{CliWriterRepository, CrosstermCliWriter};
 use crate::view::style::{Color, StyledStr};
 
 pub struct InspectRequestExecutor<Writer: CliWriterRepository> {
     pub request_name: String,
     pub writer: Writer,
+}
+
+impl InspectRequestExecutor<CrosstermCliWriter> {
+    pub fn new(request_name: String) -> Self {
+        InspectRequestExecutor {
+            request_name,
+            writer: CrosstermCliWriter::from(Box::new(stdout())),
+        }
+    }
 }
 
 #[async_trait]

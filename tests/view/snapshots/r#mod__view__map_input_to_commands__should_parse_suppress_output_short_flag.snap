@@ -12,10 +12,10 @@ expression: output
           paths: []
           query_params: []
           anchor: ~
-      method: PATCH
+      method: GET
       headers: {}
       body:
         Raw: ""
     view_options:
       print_body_only: false
-      suppress_output: false
+      suppress_output: true

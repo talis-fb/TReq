@@ -182,12 +182,15 @@ impl SavingOptions {
 #[derive(Default, Debug, Eq, PartialEq, Serialize, Clone)]
 pub struct ViewOptions {
     pub print_body_only: bool,
+    pub suppress_output: bool,
 }
 
 impl ViewOptions {
     pub fn from_clap_matches(matches: &ArgMatches) -> Result<ViewOptions> {
         Ok(ViewOptions {
             print_body_only: clap_args_utils::get_one::<bool>(matches, "print-body-only")
+                .unwrap_or(false),
+            suppress_output: clap_args_utils::get_one::<bool>(matches, "suppress-output")
                 .unwrap_or(false),
         })
     }

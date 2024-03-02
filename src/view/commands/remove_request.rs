@@ -1,14 +1,33 @@
+use std::io::{empty, stdout};
+
 use async_trait::async_trait;
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
+use crate::view::input::cli_input::ViewOptions;
 use crate::view::output::utils::BREAK_LINE;
-use crate::view::output::writer::CliWriterRepository;
+use crate::view::output::writer::{CliWriterRepository, CrosstermCliWriter};
 use crate::view::style::{Color, StyledStr};
 
 pub struct RemoveRequestExecutor<Writer: CliWriterRepository> {
     pub request_name: String,
     pub writer: Writer,
+}
+
+impl RemoveRequestExecutor<CrosstermCliWriter> {
+    pub fn new(request_name: String, view_options: &ViewOptions) -> Self {
+        if view_options.suppress_output {
+            RemoveRequestExecutor {
+                request_name,
+                writer: CrosstermCliWriter::from(Box::new(empty())),
+            }
+        } else {
+            RemoveRequestExecutor {
+                request_name,
+                writer: CrosstermCliWriter::from(Box::new(stdout())),
+            }
+        }
+    }
 }
 
 #[async_trait]

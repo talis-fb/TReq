@@ -25,3 +25,4 @@ expression: output.unwrap()
             name: John
     view_options:
       print_body_only: false
+      suppress_output: false

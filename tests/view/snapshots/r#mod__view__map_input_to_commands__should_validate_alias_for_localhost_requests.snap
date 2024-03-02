@@ -22,3 +22,4 @@ expression: output.unwrap()
         Raw: ""
     view_options:
       print_body_only: false
+      suppress_output: false
