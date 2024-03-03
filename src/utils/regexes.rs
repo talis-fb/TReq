@@ -30,7 +30,7 @@ pub mod request_items {
 
     static BODY_VALUE_REGEX: OnceLock<Regex> = OnceLock::new();
     pub fn body_value() -> &'static Regex {
-        BODY_VALUE_REGEX.get_or_init(|| Regex::new(r"^(?<key>[ -~]*[^:=])=(?<value>[ -~]+)$").unwrap())
+        BODY_VALUE_REGEX.get_or_init(|| Regex::new(r"^(?<key>[ -~]*[^:])=(?<value>[ -~]+)$").unwrap())
     }
 
     static NESTED_BODY_KEYS_REGEX: OnceLock<Regex> = OnceLock::new();
