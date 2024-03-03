@@ -323,10 +323,10 @@ pub mod tests_parsers_request_items {
             ),
         ];
 
-        for (input, output) in cases {
+        for (input, expected_json_output) in cases {
             let base_request = PartialRequestData::default();
 
-            let expected_result = PartialRequestData::default().with_body(output.to_string());
+            let expected_result = PartialRequestData::default().with_body(expected_json_output);
 
             assert_eq!(
                 parsers_request_items::non_string_body_value(input, &base_request),
@@ -355,10 +355,10 @@ pub mod tests_parsers_request_items {
             (r#"worked:='null'"#, r#"{ "worked": null }"#),
         ];
 
-        for (input, output) in cases {
+        for (input, expected_json_output) in cases {
             let base_request = PartialRequestData::default();
 
-            let expected_result = PartialRequestData::default().with_body(output.to_string());
+            let expected_result = PartialRequestData::default().with_body(expected_json_output);
 
             assert_eq!(
                 parsers_request_items::non_string_body_value(input, &base_request),
@@ -412,6 +412,23 @@ pub mod tests_parsers_request_items {
                 Some(expected_request),
                 parsers_request_items::body_value(input, &request)
             )
+        }
+    }
+
+    #[test]
+    fn test_invalid_body_value() {
+        let cases = [
+            r#"key:={"name":]"#,
+            r#"key:=name"#,
+        ];
+
+        for input in cases {
+            let base_request = PartialRequestData::default();
+
+        assert_eq!(
+            None,
+            parsers_request_items::body_value(input, &base_request)
+        )
         }
     }
 
