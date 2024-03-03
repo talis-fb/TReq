@@ -1,6 +1,7 @@
 use std::io::{empty, stderr, stdout};
 
 use async_trait::async_trait;
+use indicatif::ProgressDrawTarget;
 
 use super::submit_request::BasicRequestExecutor;
 use super::ViewCommand;
@@ -19,6 +20,7 @@ where
 {
     pub request_name: String,
     pub input_request_data: PartialRequestData,
+    pub progress_draw_target: ProgressDrawTarget,
     pub writer_metadata: W1,
     pub writer_response: W2,
     pub writer_stderr: W3,
@@ -34,6 +36,7 @@ impl SubmitSavedRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, Crosster
             SubmitSavedRequestExecutor {
                 request_name,
                 input_request_data,
+                progress_draw_target: ProgressDrawTarget::stderr(),
                 writer_metadata: CrosstermCliWriter::from(empty()),
                 writer_response: CrosstermCliWriter::from(stdout()),
                 writer_stderr: CrosstermCliWriter::from(stderr()),
@@ -42,6 +45,7 @@ impl SubmitSavedRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, Crosster
             SubmitSavedRequestExecutor {
                 request_name,
                 input_request_data,
+                progress_draw_target: ProgressDrawTarget::hidden(),
                 writer_metadata: CrosstermCliWriter::from(empty()),
                 writer_response: CrosstermCliWriter::from(empty()),
                 writer_stderr: CrosstermCliWriter::from(stderr()),
@@ -50,6 +54,7 @@ impl SubmitSavedRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, Crosster
             SubmitSavedRequestExecutor {
                 request_name,
                 input_request_data,
+                progress_draw_target: ProgressDrawTarget::stderr(),
                 writer_metadata: CrosstermCliWriter::from(stderr()),
                 writer_response: CrosstermCliWriter::from(stdout()),
                 writer_stderr: CrosstermCliWriter::from(stderr()),
@@ -83,6 +88,7 @@ where
 
         Box::new(BasicRequestExecutor {
             request,
+            progress_draw_target: self.progress_draw_target,
             writer_metadata: self.writer_metadata,
             writer_response: self.writer_response,
             writer_stderr: self.writer_stderr,

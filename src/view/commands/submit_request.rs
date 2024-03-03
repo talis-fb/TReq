@@ -1,7 +1,7 @@
 use std::io::{empty, stderr, stdout};
 
 use async_trait::async_trait;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 
 use super::ViewCommand;
 use crate::app::backend::Backend;
@@ -20,6 +20,7 @@ where
     W3: CliWriterRepository,
 {
     pub request: RequestData,
+    pub progress_draw_target: ProgressDrawTarget,
     pub writer_metadata: W1,
     pub writer_response: W2,
     pub writer_stderr: W3,
@@ -30,6 +31,7 @@ impl BasicRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, CrosstermCliWr
         if view_options.print_body_only {
             BasicRequestExecutor {
                 request,
+                progress_draw_target: ProgressDrawTarget::stderr(),
                 writer_metadata: CrosstermCliWriter::from(empty()),
                 writer_response: CrosstermCliWriter::from(stdout()),
                 writer_stderr: CrosstermCliWriter::from(stderr()),
@@ -37,6 +39,7 @@ impl BasicRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, CrosstermCliWr
         } else if view_options.suppress_output {
             BasicRequestExecutor {
                 request,
+                progress_draw_target: ProgressDrawTarget::hidden(),
                 writer_metadata: CrosstermCliWriter::from(empty()),
                 writer_response: CrosstermCliWriter::from(empty()),
                 writer_stderr: CrosstermCliWriter::from(stderr()),
@@ -44,6 +47,7 @@ impl BasicRequestExecutor<CrosstermCliWriter, CrosstermCliWriter, CrosstermCliWr
         } else {
             BasicRequestExecutor {
                 request,
+                progress_draw_target: ProgressDrawTarget::stderr(),
                 writer_metadata: CrosstermCliWriter::from(stderr()),
                 writer_response: CrosstermCliWriter::from(stdout()),
                 writer_stderr: CrosstermCliWriter::from(stderr()),
@@ -105,6 +109,7 @@ where
             let now = tokio::time::Instant::now();
 
             let pb = ProgressBar::new(100);
+            pb.set_draw_target(self.progress_draw_target);
             pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
             pb.set_message("Loading...\t\t 0 MS");
 
