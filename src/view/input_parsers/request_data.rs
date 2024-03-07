@@ -45,14 +45,21 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
             .iter()
             .fold(base_request, |req_data, item| {
                 [
-                    parsers_request_items::query_param_value,
-                    parsers_request_items::nested_body_value,
-                    parsers_request_items::non_string_body_value,
-                    parsers_request_items::body_value,
-                    parsers_request_items::header_value,
+                    parsers_request_items::operators::query_param_value,
+                    // parsers_request_items::nested_body_value,
+                    parsers_request_items::operators::non_string_body_value,
+                    parsers_request_items::operators::body_value,
+                    parsers_request_items::operators::header_value,
                 ]
                 .into_iter()
                 .find_map(|parser| parser(item.as_ref(), &req_data))
+                .and_then(|v| {
+                    use parsers_request_items::operators::ParserResult;
+                    match v {
+                        ParserResult::ParsedOk(r) => Some(r),
+                        ParserResult::ParsedError(_) => None,
+                    }
+                })
                 .unwrap_or(req_data)
             });
 
@@ -65,199 +72,308 @@ mod parsers_request_items {
     use super::*;
     use crate::utils::regexes;
 
-    // Github Issue #8
-    // Parse "<key>:=<null>"
-    // Parse "<key>:=[-]<number>"
-    // Parse "<key>:=true|false"
-    // Parse "<key>:=[<null>, <string>, <number>, <boolean>, <array>, <object>]"
-    // Parse "<key>:={"<key>": <null>|<string|number|boolean|array|object>"}"
-    pub fn non_string_body_value(
-        s: &str,
-        base_request: &PartialRequestData,
-    ) -> Option<PartialRequestData> {
-        let mut re = regexes::request_items::non_string_body_value();
-        let mut matcher = re.captures(s)?;
+    pub mod operators {
+        use std::error::Error;
 
-        let key = matcher.name("key")?.as_str();
-        let value = matcher.name("value")?.as_str();
+        use super::*;
 
-        let value = serde_json::from_str::<Value>(value)
-            .ok()
-            .and_then(|v| match v {
-                Value::String(_) => None,
-                _ => Some(v),
-            })
-            .or_else(|| {
-                re = regexes::request_items::enclosed_by_single_quote_value();
-                matcher = re.captures(value)?;
+        pub enum ParserResult {
+            ParsedOk(PartialRequestData),
+            ParsedError(Box<dyn Error>),
+        }
 
-                serde_json::from_str(matcher.name("value")?.as_str())
-                    .ok()
-                    .and_then(|v| match v {
-                        Value::String(_) => None,
-                        _ => Some(v),
-                    })
-            })
-            .or_else(|| {
-                re = regexes::request_items::enclosed_by_double_quote_value();
-                matcher = re.captures(value)?;
+        pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<ParserResult> {
+            let re = regexes::request_items::non_string_body_value();
+            let matcher = re.captures(s)?;
 
-                serde_json::from_str(matcher.name("value")?.as_str())
-                    .ok()
-                    .and_then(|v| match v {
-                        Value::String(_) => None,
-                        _ => Some(v),
-                    })
-            })?;
+            let key = matcher.name("key")?.as_str();
+            let value = matcher.name("value")?.as_str();
 
-        let mut request = base_request.clone();
+            let request = base_request.clone();
 
-        request.body = match request.body {
-            Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
-                json.insert(key.to_string(), value);
-                BodyPayload::Json(serde_json::Value::Object(json))
+            let sub_keys = utils::nested_body_keys(key);
+
+            let new_request =
+                utils::set_body_value(request, sub_keys, Value::String(value.to_string()));
+
+            Some(ParserResult::ParsedOk(new_request))
+        }
+
+        pub fn non_string_body_value(
+            s: &str,
+            base_request: &PartialRequestData,
+        ) -> Option<ParserResult> {
+            let re = regexes::request_items::non_string_body_value();
+            let matcher = re.captures(s)?;
+
+            let input_key = matcher.name("key")?.as_str();
+            let input_value = matcher.name("value")?.as_str();
+
+            let value_to_set = utils::non_string_value_from_str_input(input_value);
+
+            // let value_to_set: Option<Value> = serde_json::from_str::<Value>(input_value)
+            //     .ok()
+            //     .and_then(|v| match v {
+            //         Value::String(_) => None,
+            //         _ => Some(v),
+            //     })
+            //     .or_else(|| {
+            //         re = regexes::request_items::enclosed_by_single_quote_value();
+            //         matcher = re.captures(input_value)?;
+            //
+            //         serde_json::from_str(matcher.name("value")?.as_str())
+            //             .ok()
+            //             .and_then(|v| match v {
+            //                 Value::String(_) => None,
+            //                 _ => Some(v),
+            //             })
+            //     })
+            //     .or_else(|| {
+            //         re = regexes::request_items::enclosed_by_double_quote_value();
+            //         matcher = re.captures(input_value)?;
+            //
+            //         serde_json::from_str(matcher.name("value")?.as_str())
+            //             .ok()
+            //             .and_then(|v| match v {
+            //                 Value::String(_) => None,
+            //                 _ => Some(v),
+            //             })
+            //     });
+
+            if value_to_set.is_none() {
+                return Some(ParserResult::ParsedError(
+                    anyhow::Error::msg("Could not parse body value").into(),
+                ));
             }
-            _ => BodyPayload::Json(serde_json::json!({key: value})),
+
+            let request = base_request.clone();
+
+            let sub_keys = utils::nested_body_keys(input_key);
+
+            let new_request = utils::set_body_value(request, sub_keys, value_to_set.unwrap());
+
+            Some(ParserResult::ParsedOk(new_request))
         }
-        .into();
 
-        Some(request)
-    }
+        pub fn header_value(s: &str, base_request: &PartialRequestData) -> Option<ParserResult> {
+            let re = regexes::request_items::header_value();
+            let matcher = re.captures(s)?;
 
-    pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
-        let re = regexes::request_items::body_value();
-        let matcher = re.captures(s)?;
+            let key = matcher.name("key")?.as_str();
+            let value = matcher.name("value")?.as_str();
 
-        let key = matcher.name("key")?.as_str();
-        let value = matcher.name("value")?.as_str();
+            let mut request = base_request.clone();
 
-        let mut request = base_request.clone();
+            request
+                .headers
+                .get_or_insert(HashMap::new())
+                .insert(key.to_string(), value.to_string());
 
-        request.body = match request.body {
-            Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
-                json.insert(key.to_string(), Value::String(value.to_string()));
-                BodyPayload::Json(serde_json::Value::Object(json))
+            Some(ParserResult::ParsedOk(request))
+        }
+
+        pub fn query_param_value(
+            s: &str,
+            base_request: &PartialRequestData,
+        ) -> Option<ParserResult> {
+            let re = regexes::request_items::query_param_value();
+            let matcher = re.captures(s)?;
+
+            let key = matcher.name("key")?.as_str();
+            let value = matcher.name("value")?.as_str();
+
+            if let Some(Url::Raw(_)) = base_request.url.as_ref() {
+                return Some(ParserResult::ParsedError(
+                    anyhow::Error::msg("Cannot insert query param to given URL").into(),
+                ));
             }
-            _ => BodyPayload::Json(serde_json::json!({key: value})),
-        }
-        .into();
 
-        Some(request)
+            let mut request = base_request.clone();
+            request.url = request.url.or(Some(Url::ValidatedUrl(UrlInfo::default())));
+
+            if let Some(Url::ValidatedUrl(url_data)) = request.url.as_mut() {
+                url_data
+                    .query_params
+                    .push((key.to_string(), value.to_string()));
+            }
+
+            Some(ParserResult::ParsedOk(request))
+        }
     }
 
-    pub fn header_value(s: &str, base_request: &PartialRequestData) -> Option<PartialRequestData> {
-        let re = regexes::request_items::header_value();
-        let matcher = re.captures(s)?;
+    mod utils {
+        use super::*;
 
-        let key = matcher.name("key")?.as_str();
-        let value = matcher.name("value")?.as_str();
+        pub fn nested_body_keys<'a>(s: &'a str) -> Vec<&'a str> {
+            let keys: Option<Vec<&str>> = (|| {
+                let re = regexes::request_items::nested_body_keys();
+                let matcher = re.captures(s)?;
 
-        let mut request = base_request.clone();
-
-        request
-            .headers
-            .get_or_insert(HashMap::new())
-            .insert(key.to_string(), value.to_string());
-
-        Some(request)
-    }
-
-    pub fn query_param_value(
-        s: &str,
-        base_request: &PartialRequestData,
-    ) -> Option<PartialRequestData> {
-        let re = regexes::request_items::query_param_value();
-        let matcher = re.captures(s)?;
-
-        let key = matcher.name("key")?.as_str();
-        let value = matcher.name("value")?.as_str();
-
-        // TODO: RETURN THIS TO USER
-        // In this case the validation on URL is already made and is not possible to manipulate it
-        // to insert a query_param, because was not possible to create the UrlInfo using given input
-        if let Some(Url::Raw(_)) = base_request.url.as_ref() {
-            return None;
-        }
-
-        let mut request = base_request.clone();
-        request.url = request.url.or(Some(Url::ValidatedUrl(UrlInfo::default())));
-
-        if let Some(Url::ValidatedUrl(url_data)) = request.url.as_mut() {
-            url_data
-                .query_params
-                .push((key.to_string(), value.to_string()));
-        }
-
-        Some(request)
-    }
-
-    pub fn nested_body_value(
-        s: &str,
-        base_request: &PartialRequestData,
-    ) -> Option<PartialRequestData> {
-        let re = regexes::request_items::body_value();
-        let matcher = re.captures(s)?;
-
-        // Key=Value
-        let key = matcher.name("key")?.as_str();
-        let value = matcher.name("value")?.as_str();
-
-        // Extract the root key and sub keys from "key" input
-        // ----
-        // Key[SubKey1][SubKey2] => Key, [SubKey1, SubKey2]
-        // ----
-        let (root_key, sub_keys) = {
-            let re = regexes::request_items::nested_body_keys();
-            let matcher = re.captures(key)?;
-
-            (
-                matcher.name("root_key")?.as_str(),
-                matcher
+                // Key=Value
+                let root_key = matcher.name("root_key")?.as_str();
+                let sub_keys = matcher
                     .name("sub_keys")?
                     .as_str()
                     .split(['[', ']'])
                     .filter(|s| !s.is_empty())
-                    .collect::<Vec<_>>(),
-            )
-        };
+                    .collect::<Vec<_>>();
 
-        let mut request = base_request.clone();
+                Some(
+                    Vec::from([root_key])
+                        .into_iter()
+                        .chain(sub_keys.into_iter())
+                        .collect::<Vec<_>>(),
+                )
+            })();
 
-        let mut root_map: Map<String, Value> = match request.body {
-            Some(BodyPayload::Json(serde_json::Value::Object(v))) => v,
-            _ => Map::new(),
-        };
+            keys.unwrap_or(Vec::from([s]))
+        }
 
-        let root_value: &mut Value = root_map
-            .entry(root_key)
-            .or_insert(Value::Object(Map::new()));
+        pub fn non_string_value_from_str_input<'a>(input_value: &'a str) -> Option<Value> {
+            serde_json::from_str::<Value>(input_value)
+                .ok()
+                .and_then(|v| match v {
+                    Value::String(inner_str) => serde_json::from_str(&inner_str).ok(),
+                    _ => Some(v),
+                })
+                .or_else(|| {
+                    let re = regexes::request_items::enclosed_by_single_quote_value();
+                    let matcher = re.captures(input_value)?;
+                    serde_json::from_str(matcher.name("value")?.as_str()).ok()
+                })
+                .and_then(|v| match v {
+                    Value::String(_) => None,
+                    _ => Some(v),
+                })
+        }
 
-        let target_value: &mut Value =
-            sub_keys
-                .iter()
-                .fold(root_value, |map_value, key| match map_value {
-                    Value::Object(map) => map
-                        .entry(key.to_string())
-                        .or_insert(Value::Object(Map::new())),
-                    _ => {
-                        *map_value = Value::Object(Map::new());
-                        match map_value {
-                            Value::Object(map) => map
-                                .entry(key.to_string())
-                                .or_insert(Value::Object(Map::new())),
-                            _ => unreachable!(),
+        pub fn set_body_value(
+            mut request: PartialRequestData,
+            path_keys: Vec<&str>,
+            value: Value,
+        ) -> PartialRequestData {
+            let mut root_value = match request.body {
+                Some(BodyPayload::Json(v)) => v,
+                _ => serde_json::json!({}),
+            };
+
+            let target_value: &mut Value =
+                path_keys
+                    .iter()
+                    .fold(&mut root_value, |map_value, key| match map_value {
+                        Value::Object(map) => map
+                            .entry(key.to_string())
+                            .or_insert(Value::Object(Map::new())),
+                        _ => {
+                            *map_value = Value::Object(Map::new());
+                            match map_value {
+                                Value::Object(map) => map
+                                    .entry(key.to_string())
+                                    .or_insert(Value::Object(Map::new())),
+                                _ => unreachable!(),
+                            }
                         }
-                    }
-                });
+                    });
 
-        *target_value = serde_json::from_str(value)
-            .ok()
-            .unwrap_or(Value::String(value.to_string()));
+            *target_value = value;
 
-        request.body = BodyPayload::Json(serde_json::Value::Object(root_map)).into();
+            request.body = Some(BodyPayload::Json(root_value));
 
-        Some(request)
+            request
+        }
     }
+
+    // pub fn body_value(
+    //     s: &str,
+    //     base_request: &PartialRequestData,
+    // ) -> Option<Result<PartialRequestData>> {
+    //     let re = regexes::request_items::body_value();
+    //     let matcher = re.captures(s)?;
+    //
+    //     let key = matcher.name("key")?.as_str();
+    //     let value = matcher.name("value")?.as_str();
+    //
+    //     let mut request = base_request.clone();
+    //
+    //     request.body = match request.body {
+    //         Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
+    //             json.insert(key.to_string(), Value::String(value.to_string()));
+    //             BodyPayload::Json(serde_json::Value::Object(json))
+    //         }
+    //         _ => BodyPayload::Json(serde_json::json!({key: value})),
+    //     }
+    //     .into();
+    //
+    //     Some(Ok(request))
+    // }
+
+    // pub fn nested_body_value(
+    //     s: &str,
+    //     base_request: &PartialRequestData,
+    // ) -> Option<Result<PartialRequestData>> {
+    //     let re = regexes::request_items::body_value();
+    //     let matcher = re.captures(s)?;
+    //
+    //     // Key=Value
+    //     let key = matcher.name("key")?.as_str();
+    //     let value = matcher.name("value")?.as_str();
+    //
+    //     // Extract the root key and sub keys from "key" input
+    //     // ----
+    //     // Key[SubKey1][SubKey2] => Key, [SubKey1, SubKey2]
+    //     // ----
+    //     let (root_key, sub_keys) = {
+    //         let re = regexes::request_items::nested_body_keys();
+    //         let matcher = re.captures(key)?;
+    //
+    //         (
+    //             matcher.name("root_key")?.as_str(),
+    //             matcher
+    //                 .name("sub_keys")?
+    //                 .as_str()
+    //                 .split(['[', ']'])
+    //                 .filter(|s| !s.is_empty())
+    //                 .collect::<Vec<_>>(),
+    //         )
+    //     };
+    //
+    //     let mut request = base_request.clone();
+    //
+    //     let mut root_map: Map<String, Value> = match request.body {
+    //         Some(BodyPayload::Json(serde_json::Value::Object(v))) => v,
+    //         _ => Map::new(),
+    //     };
+    //
+    //     let root_value: &mut Value = root_map
+    //         .entry(root_key)
+    //         .or_insert(Value::Object(Map::new()));
+    //
+    //     let target_value: &mut Value =
+    //         sub_keys
+    //             .iter()
+    //             .fold(root_value, |map_value, key| match map_value {
+    //                 Value::Object(map) => map
+    //                     .entry(key.to_string())
+    //                     .or_insert(Value::Object(Map::new())),
+    //                 _ => {
+    //                     *map_value = Value::Object(Map::new());
+    //                     match map_value {
+    //                         Value::Object(map) => map
+    //                             .entry(key.to_string())
+    //                             .or_insert(Value::Object(Map::new())),
+    //                         _ => unreachable!(),
+    //                     }
+    //                 }
+    //             });
+    //
+    //     *target_value = serde_json::from_str(value)
+    //         .ok()
+    //         .unwrap_or(Value::String(value.to_string()));
+    //
+    //     request.body = BodyPayload::Json(serde_json::Value::Object(root_map)).into();
+    //
+    //     Some(Ok(request))
+    // }
 }
 
 #[cfg(test)]
@@ -277,12 +393,7 @@ pub mod tests_parsers_request_items {
         for case in cases {
             let base_request = PartialRequestData::default();
 
-            let expected_result = None;
-
-            assert_eq!(
-                parsers_request_items::non_string_body_value(case, &base_request),
-                expected_result
-            );
+            assert!(parsers_request_items::non_string_body_value(case, &base_request).is_none(),);
         }
     }
 
