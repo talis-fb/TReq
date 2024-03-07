@@ -21,8 +21,13 @@ expression: output.unwrap()
           user:
             address:
               city: NY
-            age: "30"
+              country:
+                code: US
+            age: 30
             name: John
+            roles:
+              - admin
+              - user
     view_options:
       print_body_only: false
       suppress_output: false
