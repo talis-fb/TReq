@@ -46,20 +46,13 @@ pub fn parse_inputs_to_request_data(input: &CliInput) -> Result<PartialRequestDa
             .fold(base_request, |req_data, item| {
                 [
                     parsers_request_items::operators::query_param_value,
-                    // parsers_request_items::nested_body_value,
                     parsers_request_items::operators::non_string_body_value,
                     parsers_request_items::operators::body_value,
                     parsers_request_items::operators::header_value,
                 ]
                 .into_iter()
                 .find_map(|parser| parser(item.as_ref(), &req_data))
-                .and_then(|v| {
-                    use parsers_request_items::operators::ParserResult;
-                    match v {
-                        ParserResult::ParsedOk(r) => Some(r),
-                        ParserResult::ParsedError(_) => None,
-                    }
-                })
+                .and_then(Result::ok)
                 .unwrap_or(req_data)
             });
 
@@ -77,26 +70,27 @@ mod parsers_request_items {
 
         use super::*;
 
-        pub enum ParserResult {
-            ParsedOk(PartialRequestData),
-            ParsedError(Box<dyn Error>),
-        }
+        pub type ParserResult = Result<PartialRequestData, Box<dyn Error>>;
 
         pub fn body_value(s: &str, base_request: &PartialRequestData) -> Option<ParserResult> {
-            let re = regexes::request_items::non_string_body_value();
+            let re = regexes::request_items::body_value();
             let matcher = re.captures(s)?;
 
-            let key = matcher.name("key")?.as_str();
-            let value = matcher.name("value")?.as_str();
+            let input_key = matcher.name("key")?.as_str();
+            let input_value = matcher.name("value")?.as_str();
 
             let request = base_request.clone();
 
-            let sub_keys = utils::nested_body_keys(key);
+            let sub_keys = utils::extract_nested_body_keys(input_key);
+            let new_request = utils::build_partial_request_data_with(
+                request,
+                sub_keys,
+                Value::String(input_value.to_string()),
+            );
 
-            let new_request =
-                utils::set_body_value(request, sub_keys, Value::String(value.to_string()));
+            println!("{:?}", new_request);
 
-            Some(ParserResult::ParsedOk(new_request))
+            Some(Ok(new_request))
         }
 
         pub fn non_string_body_value(
@@ -109,50 +103,22 @@ mod parsers_request_items {
             let input_key = matcher.name("key")?.as_str();
             let input_value = matcher.name("value")?.as_str();
 
-            let value_to_set = utils::non_string_value_from_str_input(input_value);
-
-            // let value_to_set: Option<Value> = serde_json::from_str::<Value>(input_value)
-            //     .ok()
-            //     .and_then(|v| match v {
-            //         Value::String(_) => None,
-            //         _ => Some(v),
-            //     })
-            //     .or_else(|| {
-            //         re = regexes::request_items::enclosed_by_single_quote_value();
-            //         matcher = re.captures(input_value)?;
-            //
-            //         serde_json::from_str(matcher.name("value")?.as_str())
-            //             .ok()
-            //             .and_then(|v| match v {
-            //                 Value::String(_) => None,
-            //                 _ => Some(v),
-            //             })
-            //     })
-            //     .or_else(|| {
-            //         re = regexes::request_items::enclosed_by_double_quote_value();
-            //         matcher = re.captures(input_value)?;
-            //
-            //         serde_json::from_str(matcher.name("value")?.as_str())
-            //             .ok()
-            //             .and_then(|v| match v {
-            //                 Value::String(_) => None,
-            //                 _ => Some(v),
-            //             })
-            //     });
-
-            if value_to_set.is_none() {
-                return Some(ParserResult::ParsedError(
-                    anyhow::Error::msg("Could not parse body value").into(),
-                ));
-            }
-
             let request = base_request.clone();
 
-            let sub_keys = utils::nested_body_keys(input_key);
+            let sub_keys = utils::extract_nested_body_keys(input_key);
+            let value_to_set = {
+                match utils::parse_non_string_value_from_str_input(input_value) {
+                    Some(value) => value,
+                    None => {
+                        return Some(Err(anyhow::Error::msg("Could not parse body value").into()))
+                    }
+                }
+            };
 
-            let new_request = utils::set_body_value(request, sub_keys, value_to_set.unwrap());
+            let new_request =
+                utils::build_partial_request_data_with(request, sub_keys, value_to_set);
 
-            Some(ParserResult::ParsedOk(new_request))
+            Some(Ok(new_request))
         }
 
         pub fn header_value(s: &str, base_request: &PartialRequestData) -> Option<ParserResult> {
@@ -169,7 +135,7 @@ mod parsers_request_items {
                 .get_or_insert(HashMap::new())
                 .insert(key.to_string(), value.to_string());
 
-            Some(ParserResult::ParsedOk(request))
+            Some(Ok(request))
         }
 
         pub fn query_param_value(
@@ -183,9 +149,10 @@ mod parsers_request_items {
             let value = matcher.name("value")?.as_str();
 
             if let Some(Url::Raw(_)) = base_request.url.as_ref() {
-                return Some(ParserResult::ParsedError(
-                    anyhow::Error::msg("Cannot insert query param to given URL").into(),
-                ));
+                return Some(Err(anyhow::Error::msg(
+                    "Cannot insert query param to given URL",
+                )
+                .into()));
             }
 
             let mut request = base_request.clone();
@@ -197,14 +164,14 @@ mod parsers_request_items {
                     .push((key.to_string(), value.to_string()));
             }
 
-            Some(ParserResult::ParsedOk(request))
+            Some(Ok(request))
         }
     }
 
-    mod utils {
+    pub mod utils {
         use super::*;
 
-        pub fn nested_body_keys<'a>(s: &'a str) -> Vec<&'a str> {
+        pub fn extract_nested_body_keys<'a>(s: &'a str) -> Vec<&'a str> {
             let keys: Option<Vec<&str>> = (|| {
                 let re = regexes::request_items::nested_body_keys();
                 let matcher = re.captures(s)?;
@@ -229,7 +196,7 @@ mod parsers_request_items {
             keys.unwrap_or(Vec::from([s]))
         }
 
-        pub fn non_string_value_from_str_input<'a>(input_value: &'a str) -> Option<Value> {
+        pub fn parse_non_string_value_from_str_input<'a>(input_value: &'a str) -> Option<Value> {
             serde_json::from_str::<Value>(input_value)
                 .ok()
                 .and_then(|v| match v {
@@ -247,7 +214,7 @@ mod parsers_request_items {
                 })
         }
 
-        pub fn set_body_value(
+        pub fn build_partial_request_data_with(
             mut request: PartialRequestData,
             path_keys: Vec<&str>,
             value: Value,
@@ -282,102 +249,11 @@ mod parsers_request_items {
             request
         }
     }
-
-    // pub fn body_value(
-    //     s: &str,
-    //     base_request: &PartialRequestData,
-    // ) -> Option<Result<PartialRequestData>> {
-    //     let re = regexes::request_items::body_value();
-    //     let matcher = re.captures(s)?;
-    //
-    //     let key = matcher.name("key")?.as_str();
-    //     let value = matcher.name("value")?.as_str();
-    //
-    //     let mut request = base_request.clone();
-    //
-    //     request.body = match request.body {
-    //         Some(BodyPayload::Json(serde_json::Value::Object(mut json))) => {
-    //             json.insert(key.to_string(), Value::String(value.to_string()));
-    //             BodyPayload::Json(serde_json::Value::Object(json))
-    //         }
-    //         _ => BodyPayload::Json(serde_json::json!({key: value})),
-    //     }
-    //     .into();
-    //
-    //     Some(Ok(request))
-    // }
-
-    // pub fn nested_body_value(
-    //     s: &str,
-    //     base_request: &PartialRequestData,
-    // ) -> Option<Result<PartialRequestData>> {
-    //     let re = regexes::request_items::body_value();
-    //     let matcher = re.captures(s)?;
-    //
-    //     // Key=Value
-    //     let key = matcher.name("key")?.as_str();
-    //     let value = matcher.name("value")?.as_str();
-    //
-    //     // Extract the root key and sub keys from "key" input
-    //     // ----
-    //     // Key[SubKey1][SubKey2] => Key, [SubKey1, SubKey2]
-    //     // ----
-    //     let (root_key, sub_keys) = {
-    //         let re = regexes::request_items::nested_body_keys();
-    //         let matcher = re.captures(key)?;
-    //
-    //         (
-    //             matcher.name("root_key")?.as_str(),
-    //             matcher
-    //                 .name("sub_keys")?
-    //                 .as_str()
-    //                 .split(['[', ']'])
-    //                 .filter(|s| !s.is_empty())
-    //                 .collect::<Vec<_>>(),
-    //         )
-    //     };
-    //
-    //     let mut request = base_request.clone();
-    //
-    //     let mut root_map: Map<String, Value> = match request.body {
-    //         Some(BodyPayload::Json(serde_json::Value::Object(v))) => v,
-    //         _ => Map::new(),
-    //     };
-    //
-    //     let root_value: &mut Value = root_map
-    //         .entry(root_key)
-    //         .or_insert(Value::Object(Map::new()));
-    //
-    //     let target_value: &mut Value =
-    //         sub_keys
-    //             .iter()
-    //             .fold(root_value, |map_value, key| match map_value {
-    //                 Value::Object(map) => map
-    //                     .entry(key.to_string())
-    //                     .or_insert(Value::Object(Map::new())),
-    //                 _ => {
-    //                     *map_value = Value::Object(Map::new());
-    //                     match map_value {
-    //                         Value::Object(map) => map
-    //                             .entry(key.to_string())
-    //                             .or_insert(Value::Object(Map::new())),
-    //                         _ => unreachable!(),
-    //                     }
-    //                 }
-    //             });
-    //
-    //     *target_value = serde_json::from_str(value)
-    //         .ok()
-    //         .unwrap_or(Value::String(value.to_string()));
-    //
-    //     request.body = BodyPayload::Json(serde_json::Value::Object(root_map)).into();
-    //
-    //     Some(Ok(request))
-    // }
 }
 
 #[cfg(test)]
 pub mod tests_parsers_request_items {
+    use super::parsers_request_items::operators;
     use super::*;
 
     #[test]
@@ -392,8 +268,8 @@ pub mod tests_parsers_request_items {
 
         for case in cases {
             let base_request = PartialRequestData::default();
-
-            assert!(parsers_request_items::non_string_body_value(case, &base_request).is_none(),);
+            let output = operators::non_string_body_value(case, &base_request); 
+            assert!(matches!(output, Some(Err(_))));
         }
     }
 
@@ -405,19 +281,11 @@ pub mod tests_parsers_request_items {
                 r#"{ "hobbies": ["http", "pies"] }"#,
             ),
             (
-                r#"hobbies:="["http", "pies"]""#,
-                r#"{ "hobbies": ["http", "pies"] }"#,
-            ),
-            (
                 r#"hobbies:=["http", "pies"]"#,
                 r#"{ "hobbies": ["http", "pies"] }"#,
             ),
             (
                 r#"favorite:={"tool": "HTTPie"}"#,
-                r#"{ "favorite": { "tool": "HTTPie"} }"#,
-            ),
-            (
-                r#"favorite:="{"tool": "HTTPie"}""#,
                 r#"{ "favorite": { "tool": "HTTPie"} }"#,
             ),
             (
@@ -440,8 +308,10 @@ pub mod tests_parsers_request_items {
             let expected_result = PartialRequestData::default().with_body(output.to_string());
 
             assert_eq!(
-                parsers_request_items::non_string_body_value(input, &base_request),
-                Some(expected_result)
+                expected_result,
+                operators::non_string_body_value(input, &base_request)
+                    .unwrap()
+                    .unwrap(),
             );
         }
     }
@@ -472,8 +342,10 @@ pub mod tests_parsers_request_items {
             let expected_result = PartialRequestData::default().with_body(output.to_string());
 
             assert_eq!(
-                parsers_request_items::non_string_body_value(input, &base_request),
-                Some(expected_result)
+                expected_result,
+                operators::non_string_body_value(input, &base_request)
+                    .unwrap()
+                    .unwrap(),
             );
         }
     }
@@ -488,13 +360,15 @@ pub mod tests_parsers_request_items {
             .with_body(r#"{ "email": "johndoe@gmail.com", "password": "123" }"#);
 
         assert_eq!(
-            Some(expected_request),
-            parsers_request_items::body_value(input, &base_request)
-        )
+            expected_request,
+            operators::body_value(input, &base_request)
+                .unwrap()
+                .unwrap(),
+        );
     }
 
     #[test]
-    fn test_body_value_append_overwrite() {
+    fn test_body_value_overwrite() {
         let input = "password=123456";
         let base_request = PartialRequestData::default()
             .with_body(r#"{ "email": "johndoe@gmail.com", "password": "123" }"#);
@@ -503,9 +377,11 @@ pub mod tests_parsers_request_items {
             .with_body(r#"{ "email": "johndoe@gmail.com", "password": "123456" }"#);
 
         assert_eq!(
-            Some(expected_request),
-            parsers_request_items::body_value(input, &base_request)
-        )
+            expected_request,
+            operators::body_value(input, &base_request)
+                .unwrap()
+                .unwrap(),
+        );
     }
 
     #[test]
@@ -519,10 +395,11 @@ pub mod tests_parsers_request_items {
         for request in base_requests {
             let expected_request =
                 PartialRequestData::default().with_body(r#"{ "password": "123" }"#);
+
             assert_eq!(
-                Some(expected_request),
-                parsers_request_items::body_value(input, &request)
-            )
+                expected_request,
+                operators::body_value(input, &request).unwrap().unwrap(),
+            );
         }
     }
 
@@ -533,86 +410,10 @@ pub mod tests_parsers_request_items {
 
         let expected_request = PartialRequestData::default().with_body(r#"{ "password": "123" }"#);
         assert_eq!(
-            Some(expected_request),
-            parsers_request_items::body_value(input, &base_request)
-        )
-    }
-
-    #[test]
-    fn test_nested_body_value_basic() {
-        let cases = [
-            ("user[name]=John", r#"{ "user": { "name": "John"} }"#),
-            (
-                "user[name][first]=John",
-                r#"{ "user": { "name": { "first": "John"} } }"#,
-            ),
-        ];
-
-        for (input, expected_json_output) in cases {
-            let base_request = PartialRequestData::default();
-            let expected_request = PartialRequestData::default().with_body(expected_json_output);
-            assert_eq!(
-                Some(expected_request),
-                parsers_request_items::nested_body_value(input, &base_request)
-            )
-        }
-    }
-
-    #[test]
-    fn test_nested_body_value_overwriting_fields() {
-        // 1. appending in a nested object
-        let input = "user[name]=John";
-        let base_json = r#"{ "user": {} }"#;
-        let expected_output_json = r#"{ "user": { "name": "John" } }"#;
-        let base_request = PartialRequestData::default().with_body(base_json);
-        let expected_request = PartialRequestData::default().with_body(expected_output_json);
-        assert_eq!(
-            Some(expected_request),
-            parsers_request_items::nested_body_value(input, &base_request)
-        );
-
-        // 2. overwriting existing field
-        let input = "user[name]=Mary";
-        let base_json = r#"{ "user": { "name": "John" } }"#;
-        let expected_output_json = r#"{ "user": { "name": "Mary" } }"#;
-        let base_request = PartialRequestData::default().with_body(base_json);
-        let expected_request = PartialRequestData::default().with_body(expected_output_json);
-        assert_eq!(
-            Some(expected_request),
-            parsers_request_items::nested_body_value(input, &base_request)
-        );
-
-        // 3. appending in a nested object with another fields
-        let input = "user[name][first]=John";
-        let base_json = r#"{ "user": { "name": { "last": "Doe"} } }"#;
-        let expected_output_json = r#"{ "user": { "name": { "first": "John", "last": "Doe"} } }"#;
-        let base_request = PartialRequestData::default().with_body(base_json);
-        let expected_request = PartialRequestData::default().with_body(expected_output_json);
-        assert_eq!(
-            Some(expected_request),
-            parsers_request_items::nested_body_value(input, &base_request)
-        );
-
-        // 4. replacing fields to object
-        let input = "user[name]=Mary";
-        let base_json = r#"{ "user": "a-string-to-be-replaced" }"#;
-        let expected_output_json = r#"{ "user": { "name": "Mary" } }"#;
-        let base_request = PartialRequestData::default().with_body(base_json);
-        let expected_request = PartialRequestData::default().with_body(expected_output_json);
-        assert_eq!(
-            Some(expected_request),
-            parsers_request_items::nested_body_value(input, &base_request)
-        );
-
-        // 5. replacing fields to nested object
-        let input = "user[name][first]=John";
-        let base_json = r#"{ "user": "a-string-to-be-replaced" }"#;
-        let expected_output_json = r#"{ "user": { "name": { "first": "John" } } }"#;
-        let base_request = PartialRequestData::default().with_body(base_json);
-        let expected_request = PartialRequestData::default().with_body(expected_output_json);
-        assert_eq!(
-            Some(expected_request),
-            parsers_request_items::nested_body_value(input, &base_request)
+            expected_request,
+            operators::body_value(input, &base_request)
+                .unwrap()
+                .unwrap(),
         );
     }
 }

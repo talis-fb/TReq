@@ -16,13 +16,7 @@ expression: output.unwrap()
       headers: {}
       body:
         Json:
-          id: "1"
-          type: user
-          user:
-            address:
-              city: NY
-            age: "30"
-            name: John
+          should_parse: {}
     view_options:
       print_body_only: false
       suppress_output: false

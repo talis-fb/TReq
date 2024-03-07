@@ -100,6 +100,55 @@ fn should_parse_body_values_with_nested_json_too() {
 }
 
 #[test]
+fn should_parse_body_non_string_values_with_nested_json() {
+    let input = [
+        "treq",
+        "POST",
+        "url.com",
+        "id=1",
+        "user[name]=John",
+        "user[age]:=30",
+        "user[address][city]=NY",
+        "user[address][country][code]=US",
+        r#"user[roles]:='["admin", "user"]'"#,
+        "type=user",
+    ];
+    let output = process(input);
+
+    debug_assert!(output.is_ok(), "{:?}", output);
+    assert_snapshot!(output.unwrap());
+}
+
+#[test]
+fn should_NOT_parse_non_string_invalid_json() {
+    let input = [
+        "treq",
+        "POST",
+        "url.com",
+        "should_parse:={}",
+        r#"should_not_parse:='{invalid = json}'"#,
+    ];
+    let output = process(input);
+
+    debug_assert!(output.is_ok(), "{:?}", output);
+    assert_snapshot!(output.unwrap());
+}
+
+#[test]
+fn should_NOT_parse_non_string_invalid_json_nested() {
+    let input = [
+        "treq",
+        "POST",
+        "url.com",
+        r#"should_not_parse[some][nested]:='{invalid = json}'"#,
+    ];
+    let output = process(input);
+
+    debug_assert!(output.is_ok(), "{:?}", output);
+    assert_snapshot!(output.unwrap());
+}
+
+#[test]
 fn should_merge_inputs_of_raw_flag_and_param_body() {
     let input = [
         "treq",
@@ -245,7 +294,6 @@ fn should_validate_if_error_on_raw_value_as_not_map_and_body_insert() {
 fn should_parse_boolean_json() {
     let input = ["treq", "GET", "url.com", "Hello=World", "married:=false"];
     let output = process(input).unwrap();
-    //assert!(output.len() == 1);
     assert_snapshot!(output);
 }
 
@@ -260,7 +308,6 @@ fn should_parse_number_json() {
         "amount:=-30.8",
     ];
     let output = process(input).unwrap();
-    //assert!(output.len() == 1);
     assert_snapshot!(output);
 }
 
@@ -279,7 +326,6 @@ fn should_parse_combine_json() {
         r#"favorite:='{"tool": {"all":[true, 29, {"name": ["Mary", "John"]}]}}'"#,
     ];
     let output = process(input).unwrap();
-    //assert!(output.len() == 1);
     assert_snapshot!(output);
 }
 
